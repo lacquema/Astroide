@@ -23,6 +23,7 @@ import os
 
 # PyQt packages
 from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QStatusBar, QWidget, QApplication, QProgressBar
+from PyQt6.QtCore import pyqtSignal
 
 # My packages
 from SnapSelector import SnapSelectorClass
@@ -35,6 +36,8 @@ from WindowLoad import LoadWindowClass
 ### --- Main Window Generating --- ###
 
 class WindowMainClass(QMainWindow):
+
+    SignalCloseWindowMain = pyqtSignal()
 
     def __init__(self, PathFollowbodies, PathMextract):
         super().__init__()
@@ -94,19 +97,20 @@ class WindowMainClass(QMainWindow):
         
         # Showing
         self.show()
-        LoadWin.close()
+        # LoadWin.close()
 
     # Close programme when the main window are closed
     def closeEvent(self, e):
-        app.closeAllWindows()
+        self.SignalCloseWindowMain.emit()
+        self.close()
 
 
 
 
 if __name__=="__main__":
     app = QApplication(sys.argv) # Application creation
-    LoadWin = LoadWindowClass() # Loading window showing
-    app.processEvents() # Continue the program
+    # LoadWin = LoadWindowClass() # Loading window showing
+    # app.processEvents() # Continue the program
     WindowMain = WindowMainClass(PathFollowbodies, PathMextract) # Main window showing
     sys.exit(app.exec()) # Application execution
     

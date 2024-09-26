@@ -1,4 +1,4 @@
-#! /Users/lacquema/ByeGildas/bin/python3
+#! /Users/lacquema/Astroide.env/bin/python3
 
 
 ### --- Packages --- ###
@@ -43,33 +43,33 @@ class SnapSelectorClass(QWidget):
 
         # Button to fist snapshot
         self.BtnFirstSnap = QPushButton()
-        self.BtnFirstSnap.setIcon(QIcon(f'{self.DirPath}/Items/arrowStopL.png'))
+        self.BtnFirstSnap.setIcon(QIcon(f'{self.DirPath}/../Items/arrowStopL.png'))
         self.BtnFirstSnap.setEnabled(False)
         self.BtnFirstSnap.setStatusTip('First snapshot')
         Layout.addWidget(self.BtnFirstSnap)
         
         # Button to previous snapshot
         self.BtnPreviousSnap = QPushButton()
-        self.BtnPreviousSnap.setIcon(QIcon(f'{self.DirPath}/Items/arrowL.png'))
+        self.BtnPreviousSnap.setIcon(QIcon(f'{self.DirPath}/../Items/arrowL.png'))
         self.BtnPreviousSnap.setEnabled(False)
         self.BtnPreviousSnap.setStatusTip('Previous snapshot')
         Layout.addWidget(self.BtnPreviousSnap)
         
         # Button to refresh snapshot
         self.BtnRefreshSnap = QPushButton()
-        self.BtnRefreshSnap.setIcon(QIcon(f'{self.DirPath}/Items/arrowCircle.png'))
+        self.BtnRefreshSnap.setIcon(QIcon(f'{self.DirPath}/../Items/arrowCircle.png'))
         self.BtnRefreshSnap.setStatusTip('Refresh')
         Layout.addWidget(self.BtnRefreshSnap)
 
         # Button to next snapshot
         self.BtnNextSnap = QPushButton()
-        self.BtnNextSnap.setIcon(QIcon(f'{self.DirPath}/Items/arrowR.png'))
+        self.BtnNextSnap.setIcon(QIcon(f'{self.DirPath}/../Items/arrowR.png'))
         self.BtnNextSnap.setStatusTip('Next snapshot')
         Layout.addWidget(self.BtnNextSnap)
 
         # Button to last snapshot
         self.BtnLastSnap = QPushButton()
-        self.BtnLastSnap.setIcon(QIcon(f'{self.DirPath}/Items/arrowStopR.png'))
+        self.BtnLastSnap.setIcon(QIcon(f'{self.DirPath}/../Items/arrowStopR.png'))
         self.BtnLastSnap.setStatusTip('Last snapshot')
         Layout.addWidget(self.BtnLastSnap)
 
