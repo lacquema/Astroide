@@ -1,4 +1,4 @@
-#! /Users/lacquema/ByeGildas/bin/python3
+#! /Users/lacquema/Astroide.env/bin/python3
 
 
 
@@ -8,8 +8,8 @@
 ##########################################################################################################
 n=8
 System = 'BetaPic'
-PathFollowbodies = '/Users/lacquema/Documents/Swiftdata/'+System+f'/simu_bpicbcd_{n}/followbodies.dat'
-PathMextract = '/Users/lacquema/Documents/Swiftdata/'+System+f'/simu_bpicbcd_{n}/mextract.dat'
+PathFollowbodies = '/Users/lacquema/Documents/Research/Simulations/Astroide/'+System+f'/simu_bpicbcd_{n}/followbodies.dat'
+PathMextract = '/Users/lacquema/Documents/Research/Simulations/Astroide/'+System+f'/simu_bpicbcd_{n}/mextract.dat'
 ##########################################################################################################
 
 
@@ -28,7 +28,7 @@ from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QStatusBar, QWidget, QAppl
 from SnapSelector import SnapSelectorClass
 from Tools import *
 from TransferData import TransferDataClass
-from WindowMenu import LoadWindowClass
+from WindowLoad import LoadWindowClass
 
 
 
@@ -44,7 +44,7 @@ class WindowMainClass(QMainWindow):
         NbSnapshots, t_m, NbBodies_m, NbParticles, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R = TransferDataClass.OpenMextract(PathMextract)
 
         # Window settings
-        self.setWindowTitle('Swift data analysis of {}'.format(System))
+        self.setWindowTitle('Astroide data analysis of {}'.format(System))
 
         # Layout intialisation
         Layout = QVBoxLayout()

@@ -5,6 +5,7 @@
 
 # Transverse packages
 import sys
+import os
 from numpy import cos, sin, exp, log, log10, linspace, max, loadtxt, transpose, histogram, histogram2d, arcsinh
 from math import pi, sqrt
 from random import random
@@ -32,6 +33,7 @@ class GeneralToolClass(QWidget):
 
         self.IndexSnap = 0
         self.colorList = ['black', 'blue', 'red', 'green', 'orange', 'pink']
+        self.DirPath = os.path.dirname(__file__)
 
         # Layout
         Layout = QHBoxLayout()
@@ -714,9 +716,9 @@ class RadProfile(GeneralToolClass):
         self.R = R
 
         # Beta Pic other curves
-        self.profileAug = transpose(loadtxt('/Users/lacquema/ByeGildas/Softs/SoftSwift/OtherCurves/bpic_Augereau_profile.dat', dtype = float))
-        self.profileNE = transpose(loadtxt('/Users/lacquema/ByeGildas/Softs/SoftSwift/OtherCurves/bpic_Dent_profile_NE.dat', dtype = float))
-        self.profileSW = transpose(loadtxt('/Users/lacquema/ByeGildas/Softs/SoftSwift/OtherCurves/bpic_Dent_profile_SW.dat', dtype = float))
+        self.profileAug = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Augereau_profile.dat', dtype = float))
+        self.profileNE = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_NE.dat', dtype = float))
+        self.profileSW = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_SW.dat', dtype = float))
 
         # Plot initialisation
         self.Subplot = self.WindowPlot.Canvas.fig.add_subplot(111)
