@@ -57,7 +57,7 @@ class WindowMainClass(QMainWindow):
         Layout.addWidget(SnapSelectorWidget)
 
         # Separation
-        Layout.addWidget(QProgressBar())
+        Layout.addWidget(Delimiter())
 
         # Space view tool adding
         SpaceViewWidget = SpaceView(t_m, NbBodies_m, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R)
@@ -101,8 +101,10 @@ class WindowMainClass(QMainWindow):
 
     # Close programme when the main window are closed
     def closeEvent(self, e):
-        self.SignalCloseWindowMain.emit()
-        self.close()
+        try:
+            app.closeAllWindows()
+        except:
+            self.SignalCloseWindowMain.emit()
 
 
 

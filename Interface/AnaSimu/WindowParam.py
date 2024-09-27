@@ -1,14 +1,16 @@
-#! /Users/lacquema/ByeGildas/bin/python3
+#! /Users/lacquema/Astroide.env/bin/python3
 
 
 ### --- Packages --- ###
 
 # Transverse packages
 import sys
+import os
 
 # PyQt packages
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QPushButton, QWidget, QStatusBar, QApplication
+from PyQt6.QtGui import QIcon
 
 
 ### --- Parameters Window Generating --- ###
@@ -20,6 +22,9 @@ class WindowParamClass(QMainWindow):
     def __init__(self, ToolName):
         super().__init__()
 
+        # Directory path
+        self.DirPath = os.path.dirname(__file__)
+
         # Window characteristics
         self.setWindowTitle(ToolName+': Parameters')
 
@@ -30,6 +35,12 @@ class WindowParamClass(QMainWindow):
         self.BtnReset = QPushButton('Reset')
         self.BtnReset.setStatusTip('Reset')
         self.Layout.addWidget(self.BtnReset)
+
+        # Refresh button
+        self.BtnRefresh = QPushButton()
+        self.BtnRefresh.setIcon(QIcon(f'{self.DirPath}/../Items/arrowCircle.png'))
+        self.BtnRefresh.setStatusTip('Refresh')
+        self.Layout.addWidget(self.BtnRefresh)
 
         # Widget container
         self.Container = QWidget()

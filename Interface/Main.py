@@ -58,13 +58,14 @@ class MainClass():
         self.WinMenu.close()
         self.WinSetAnaSimu.show()
 
-    def closeEvent(self, e):
-        self.WinMenu.show()
-
     def ReOpenWinLoad(self):
-        if self.WinSetAnaSimu.isVisible(): self.WinSetAnaSimu.close()
+        app.closeAllWindows()
+        # if self.WinSetAnaSimu.isVisible(): self.WinSetAnaSimu.close()
         # if self.WinSetNewSimu.isVisible(): self.WinSetNezSimu.close()
         # if self.WinSetContSimu.isVisible(): self.WinSetContSimu.close()
+        self.WinMenu.show()
+
+    def closeEvent(self, e):
         self.WinMenu.show()
 
 

@@ -86,14 +86,14 @@ class WindowSetAnaSimu(QMainWindow):
 
 
     def OpenWinMain(self):
-        print(self.SimuPath.EditPath.text()+self.FollowbodiesFileName.EditParam.text())
-        # try:
-        self.WinMain = WindowMainClass(self.SimuPath.EditPath.text()+self.FollowbodiesFileName.EditParam.text(), self.SimuPath.EditPath.text()+self.MextractFileName.EditParam.text())
-        self.WinMain.SignalCloseWindowMain.connect(self.ReSignalCloseWindowMain.emit)
-        self.WinMain.show()
-        self.close()
-        # except:
-        #     print('Data not found: check the directory path and the name of input files.')
+        try:
+            self.BtnStart.setEnabled(False)
+            self.WinMain = WindowMainClass(self.SimuPath.EditPath.text()+self.FollowbodiesFileName.EditParam.text(), self.SimuPath.EditPath.text()+self.MextractFileName.EditParam.text())
+            self.WinMain.SignalCloseWindowMain.connect(self.ReSignalCloseWindowMain.emit)
+            self.WinMain.show()
+            self.close()
+        except:
+            print('Data not found: check the directory path and the name of input files.')
 
     # def FindInputFiles(self):
     #     Files = os.listdir(self.SimuPath.EditPath.text()[:-1])

@@ -36,7 +36,7 @@ class WindowMenuClass(QMainWindow):
         # Front = QFont('', 20, italic=True)
         # self.BtnNew.setFont(Front)
         self.BtnNew.setFixedSize(200, 40)
-        self.BtnNew.setStyleSheet('QPushButton {background-color: grey; color: white; font: italic 15px;}')
+        self.BtnNew.setStyleSheet('QPushButton{background-color: grey; color: light grey; font: bold italic 15px;}')
         Layout.addWidget(self.BtnNew, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         Layout.addSpacing(20)
@@ -45,7 +45,7 @@ class WindowMenuClass(QMainWindow):
         self.BtnContinue = QPushButton('Continue')
         # self.BtnContinue.setFont(Front)
         self.BtnContinue.setFixedSize(200, 40)
-        self.BtnContinue.setStyleSheet('QPushButton {background-color: grey; color: white; font: italic 15px;}')
+        self.BtnContinue.setStyleSheet('QPushButton{background-color: grey; color: light grey; font: bold italic 15px}')
         Layout.addWidget(self.BtnContinue, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         Layout.addSpacing(95)
@@ -54,7 +54,7 @@ class WindowMenuClass(QMainWindow):
         self.BtnAnalyse = QPushButton('Analyse')
         # self.BtnAnalyse.setFont(Front)
         self.BtnAnalyse.setFixedSize(200, 40)
-        self.BtnAnalyse.setStyleSheet('QPushButton {background-color: grey; color: white; font: italic 15px;}')
+        self.BtnAnalyse.setStyleSheet('QPushButton{background-color: grey; color: light grey; font: bold italic 15px;}')
         Layout.addWidget(self.BtnAnalyse, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         Layout.addSpacing(500)

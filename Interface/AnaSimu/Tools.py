@@ -51,6 +51,7 @@ class GeneralToolClass(QWidget):
         # Initialisation of parameters windows
         self.WindowParam = WindowParamClass(ToolName)
         self.WindowParam.BtnReset.clicked.connect(self.ResetParams)
+        self.WindowParam.BtnRefresh.clicked.connect(self.Refresh_ActivePlots)
         self.WindowParam.SignalCloseWindowParam.connect(lambda: self.BtnParam.setEnabled(True)) # reception of the closeEvent of the parameter window and set enabled the associed button
         self.WindowParam.resize(self.WindowParam.minimumSize())
 
@@ -143,40 +144,51 @@ class SpaceView(GeneralToolClass):
         self.indexView = self.ViewWidget.ComboParam.currentIndex()
         self.ViewWidget.ComboParam. currentIndexChanged.connect(self.indexViewChanged)
 
-        # Planets' positions
-        self.BodPosWidget = QCheckBox("Planets' position showing")
-        self.WindowParam.Layout.addWidget(self.BodPosWidget)
-
         # X limits
         LimDefault = int(round(max(self.a_m[0])*(1+max(self.e_m[0]))))
 
         self.Xmin = -LimDefault
-        self.XminWidget = LineEditInt('Xmin', 'X minimum(AU)', self.Xmin)
+        self.XminWidget = SpinBox('Xmin', 'X minimum [AU]', self.Xmin)
         self.WindowParam.Layout.addWidget(self.XminWidget)
 
         self.Xmax = +LimDefault
-        self.XmaxWidget = LineEditInt('Xmax', 'X maximum (AU)', self.Xmax)
+        self.XmaxWidget = SpinBox('Xmax', 'X maximum [AU]', self.Xmax)
         self.XminWidget.Layout.addWidget(self.XmaxWidget) 
 
         # Y limits
         self.Ymin = -LimDefault
-        self.YminWidget = LineEditInt('Ymin', 'Y minimum (AU)', self.Ymin)
+        self.YminWidget = SpinBox('Ymin', 'Y minimum [AU]', self.Ymin)
         self.WindowParam.Layout.addWidget(self.YminWidget)
 
         self.Ymax = +LimDefault
-        self.YmaxWidget = LineEditInt('Ymax', 'Y maximum (AU)', self.Ymax)
+        self.YmaxWidget = SpinBox('Ymax', 'Y maximum [AU]', self.Ymax)
         self.YminWidget.Layout.addWidget(self.YmaxWidget)
 
         # Z limits
         self.Zmin = -LimDefault
-        self.ZminWidget = LineEditInt('Zmin', 'Z minimum (AU)', self.Zmin)
+        self.ZminWidget = SpinBox('Zmin', 'Z minimum [AU]', self.Zmin)
         self.WindowParam.Layout.addWidget(self.ZminWidget)
         self.ZminWidget.setEnabled(False)
 
         self.Zmax = +LimDefault
-        self.ZmaxWidget = LineEditInt('Zmax', 'Z maximum (AU)', self.Zmax)
+        self.ZmaxWidget = SpinBox('Zmax', 'Z maximum [AU]', self.Zmax)
         self.ZminWidget.Layout.addWidget(self.ZmaxWidget)
         self.ZmaxWidget.setEnabled(False)
+
+        self.WindowParam.Layout.addWidget(Delimiter())
+
+        # Bodies' positions
+        self.CheckBodies = CheckBox("Bodies' position showing")
+        self.WindowParam.Layout.addWidget(self.CheckBodies, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        self.SizeBodies = 15
+        self.SizeBodiesWidget = SpinBox('Size of bodies', 'Plot size of bodies', self.SizeBodies)
+        self.WindowParam.Layout.addWidget(self.SizeBodiesWidget)
+        
+        self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked())
+        self.CheckBodies.CheckParam.stateChanged.connect(lambda: self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked()))
+
+        self.WindowParam.Layout.addWidget(Delimiter())
 
         # Type of representation
         self.RepresWidget = ComboBox('Representation', 'Type of representation', ['scatter', 'density'])
@@ -185,16 +197,16 @@ class SpaceView(GeneralToolClass):
         self.RepresWidget.ComboParam.currentIndexChanged.connect(self.indexRepresChanged)
 
         self.SizePart = 0.3
-        self.SizePartWidget = LineEditFloatPos('Size of particules', 'Plot size of particles', self.SizePart)
+        self.SizePartWidget = DoubleSpinBox('Size of particules', 'Plot size of particles', self.SizePart)
         self.WindowParam.Layout.addWidget(self.SizePartWidget)
 
         self.NbBinsX = 300
-        self.NbBinsXWidget = LineEditIntPos('X Bining', 'Number of bins in the x-axis', self.NbBinsX)
+        self.NbBinsXWidget = SpinBox('X Bining', 'Number of bins in the x-axis', self.NbBinsX)
         self.WindowParam.Layout.addWidget(self.NbBinsXWidget)
         self.NbBinsXWidget.setEnabled(False)
 
         self.NbBinsY = 300
-        self.NbBinsYWidget = LineEditIntPos('Y Bining', 'Number of bins in the y-axis', self.NbBinsY)
+        self.NbBinsYWidget = SpinBox('Y Bining', 'Number of bins in the y-axis', self.NbBinsY)
         self.NbBinsXWidget.Layout.addWidget(self.NbBinsYWidget)
         self.NbBinsYWidget.setEnabled(False)
 
@@ -244,15 +256,16 @@ class SpaceView(GeneralToolClass):
 
 
     def UpdateParams(self):
-        self.Xmin = int(self.XminWidget.EditParam.text())
-        self.Xmax = int(self.XmaxWidget.EditParam.text())
-        self.Ymin = int(self.YminWidget.EditParam.text())
-        self.Ymax = int(self.YmaxWidget.EditParam.text())
-        self.Zmin = int(self.ZminWidget.EditParam.text())
-        self.Zmax = int(self.ZmaxWidget.EditParam.text())
-        self.SizePart = float(self.SizePartWidget.EditParam.text().replace(',', '.'))
-        self.NbBinsX = int(self.NbBinsXWidget.EditParam.text())
-        self.NbBinsY = int(self.NbBinsYWidget.EditParam.text())
+        self.Xmin = float(self.XminWidget.SpinParam.text())
+        self.Xmax = float(self.XmaxWidget.SpinParam.text())
+        self.Ymin = float(self.YminWidget.SpinParam.text())
+        self.Ymax = float(self.YmaxWidget.SpinParam.text())
+        self.Zmin = float(self.ZminWidget.SpinParam.text())
+        self.Zmax = float(self.ZmaxWidget.SpinParam.text())
+        self.SizeBodies = float(self.SizeBodiesWidget.SpinParam.text())
+        self.SizePart = float(self.SizePartWidget.SpinParam.text())
+        self.NbBinsX = int(self.NbBinsXWidget.SpinParam.text())
+        self.NbBinsY = int(self.NbBinsYWidget.SpinParam.text())
 
 
     def Plot(self):
@@ -296,8 +309,8 @@ class SpaceView(GeneralToolClass):
             for k in range(self.NbBodies):
                 # self.Subplot2D.plot(self.Xbf[k], self.Ybf[k])
                 self.Subplot2D.plot(self.Xbm[k], self.Ybm[k], color=self.colorList[k], linestyle='--')
-                if self.BodPosWidget.isChecked():
-                    self.Subplot2D.plot(self.X[self.IndexSnap][k], self.Y[self.IndexSnap][k], marker='.', markersize=10, color=self.colorList[k])
+                if self.CheckBodies.CheckParam.isChecked():
+                    self.Subplot2D.plot(self.X[self.IndexSnap][k], self.Y[self.IndexSnap][k], marker='.', markersize=self.SizeBodies, color=self.colorList[k])
 
             if self.indexRepres == 0:
                 self.Subplot2D.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Y[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0)
@@ -308,9 +321,9 @@ class SpaceView(GeneralToolClass):
 
             # Plot features
             self.Subplot2D.set_title('t='+str(round(self.t, 1))+' Myr')
-            self.Subplot2D.set_xlabel('X (AU)')
+            self.Subplot2D.set_xlabel('X [AU]')
             self.Subplot2D.set_xlim(self.Xmin, self.Xmax)
-            self.Subplot2D.set_ylabel('Y (AU)')
+            self.Subplot2D.set_ylabel('Y [AU]')
             self.Subplot2D.set_ylim(self.Ymin, self.Ymax)
 
 
@@ -323,8 +336,8 @@ class SpaceView(GeneralToolClass):
             # Plot
             for k in range(self.NbBodies):
                 self.Subplot2D.plot(self.Xbm[k], self.Zbm[k], color=self.colorList[k], linestyle='--')
-                if self.BodPosWidget.isChecked():
-                    self.Subplot2D.plot(self.X[self.IndexSnap][k], self.Z[self.IndexSnap][k], marker='.', markersize=10, color=self.colorList[k])
+                if self.CheckBodies.CheckParam.isChecked():
+                    self.Subplot2D.plot(self.X[self.IndexSnap][k], self.Z[self.IndexSnap][k], marker='.', markersize=self.SizeBodies, color=self.colorList[k])
 
             if self.indexRepres == 0:
                 self.Subplot2D.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Z[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0)
@@ -333,9 +346,9 @@ class SpaceView(GeneralToolClass):
 
             # Plot features
             self.Subplot2D.set_title('t='+str(round(self.t, 1))+' Myr')
-            self.Subplot2D.set_xlabel('X (AU)')
+            self.Subplot2D.set_xlabel('X [AU]')
             self.Subplot2D.set_xlim(self.Xmin, self.Xmax)
-            self.Subplot2D.set_ylabel('Z (AU)')
+            self.Subplot2D.set_ylabel('Z [AU]')
             self.Subplot2D.set_ylim(self.Zmin, self.Zmax)
         
         elif self.indexView == 2: 
@@ -349,18 +362,18 @@ class SpaceView(GeneralToolClass):
             for k in range(self.NbBodies):
                 # self.Subplot3D.plot(self.Xbf[k], self.Ybf[k], self.Zbf[k])
                 self.Subplot3D.plot(self.Xbm[k], self.Ybm[k], self.Zbm[k], color=self.colorList[k], linestyle='--')
-                if self.BodPosWidget.isChecked():
-                    self.Subplot3D.plot(self.X[self.IndexSnap][k], self.Y[self.IndexSnap][k], self.Z[self.IndexSnap][k], marker='.', markersize=10, color=self.colorList[k])
+                if self.CheckBodies.CheckParam.isChecked():
+                    self.Subplot3D.plot(self.X[self.IndexSnap][k], self.Y[self.IndexSnap][k], self.Z[self.IndexSnap][k], marker='.', markersize=self.SizeBodies, color=self.colorList[k])
 
             self.Subplot3D.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Y[self.IndexSnap][self.NbBodies-1:], self.Z[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0)
 
             # Plot features
             self.Subplot3D.set_title('t='+str(round(self.t, 1))+' Myr')
-            self.Subplot3D.set_xlabel('X (AU)')
+            self.Subplot3D.set_xlabel('X [AU]')
             self.Subplot3D.set_xlim(self.Xmin, self.Xmax)
-            self.Subplot3D.set_ylabel('Y (AU)')
+            self.Subplot3D.set_ylabel('Y [AU]')
             self.Subplot3D.set_ylim(self.Ymin, self.Ymax)
-            self.Subplot3D.set_zlabel('Z (AU)')
+            self.Subplot3D.set_zlabel('Z [AU]')
             self.Subplot3D.set_zlim(self.Zmin, self.Zmax)
 
         # Update canvas
@@ -400,21 +413,38 @@ class DiagramAE(GeneralToolClass):
         
         # a limits
         self.Amin = 0
-        self.AminWidget = LineEditInt('Amin', 'Semi-major axis minimum (AU)', self.Amin)
+        self.AminWidget = SpinBox('Amin', 'Semi-major axis minimum [AU]', self.Amin)
         self.WindowParam.Layout.addWidget(self.AminWidget)
 
         self.Amax = round(max(self.a_m[0]))
-        self.AmaxWidget = LineEditInt('Amax', 'Semi-major axis maximum (AU)', self.Amax)
+        self.AmaxWidget = SpinBox('Amax', 'Semi-major axis maximum [AU]', self.Amax)
         self.AminWidget.Layout.addWidget(self.AmaxWidget) 
+
+        self.WindowParam.Layout.addWidget(Delimiter())
+
+        # Bodies' positions
+        self.CheckBodies = CheckBox("Bodies' position showing")
+        self.WindowParam.Layout.addWidget(self.CheckBodies, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        self.SizeBodies = 15
+        self.SizeBodiesWidget = SpinBox('Size of bodies', 'Plot size of bodies', self.SizeBodies)
+        self.WindowParam.Layout.addWidget(self.SizeBodiesWidget)
+        
+        self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked())
+        self.CheckBodies.CheckParam.stateChanged.connect(lambda: self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked()))
+
+        self.WindowParam.Layout.addWidget(Delimiter())
 
         # Particules' size
         self.SizePart = 0.05
-        self.SizePartWidget = LineEditFloatPos('Size of particules', 'Plot size of particles', self.SizePart)
+        self.SizePartWidget = DoubleSpinBox('Size of particules', 'Plot size of particles', self.SizePart, ParamPrecision=2, ParamIncrement=0.01)
         self.WindowParam.Layout.addWidget(self.SizePartWidget)
+
+        self.WindowParam.Layout.addWidget(Delimiter())
 
         # Orbital resonance
         self.CheckRes = QCheckBox('Orbital resonance')
-        self.WindowParam.Layout.addWidget(self.CheckRes)
+        self.WindowParam.Layout.addWidget(self.CheckRes, alignment=Qt.AlignmentFlag.AlignCenter)
         self.CheckRes.stateChanged.connect(self.ResStateChange)
 
         self.ButAddRes = QPushButton('+')
@@ -468,9 +498,10 @@ class DiagramAE(GeneralToolClass):
 
     # Update of parameters
     def UpdateParams(self):
-        self.Amin = int(self.AminWidget.EditParam.text())
-        self.Amax = int(self.AmaxWidget.EditParam.text())
-        self.SizePart = float(self.SizePartWidget.EditParam.text().replace(',', '.'))
+        self.Amin = int(self.AminWidget.SpinParam.text())
+        self.Amax = int(self.AmaxWidget.SpinParam.text())
+        self.SizePart = float(self.SizePartWidget.SpinParam.text())
+        self.SizeBodies = int(self.SizeBodiesWidget.SpinParam.text())
         if self.CheckRes.isChecked():
             self.nRefValues = []
             self.PResValues = []
@@ -507,8 +538,9 @@ class DiagramAE(GeneralToolClass):
                 self.aResValues.append((self.PResValues[i]/self.PRefValues[i])**(2/3)*self.aRefValues[i])
         
         # Plot with current parameters
-        for k in range(self.NbBodies_m[self.IndexSnap]):
-            self.Subplot.plot(self.a[k], self.e[k], color=self.colorList[k], marker='.', markersize=10)
+        if self.CheckBodies.CheckParam.isChecked():
+            for k in range(self.NbBodies_m[self.IndexSnap]):
+                self.Subplot.plot(self.a[k], self.e[k], color=self.colorList[k], marker='.', markersize=self.SizeBodies)
         self.Subplot.scatter(self.a[self.NbBodies_m[self.IndexSnap]:], self.e[self.NbBodies_m[self.IndexSnap]:], s=self.SizePart, c='black', linewidths=0)
 
         if self.CheckRes.isChecked():
@@ -520,7 +552,7 @@ class DiagramAE(GeneralToolClass):
 
         # Plot features
         self.Subplot.set_title('t='+str(round(self.t, 1))+' Myr')
-        self.Subplot.set_xlabel('Semi-major axis (AU)')
+        self.Subplot.set_xlabel('Semi-major axis [AU]')
         self.Subplot.set_xlim(self.Amin, self.Amax)
         self.Subplot.set_ylabel('Eccentricity')
         self.Subplot.set_ylim(0, 1)
@@ -564,18 +596,18 @@ class DiagramTY(GeneralToolClass):
 
         # Time limits
         self.Tmin = 0
-        self.TminWidget = LineEditIntPos('Tmin', 'Time minimum (yr)', self.Tmin)
+        self.TminWidget = SpinBox('Tmin', 'Time minimum (yr)', self.Tmin)
         self.WindowParam.Layout.addWidget(self.TminWidget)
 
         self.Tmax = round(max(self.t_f[0]))
-        self.TmaxWidget = LineEditIntPos('Tmax', 'Time maximum (yr)', self.Tmax)
+        self.TmaxWidget = SpinBox('Tmax', 'Time maximum (yr)', self.Tmax)
         self.TminWidget.Layout.addWidget(self.TmaxWidget) 
 
     def UpdateParams(self):
         self.nOrbit = int(self.nOrbitWidget.SpinParam.value())
         self.ParamOrbit = self.ParamOrbitWidget.ComboParam.currentText()
-        self.Tmin = int(self.TminWidget.EditParam.text())
-        self.Tmax = int(self.TmaxWidget.EditParam.text())
+        self.Tmin = int(self.TminWidget.SpinParam.text())
+        self.Tmax = int(self.TmaxWidget.SpinParam.text())
 
 
     # Plot
@@ -594,7 +626,7 @@ class DiagramTY(GeneralToolClass):
         
         # Specific data
         t = [self.t_f[self.nOrbit],'Time (yr)']
-        a = [self.a_f[self.nOrbit],'Semi-major axis (AU)']
+        a = [self.a_f[self.nOrbit],'Semi-major axis [AU]']
         e = [self.e_f[self.nOrbit],'Eccentricity']
         i = [self.i[self.nOrbit],'Inclinaison (deg)']
         W = [self.W[self.nOrbit],'Longitude of ascending node (deg)']
@@ -640,6 +672,7 @@ class DiagramXY(GeneralToolClass):
         self.YFormula = ''
         self.YFormulaWidget = LineEdit('Y formula','Ordinate quantity by combining t, a, e, i, w, W, [n] where n is the number of bodie (counting from the center of the system outwards, including stars in last), and math fonctions', self.YFormula)
         self.WindowParam.Layout.addWidget(self.YFormulaWidget)
+        self.YFormulaWidget.setMinimumWidth(300)
 
         # Ordinate quantity label
         self.YLabel = ''
@@ -650,6 +683,7 @@ class DiagramXY(GeneralToolClass):
         self.XFormula = '' 
         self.XFormulaWidget = LineEdit('X formula','Abscissa quantity by combining t, a, e, i, w, W, [n] where n is the number of bodie (counting from the center of the system outwards, including stars in last), and math fonctions', self.XFormula)
         self.WindowParam.Layout.addWidget(self.XFormulaWidget)
+        self.XFormulaWidget.setMinimumWidth(300)
 
         # Abscissa quantity label
         self.XLabel = ''
@@ -658,9 +692,12 @@ class DiagramXY(GeneralToolClass):
 
     def UpdateParameters(self):
         self.YFormula = self.YFormulaWidget.EditParam.text()
-        self.YLabel = self.YLabelWidget.EditParam.text()
+        if len(self.YLabelWidget.EditParam.text()) != 0: self.YLabel = self.YLabelWidget.EditParam.text()
+        else: self.YLabel = self.YFormula
         self.XFormula = self.XFormulaWidget.EditParam.text()
         self.XLabel = self.XLabelWidget.EditParam.text()
+        if len(self.XLabelWidget.EditParam.text()) != 0: self.XLabel = self.XLabelWidget.EditParam.text()
+        else: self.XLabel = self.XFormula
 
     # Plot
     def Plot(self):
@@ -730,12 +767,14 @@ class RadProfile(GeneralToolClass):
 
         # R limits
         self.Rmin = 0
-        self.RminWidget = LineEditIntPos('Rmin', 'Radii minimum (AU)', self.Rmin)
+        self.RminWidget = SpinBox('Rmin', 'Radii minimum [AU]', self.Rmin)
         self.WindowParam.Layout.addWidget(self.RminWidget)
 
         self.Rmax = round(max(self.R[0]))
-        self.RmaxWidget = LineEditIntPos('Rmax', 'Radii maximum (AU)', self.Rmax)
+        self.RmaxWidget = SpinBox('Rmax', 'Radii maximum [AU]', self.Rmax)
         self.RminWidget.Layout.addWidget(self.RmaxWidget) 
+
+        self.WindowParam.Layout.addWidget(Delimiter())
 
         # Histogram
         self.Norm = ComboBox('Normalisation', 'Choice of the normalisation', ['None', 'One', 'Proportion'])
@@ -743,26 +782,41 @@ class RadProfile(GeneralToolClass):
         self.WindowParam.Layout.addWidget(self.Norm)
 
         self.NbBins = 100
-        self.NbBinsWidget = LineEditIntPos('Bining', 'Number of bins', self.NbBins)
+        self.NbBinsWidget = SpinBox('Bining', 'Number of bins', self.NbBins)
         self.WindowParam.Layout.addWidget(self.NbBinsWidget)
 
-        # Check other curves
+        self.WindowParam.Layout.addWidget(Delimiter())
+
+        # Bodies' positions
+        self.CheckBodies = CheckBox("Bodies' position showing")
+        self.WindowParam.Layout.addWidget(self.CheckBodies, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        self.SizeBodies = 15
+        self.SizeBodiesWidget = SpinBox('Size of bodies', 'Plot size of bodies', self.SizeBodies)
+        self.WindowParam.Layout.addWidget(self.SizeBodiesWidget)
+        
+        self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked())
+        self.CheckBodies.CheckParam.stateChanged.connect(lambda: self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked()))
+
+        self.WindowParam.Layout.addWidget(Delimiter())
+
+        # Other curves
+        self.CheckCurves = QCheckBox('Other curves')
+        self.WindowParam.Layout.addWidget(self.CheckCurves, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.CheckCurves.stateChanged.connect(self.CurveStateChange)
+
         self.CheckAugWidget = QCheckBox('Aug 2001')
         self.WindowParam.Layout.addWidget(self.CheckAugWidget)
-        self.CheckAugWidget.setChecked(True)
+        self.CheckAugWidget.setEnabled(self.CheckCurves.isChecked())
 
         self.CheckDentWidget = QCheckBox('Dent 2014')
         self.WindowParam.Layout.addWidget(self.CheckDentWidget)
-        self.CheckDentWidget.setChecked(True)
-
-        self.CheckCurves = QCheckBox('Other curves')
-        self.WindowParam.Layout.addWidget(self.CheckCurves)
-        self.CheckCurves.stateChanged.connect(self.CurveStateChange)
+        self.CheckDentWidget.setEnabled(self.CheckCurves.isChecked())
 
         self.ButAddCurve = QPushButton('+')
         self.WindowParam.Layout.addWidget(self.ButAddCurve)
         self.ButAddCurve.clicked.connect(self.AddCurveWidget)
-        self.ButAddCurve.setEnabled(False)
+        self.ButAddCurve.setEnabled(self.CheckCurves.isChecked())
 
         self.CurveWidgets = []
         self.CurveWidgetsId = []
@@ -795,15 +849,18 @@ class RadProfile(GeneralToolClass):
 
     def CurveStateChange(self):
         CurveState = self.CheckCurves.isChecked()
+        self.CheckAugWidget.setEnabled(CurveState)
+        self.CheckDentWidget.setEnabled(CurveState)
         self.ButAddCurve.setEnabled(CurveState)
         for i in range(len(self.CurveWidgets)):
             self.CurveWidgets[i].setEnabled(CurveState)
     
 
     def UpdateParams(self):
-        self.Rmin = int(self.RminWidget.EditParam.text())
-        self.Rmax = int(self.RmaxWidget.EditParam.text())
-        self.NbBins = int(self.NbBinsWidget.EditParam.text())
+        self.Rmin = float(self.RminWidget.SpinParam.text())
+        self.Rmax = float(self.RmaxWidget.SpinParam.text())
+        self.NbBins = int(self.NbBinsWidget.SpinParam.text())
+        self.SizeBodies = float(self.SizeBodiesWidget.SpinParam.text())
         if self.CheckCurves.isChecked():
             self.CurvePaths = []
             self.CurveLabels = []
@@ -831,8 +888,9 @@ class RadProfile(GeneralToolClass):
         self.t = self.t_m[self.IndexSnap]/10**6
 
         # Plot with current parameters
-        for k in range(self.NbBodies_m[self.IndexSnap]):
-            self.Subplot.plot(self.a_m[self.IndexSnap][k], 0, color=self.colorList[k], marker='.', markersize=10)
+        if self.CheckBodies.CheckParam.isChecked():
+            for k in range(self.NbBodies_m[self.IndexSnap]):
+                self.Subplot.plot(self.a_m[self.IndexSnap][k], 0, color=self.colorList[k], marker='.', markersize=self.SizeBodies)
 
         # Histogram
         histCount, histX = histogram([x for x in self.R[self.IndexSnap] if self.Rmin<x<self.Rmax], bins=self.NbBins)
@@ -868,7 +926,7 @@ class RadProfile(GeneralToolClass):
         # Plot features
         self.Subplot.legend()
         self.Subplot.set_title('t='+str(round(self.t, 1))+' Myr')
-        self.Subplot.set_xlabel('Radius (AU)')
+        self.Subplot.set_xlabel('Radius [AU]')
         self.Subplot.set_xlim(self.Rmin, self.Rmax)
         self.Subplot.set_ylabel('Number of particules')
         # self.Subplot.set_ylim(0, 1)
