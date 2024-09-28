@@ -201,12 +201,12 @@ class SpaceView(GeneralToolClass):
         self.WindowParam.Layout.addWidget(self.SizePartWidget)
 
         self.NbBinsX = 300
-        self.NbBinsXWidget = SpinBox('X Bining', 'Number of bins in the x-axis', self.NbBinsX)
+        self.NbBinsXWidget = SpinBox('X Bining', 'Number of bins in the x-axis', self.NbBinsX, 1)
         self.WindowParam.Layout.addWidget(self.NbBinsXWidget)
         self.NbBinsXWidget.setEnabled(False)
 
         self.NbBinsY = 300
-        self.NbBinsYWidget = SpinBox('Y Bining', 'Number of bins in the y-axis', self.NbBinsY)
+        self.NbBinsYWidget = SpinBox('Y Bining', 'Number of bins in the y-axis', self.NbBinsY, 1)
         self.NbBinsXWidget.Layout.addWidget(self.NbBinsYWidget)
         self.NbBinsYWidget.setEnabled(False)
 
@@ -587,7 +587,7 @@ class DiagramTY(GeneralToolClass):
 
         # Orbit number
         self.nOrbit = 0
-        self.nOrbitWidget = SpinBox("Bodie's number",'Number of the bodie which is studied (counting from the center of the system outwards, including stars in last)', 0, self.NbBodies_f-1)
+        self.nOrbitWidget = SpinBox("Bodie's number",'Number of the body which is studied (counting from the center of the system outwards, including stars in last)', 0, self.NbBodies_f-1)
         self.WindowParam.Layout.addWidget(self.nOrbitWidget)
 
         # Orbit parameters
@@ -670,7 +670,7 @@ class DiagramXY(GeneralToolClass):
     def InitParams(self):
         # Ordinate quantity formula
         self.YFormula = ''
-        self.YFormulaWidget = LineEdit('Y formula','Ordinate quantity by combining t, a, e, i, w, W, [n] where n is the number of bodie (counting from the center of the system outwards, including stars in last), and math fonctions', self.YFormula)
+        self.YFormulaWidget = LineEdit('Y formula','Ordinate quantity by combining t, a, e, i, w, W, [n] where n is the number of the body (counting from the center of the system outwards, including stars in last), and math fonctions', self.YFormula)
         self.WindowParam.Layout.addWidget(self.YFormulaWidget)
         self.YFormulaWidget.setMinimumWidth(300)
 
@@ -681,7 +681,7 @@ class DiagramXY(GeneralToolClass):
 
         # Abscissa quantity formula
         self.XFormula = '' 
-        self.XFormulaWidget = LineEdit('X formula','Abscissa quantity by combining t, a, e, i, w, W, [n] where n is the number of bodie (counting from the center of the system outwards, including stars in last), and math fonctions', self.XFormula)
+        self.XFormulaWidget = LineEdit('X formula','Abscissa quantity by combining t, a, e, i, w, W, [n] where n is the number of the body (counting from the center of the system outwards, including stars in last), and math fonctions', self.XFormula)
         self.WindowParam.Layout.addWidget(self.XFormulaWidget)
         self.XFormulaWidget.setMinimumWidth(300)
 
@@ -777,12 +777,15 @@ class RadProfile(GeneralToolClass):
         self.WindowParam.Layout.addWidget(Delimiter())
 
         # Histogram
-        self.Norm = ComboBox('Normalisation', 'Choice of the normalisation', ['None', 'One', 'Proportion'])
-        self.Norm.ComboParam.setCurrentIndex(1)
+        self.Y = ComboBox('Ordinate', 'Choice of ordinate', ['Number of particules', 'Surface density'])
+        self.WindowParam.Layout.addWidget(self.Y)
+
+        self.Norm = ComboBox('Normalisation', 'Choice of the normalisation', ['None', 'MaxEqOne', 'SumEqOne'])
+        self.Norm.ComboParam.setCurrentIndex(0)
         self.WindowParam.Layout.addWidget(self.Norm)
 
         self.NbBins = 100
-        self.NbBinsWidget = SpinBox('Bining', 'Number of bins', self.NbBins)
+        self.NbBinsWidget = SpinBox('Bining', 'Number of bins', self.NbBins, 1)
         self.WindowParam.Layout.addWidget(self.NbBinsWidget)
 
         self.WindowParam.Layout.addWidget(Delimiter())
@@ -895,20 +898,21 @@ class RadProfile(GeneralToolClass):
         # Histogram
         histCount, histX = histogram([x for x in self.R[self.IndexSnap] if self.Rmin<x<self.Rmax], bins=self.NbBins)
 
-        # Normalisation
-        if self.Norm.ComboParam.currentIndex()==1:
-            self.NormDiv = max(histCount)
-        elif self.Norm.ComboParam.currentIndex()==2:
-            self.NormDiv = sum(histCount)
-        else:
-            self.NormDiv = 1
+        # Surface density computatiom
+        if self.Y.ComboParam.currentIndex()==1: histCount = histCount/(2*pi*histX[:-1]) # surface density
+
+        # Normalisation computation
+        self.NormDiv = 1
+        if self.Norm.ComboParam.currentIndex()==1: self.NormDiv = max(histCount) # normalisation of max equal one
+        elif self.Norm.ComboParam.currentIndex()==2: self.NormDiv = sum(histCount) # normalisation of sum equal one
+        histCount = histCount/self.NormDiv
 
         # Stairs
-        self.Subplot.stairs(histCount/self.NormDiv, histX, label='Simulation', linewidth=1, color='black')
+        self.Subplot.stairs(histCount, histX, label='Simulation', linewidth=1, color='black')
         
-        # Other curves
-        if self.CheckAugWidget.isChecked(): self.Subplot.plot(self.profileAug[0], self.profileAug[1], color='blue', linestyle='dashed', linewidth=0.5, label='Aug 2001')
-        if self.CheckDentWidget.isChecked(): self.Subplot.plot((self.profileNE[0]+self.profileSW[0])/2, (self.profileNE[1]+self.profileSW[1])/2, color='red', linestyle='dashed', linewidth=0.5, label='Dent 2014')
+        # Other curves 
+        if self.CheckAugWidget.isChecked(): self.Subplot.plot(self.profileAug[0], self.profileAug[1], color='blue', linestyle='dashed', linewidth=0.5, label='Aug+2001')
+        if self.CheckDentWidget.isChecked(): self.Subplot.plot((self.profileNE[0]+self.profileSW[0])/2, (self.profileNE[1]+self.profileSW[1])/2, color='red', linestyle='dashed', linewidth=0.5, label='Dent+2014')
         
         if self.CheckCurves.isChecked(): 
             try:
@@ -916,8 +920,8 @@ class RadProfile(GeneralToolClass):
                     self.Curve = transpose(loadtxt(self.CurvePaths[i], dtype = float))
                     self.Subplot.plot(self.Curve[0], self.Curve[1], linestyle='dashed', linewidth=0.5, label=self.CurveLabels[i])
             except:
-                print('Wrong file')
-                print('File must be in the format:')
+                print('Wrong files')
+                print('Path is necessary to files in format:')
                 print('Column 1 : abscissa')
                 print('Column 2 : ordinate')
 
@@ -928,7 +932,8 @@ class RadProfile(GeneralToolClass):
         self.Subplot.set_title('t='+str(round(self.t, 1))+' Myr')
         self.Subplot.set_xlabel('Radius [AU]')
         self.Subplot.set_xlim(self.Rmin, self.Rmax)
-        self.Subplot.set_ylabel('Number of particules')
+        if self.Y.ComboParam.currentIndex()==0: self.Subplot.set_ylabel('Number of particules')
+        elif self.Y.ComboParam.currentIndex()==1: self.Subplot.set_ylabel('Surface density [arbitrary unit]')
         # self.Subplot.set_ylim(0, 1)
         
         # Update canvas

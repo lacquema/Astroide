@@ -1,4 +1,4 @@
-#! /Users/lacquema/ByeGildas/bin/python3
+#! /Users/lacquema/Astroide.env/bin/python3
 
 
 ### --- Packages --- ###
@@ -48,9 +48,7 @@ class TransferDataClass():
         
         t_m, NbBodies_m, NbParticles = [np.zeros((NbSnapshots)).astype(int) for k in range(3)]
         
-        a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z = [[] for k in range(11)]
-
-        R = []
+        a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R = [[] for k in range(12)]
 
         for j in range(NbSnapshots):
             if j == 0:
@@ -74,9 +72,9 @@ class TransferDataClass():
             Y.append(DataMextract[9][indexLine+1:indexLine+1+NbBodies_m[j]+NbParticles[j]])
             Z.append(DataMextract[10][indexLine+1:indexLine+1+NbBodies_m[j]+NbParticles[j]])
 
-            R.append(DataMextract[6][indexLine+1+NbBodies_m[j]+1:indexLine+1+NbBodies_m[j]+1+NbParticles[j]])
+            # R.append(DataMextract[6][indexLine+NbBodies_m[j]+1:indexLine+NbBodies_m[j]+1+NbParticles[j]])
+            R.append(np.sqrt(X[j][NbBodies_m[j]:]**2+Y[j][NbBodies_m[j]:]**2+Z[j][NbBodies_m[j]:]**2))
             
-        
         return NbSnapshots, t_m, NbBodies_m, NbParticles, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R
 
 if __name__=="__main__":

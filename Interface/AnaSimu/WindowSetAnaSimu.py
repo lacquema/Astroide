@@ -78,7 +78,9 @@ class WindowSetAnaSimu(QMainWindow):
         self.InitWidgets()
 
     def AnalyseSimu(self):
+        self.BtnStart.setEnabled(False)
         if len(self.SimuPath.EditPath.text()) == 0:
+            self.BtnStart.setEnabled(True)
             print('Simulation directory path not given.')
             print('Check your inputs.')
         else:
@@ -87,13 +89,13 @@ class WindowSetAnaSimu(QMainWindow):
 
     def OpenWinMain(self):
         try:
-            self.BtnStart.setEnabled(False)
             self.WinMain = WindowMainClass(self.SimuPath.EditPath.text()+self.FollowbodiesFileName.EditParam.text(), self.SimuPath.EditPath.text()+self.MextractFileName.EditParam.text())
             self.WinMain.SignalCloseWindowMain.connect(self.ReSignalCloseWindowMain.emit)
-            self.WinMain.show()
             self.close()
+            self.WinMain.show()
         except:
             print('Data not found: check the directory path and the name of input files.')
+        self.BtnStart.setEnabled(True)
 
     # def FindInputFiles(self):
     #     Files = os.listdir(self.SimuPath.EditPath.text()[:-1])

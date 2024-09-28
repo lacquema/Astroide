@@ -39,7 +39,7 @@ class WindowMainClass(QMainWindow):
 
     SignalCloseWindowMain = pyqtSignal()
 
-    def __init__(self, PathFollowbodies, PathMextract):
+    def __init__(self, PathFollowbodies=str, PathMextract=str):
         super().__init__()
 
         # Data
@@ -47,7 +47,7 @@ class WindowMainClass(QMainWindow):
         NbSnapshots, t_m, NbBodies_m, NbParticles, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R = TransferDataClass.OpenMextract(PathMextract)
 
         # Window settings
-        self.setWindowTitle('Astroide data analysis of {}'.format(System))
+        self.setWindowTitle('Astroide data analysis of {}'.format(PathFollowbodies.split('/')[-2]))
 
         # Layout intialisation
         Layout = QVBoxLayout()
