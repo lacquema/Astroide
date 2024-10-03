@@ -29,7 +29,7 @@ class WindowMenuClass(QMainWindow):
         # Layout intialisation
         Layout = QVBoxLayout()
 
-        Layout.addSpacing(20)
+        Layout.addSpacing(15)
 
         # Button new simulation
         self.BtnNew = QPushButton('New Simulation')
@@ -48,7 +48,7 @@ class WindowMenuClass(QMainWindow):
         self.BtnContinue.setStyleSheet('QPushButton{background-color: grey; color: light grey; font: bold italic 15px}')
         Layout.addWidget(self.BtnContinue, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        Layout.addSpacing(95)
+        Layout.addSpacing(90)
 
         # Button analyse simulation
         self.BtnAnalyse = QPushButton('Analyse')

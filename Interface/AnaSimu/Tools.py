@@ -95,7 +95,7 @@ class GeneralToolClass(QWidget):
 
     # Reset all widgets of the parameters window
     def ResetParams(self):
-        for i in reversed(range(1, self.WindowParam.Layout.count())): 
+        for i in reversed(range(2, self.WindowParam.Layout.count())): 
             WidgetToRemove = self.WindowParam.Layout.itemAt(i).widget()
             self.WindowParam.Layout.removeWidget(WidgetToRemove)
             WidgetToRemove.setParent(None)

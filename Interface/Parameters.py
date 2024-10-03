@@ -233,6 +233,7 @@ class Delimiter(QWidget):
         # Title
         if Title!=None: 
             self.Title = QLabel(Title)
+            self.Title.setStyleSheet('QLabel{font: bold italic}')
             self.Layout.addWidget(self.Title, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.Layout.setSpacing(5)
@@ -240,6 +241,19 @@ class Delimiter(QWidget):
         self.setLayout(self.Layout)
 
 
+
+class Label(QWidget):
+    def __init__(self, label):
+        super().__init__()
+
+        # Layout
+        self.Layout = QHBoxLayout()
+
+        self.Label = QLabel(label)
+
+        self.Layout.addWidget(self.Label)
+
+        self.setLayout(self.Layout)
 
 
 

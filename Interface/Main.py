@@ -16,8 +16,8 @@ from PyQt6.QtWidgets import QApplication
 
 # My packages
 from WindowMenu import WindowMenuClass
-# from NewSimu.WindowSetNewSimu import WindowSetNewSimu
-# from ContSimu.WindowSetContSimu import WindowSetContSimu
+from NewSimu.WindowSetNewSimu import WindowSetNewSimu
+from ContSimu.WindowSetContSimu import WindowSetContSimu
 from AnaSimu.WindowSetAnaSimu import WindowSetAnaSimu
 
 
@@ -30,10 +30,10 @@ class MainClass():
 
         # Windows initialisation
         self.WinMenu = WindowMenuClass()
-        # self.WinSetNewSimu = WindowSetNewSimu()
-        # self.WinSetNewSimu.SignalCloseWindowSetNewSimu.connect(self.ReOpenWinLoad)
-        # self.WinSetContSimu = WindowSetContSimu()
-        # self.WinSetContSimu.SignalCloseWindowSetContSimu.connect(self.ReOpenWinLoad)
+        self.WinSetNewSimu = WindowSetNewSimu()
+        self.WinSetNewSimu.SignalCloseWindowSetNewSimu.connect(self.ReOpenWinLoad)
+        self.WinSetContSimu = WindowSetContSimu()
+        self.WinSetContSimu.SignalCloseWindowSetContSimu.connect(self.ReOpenWinLoad)
         self.WinSetAnaSimu = WindowSetAnaSimu()
         self.WinSetAnaSimu.SignalCloseWindowSetAnaSimu.connect(self.ReOpenWinLoad)
         self.WinSetAnaSimu.ReSignalCloseWindowMain.connect(self.ReOpenWinLoad)
@@ -42,17 +42,17 @@ class MainClass():
         self.WinMenu.show()
         
         # Actions of buttons
-        # self.WinMenu.BtnNew.clicked.connect(self.OpenWinSetNewSimu)
-        # self.WinMenu.BtnContinue.clicked.connect(self.OpenWinSetContSimu)
+        self.WinMenu.BtnNew.clicked.connect(self.OpenWinSetNewSimu)
+        self.WinMenu.BtnContinue.clicked.connect(self.OpenWinSetContSimu)
         self.WinMenu.BtnAnalyse.clicked.connect(self.OpenWinSetAnaSimu)
 
-    # def OpenWinSetNewSimu(self):
-    #     self.WinMenu.close()
-        # self.WinSetNewSimu.show()
+    def OpenWinSetNewSimu(self):
+        self.WinMenu.close()
+        self.WinSetNewSimu.show()
 
-    # def OpenWinSetContSimu(self):    
-    #     self.WinMenu.close()
-        # self.WinSetContSimu.show()
+    def OpenWinSetContSimu(self):    
+        self.WinMenu.close()
+        self.WinSetContSimu.show()
 
     def OpenWinSetAnaSimu(self):
         self.WinMenu.close()
@@ -60,9 +60,6 @@ class MainClass():
 
     def ReOpenWinLoad(self):
         app.closeAllWindows()
-        # if self.WinSetAnaSimu.isVisible(): self.WinSetAnaSimu.close()
-        # if self.WinSetNewSimu.isVisible(): self.WinSetNezSimu.close()
-        # if self.WinSetContSimu.isVisible(): self.WinSetContSimu.close()
         self.WinMenu.show()
 
     def closeEvent(self, e):
