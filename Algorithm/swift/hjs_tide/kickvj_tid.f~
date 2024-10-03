@@ -1,0 +1,258 @@
+c*************************************************************************
+c                        KICKVJ_TID.F
+c*************************************************************************
+c This subroutine tidally moves the orbit and to the rotation
+c axes of the solid bodies (averaged)
+c
+c                Source for formulas : Mardling & LIn, 2002, ApJ 573, 829 
+c                          + average.mws
+c             Input:
+c                 nbod        ==>  number of massive bodies (int scalor)
+c                 tid         ==> 0 (no tide), 1 (tide) or 2 (averaged tide)  
+c                 oloc        ==> Link between bodies and orbits
+c                                  (2D integer array)
+c                 inert       ==> Moments of inertia (real array)
+c                 krpl5       ==> k(apsidal consants) * r(radius)^5
+c                 Qlov        ==> Q constant's (array)
+c                 eta         ==> Masses of centers for orbits (real array)
+c                 mu          ==> Masses of satellites for orbits (real arr.)
+c                 mass        ==>  mass of bodies (real array)
+c                 xj,yj,zj    ==>  position in jacobi coord (real arrays)
+c                 dt          ==> Timestep
+c                 rotx,roty,rotz ==> Spin vectors of the bodies (real arrays)
+c             Output:
+c                 rotx,roty,rotz => Rotation vectors of bodies
+c                 vxj,vyj,vzj ==>  Velocity in Jacobi coord (real arrays)
+c
+c Author:  H. Beust  
+c Date:    Feb 15, 2009
+c Revision : Feb 18, 2009. Uses Burlish & Stoer / based on bs_step
+
+      subroutine kickvj_tid(nbod,tid,oloc,mass,inert,krpl5,Qlov,
+     &     eta,mu,xj,yj,zj,vxj,vyj,vzj,dt,rotx,roty,rotz)
+
+      include '../swift.inc'
+
+c...  Inputs: 
+      integer nbod
+      integer oloc(NPLMAX,NPLMAX)
+      integer tid(nbod)
+      real*8 inert(nbod),krpl5(nbod),Qlov(nbod)
+      real*8 mass(nbod),eta(nbod),mu(nbod)
+      real*8 dt
+
+c...  Inputs & outputs
+      real*8 xj(nbod),yj(nbod),zj(nbod)
+      real*8 rotx(nbod),roty(nbod),rotz(nbod)
+      real*8 vxj(nbod),vyj(nbod),vzj(nbod)
+
+c...  Internals:
+      integer i,j,k,kk,iflg,ialpha
+      real*8 rr2(NPLMAX),irj(NPLMAX)
+      real*8 rij2,irij3,a,e,q
+      real*8 ux,uy,uz,nq,nn
+      real*8 ep,ep12
+      real*8 q2,q3,inc,capom,omega
+      real*8 e1(3),e3(3),ps
+      real*8 vecth(3),vecte(3),h,h2
+      real*8 vdotr,posx,posy,vx,vy,vz,cu,su,capm
+      real*8 eps,tfake,dttmp,ybs(13)
+      real*8 masst(2),inertt(2),krpl5t(2),Qlovt(2)
+
+c----
+c...  Executable code 
+
+c...  get thr r^-3's
+
+      eps = 1d-8
+
+      do i = 2,nbod
+         rr2(i) = xj(i)*xj(i) + yj(i)*yj(i) + zj(i)*zj(i)
+         irj(i) = 1.d0/sqrt(rr2(i))
+      end do
+      
+      do k=2,nbod
+
+c...   Now compute tidal terms for orbit k
+c...   i and j will be satellite & center for this orbit. We assume 
+c...   there is only i and j
+c...   Source Mardling & Lin, 2002, ApJ 573, 829, with formulas in q
+
+c        tid(k)=0
+        if (tid(k).gt.0) then
+          i = 1
+          do while (oloc(k,i).ne.1)
+            i = i + 1
+          end do
+          j = 1
+          do while (oloc(k,j).ne.-1)
+            j = j + 1
+          end do
+ 
+c          call orbel_xv2el(xj(k),yj(k),zj(k),vxj(k),vyj(k),vzj(k),
+c     &     eta(k)+mu(k),ialpha,a,e,inc,capom,omega,capm)
+
+          call orbel_xv2aeq(xj(k),yj(k),zj(k),vxj(k),vyj(k),vzj(k),
+     &                 mu(k)+eta(k),ialpha,a,e,q) 
+          masst = (/ eta(k),mu(k) /)
+          inertt = (/ inert(j),inert(i) /)
+          krpl5t = (/ krpl5(j), krpl5(i) /)
+          Qlovt = (/ Qlov(j), Qlov(i) /)
+
+          ux = xj(k)*irj(k)
+          uy = yj(k)*irj(k)
+          uz = zj(k)*irj(k)
+
+c          print*,'e avant = ',e
+c          print*,'vant',xj(k),yj(k),zj(k),
+c     &                vxj(k),vyj(k),vzj(k)
+          ep = 1.d0+e
+          ep12 = sqrt(ep)
+          q2 = q*q
+          q3 = q2*q
+          nq = sqrt((eta(k)+mu(k))/q3)
+          h = nq*q2*ep12
+            
+          vecth(1) = yj(k)*vzj(k)-zj(k)*vyj(k)
+          vecth(2) = zj(k)*vxj(k)-xj(k)*vzj(k)
+          vecth(3) = xj(k)*vyj(k)-yj(k)*vxj(k)
+
+          e3(1) = vecth(1)/h
+          e3(2) = vecth(2)/h
+          e3(3) = vecth(3)/h
+
+          if (e*e.ge.TINY) then
+            vdotr = xj(k)*vxj(k)+yj(k)*vyj(k)+zj(k)*vzj(k)
+            cu = (1.d0-1.d0/a/irj(k))/e
+            if (cu.gt.1.d0) cu = 1.d0
+            if (cu.lt.-1.d0) cu =-1.d0
+            su = sqrt(1.d0-cu*cu)
+            if (vdotr.lt.0.d0) su = -su
+c            print*,capm,atan2(su,cu)-e*su
+            capm = atan2(su,cu)-e*su
+            vx = e3(2)*uz-e3(3)*uy
+            vy = e3(3)*ux-e3(1)*uz
+            vz = e3(1)*uy-e3(2)*ux
+            posy = su*sqrt(1.d0-e*e)*a*irj(k)
+            posx = (cu-e)*a*irj(k)
+            e1(1) = -posy*vx+posx*ux
+            e1(2) = -posy*vy+posx*uy
+            e1(3) = -posy*vz+posx*uz
+
+c            e1(1) = ((vyj(k)*e3(3)-vzj(k)*e3(2))*exq/na-ux)/e
+c            e1(2) = ((vzj(k)*e3(1)-vxj(k)*e3(3))*exq/na-uy)/e
+c            e1(3) = ((vxj(k)*e3(2)-vyj(k)*e3(1))*exq/na-uz)/e
+c            e1(1) = cos(omega)*cos(capom)-sin(omega)*cos(inc)*sin(capom)
+c            e1(2) = cos(omega)*sin(capom)+sin(omega)*cos(inc)*cos(capom)
+c            e1(3) = sin(omega)*sin(inc)
+c            print*,'drift',e,e1(1)**2+e1(2)**2+e1(3)**2,cu
+          else
+            e1(1) = ux
+            e1(2) = uy
+            e1(3) = uz
+            capm = 0.d0
+          end if
+       
+          vecte(1) = e*e1(1)
+          vecte(2) = e*e1(2)
+          vecte(3) = e*e1(3)
+
+          ybs(1) = vecte(1)
+          ybs(2) = vecte(2)
+          ybs(3) = vecte(3)
+          ybs(4) = vecth(1)
+          ybs(5) = vecth(2)
+          ybs(6) = vecth(3)
+          ybs(7) = capm
+          ybs(8) = rotx(j)
+          ybs(9) = roty(j)
+          ybs(10) = rotz(j)
+          ybs(11) = rotx(i)
+          ybs(12) = roty(i)
+          ybs(13) = rotz(i)
+
+          tfake = 0.0d0
+          dttmp = dt
+c          print*,'bs'
+
+c      do while(tfake.lt.dt)
+          do while( (abs(tfake-dt)/dt) .gt. 1.0d-7 )    ! just to be real safe
+            
+c            print*,'ybs avnat',sngl(ybs)
+            call bs_int_tid(masst,inertt,krpl5t,Qlovt,
+     &                                    tfake,dttmp,ybs,eps)
+c            print*,'ybs apres',sngl(ybs)
+            dttmp = dt - tfake
+          end do
+c          print*,'bs fini'
+
+          vecte(1) = ybs(1)
+          vecte(2) = ybs(2)
+          vecte(3) = ybs(3)
+          vecth(1) = ybs(4)
+          vecth(2) = ybs(5)
+          vecth(3) = ybs(6)
+          capm = ybs(7)
+          rotx(j) = ybs(8)
+          roty(j) = ybs(9)
+          rotz(j) = ybs(10)
+          rotx(i) = ybs(11)
+          roty(i) = ybs(12)
+          rotz(i) = ybs(13)
+
+          e = sqrt(vecte(1)*vecte(1) + vecte(2)*vecte(2)
+     &                                  + vecte(3)*vecte(3))
+          h2 = vecth(1)*vecth(1) + vecth(2)*vecth(2)
+     &                                  + vecth(3)*vecth(3)
+          q = h2/(eta(k)+mu(k))/(1.d0+e)
+          a = q/(1.d0-e)
+          nn = sqrt((eta(k)+mu(k))/(a*a*a))
+
+          e3(1) = vecth(1)/h
+          e3(2) = vecth(2)/h
+          e3(3) = vecth(3)/h
+
+         if (e*e.gt.TINY) then
+           e1(1) = vecte(1)/e
+           e1(2) = vecte(2)/e
+           e1(3) = vecte(3)/e
+         else
+           ps = e1(1)*e3(1)+e1(2)*e3(2)+e1(3)*e3(3)
+           e1(1) = e1(1)-ps*e3(1)
+           e1(2) = e1(2)-ps*e3(2)
+           e1(3) = e1(3)-ps*e3(3)
+           ps = sqrt(e1(1)*e1(1)+e1(2)*e1(2)+e1(3)*e1(3))
+           e1(1) = e1(1)/ps
+           e1(2) = e1(2)/ps
+           e1(3) = e1(3)/ps
+         end if 
+
+c
+c...    Position et vitesse au periastre, puis drift.
+c
+          xj(k) = q*e1(1)
+          yj(k) = q*e1(2)
+          zj(k) = q*e1(3)
+          vxj(k) = (vecth(2)*e1(3) - vecth(3)*e1(2))/q
+          vyj(k) = (vecth(3)*e1(1) - vecth(1)*e1(3))/q
+          vzj(k) = (vecth(1)*e1(2) - vecth(2)*e1(1))/q   
+
+c          print*,'e apres = ',e,vecte
+          call drift_one(eta(k)+mu(k),xj(k),yj(k),zj(k),
+     &                      vxj(k),vyj(k),vzj(k),capm/nn,iflg)
+c          call orbel_xv2aeq(xj(k),yj(k),zj(k),vxj(k),vyj(k),vzj(k),
+c     &                 mu(k)+eta(k),ialpha,a,e,q) 
+c          print*,'a ala fin = ',e
+c          print*,'pres',xj(k),yj(k),zj(k),
+c     &                 vxj(k),vyj(k),vzj(k)
+        end if
+      end do
+
+      return
+      end      ! kickvj_tid
+
+c---------------------------------------------------------------------
+
+
+
+

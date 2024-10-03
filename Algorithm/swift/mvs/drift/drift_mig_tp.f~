@@ -1,0 +1,89 @@
+c*************************************************************************
+c                        DRIFT_MIG_TP.F
+c*************************************************************************
+c This subroutine loops thorugh the TEST particles and calls the danby routine
+
+      subroutine drift_mig_tp(ntp,msun,xjt,yjt,zjt,vxjt,vyjt,vzjt,dt
+     &                    ,istat,Envartot,Hvartot)	
+
+      include '../../swift.inc'
+
+c...  Inputs Only: 
+      integer ntp
+      real*8 msun,dt
+
+c...  Inputs and Outputs:
+      integer istat(NTPMAX,NSTAT)
+      real*8 xjt(ntp),yjt(ntp),zjt(ntp)
+      real*8 vxjt(ntp),vyjt(ntp),vzjt(ntp)
+      real*8 Envartot,Hvartot
+
+c...  Internals:
+	integer j,iflg
+        real*8 En,H,ialpha,a,e,q,deltaE,deltaH 
+
+c----
+c...  Executable code 
+
+c Take a drift forward dth
+       Envartot=0
+       Hvartot=0
+       En=0
+       H=0
+	do j = 1,ntp
+           if(istat(j,1).eq.0) then
+              call orbel_xv2aeq(xjt(j),yjt(j),zjt(j),vxjt(j),
+     &            vyjt(j),vzjt(j),msun,ialpha,a,e,q)
+              En = -msun/(2*a)
+              if(e.lt.1) then
+               H = sqrt(msun*a*(1-e*e))
+              else
+               H = sqrt(msun*a*(e*e-1))
+              endif
+	      call drift_one(msun,xjt(j),yjt(j),zjt(j),
+     &             vxjt(j),vyjt(j),vzjt(j),dt,iflg)
+              if(iflg.ne.0) then
+                 istat(j,1) = 1
+                 istat(j,2) = -1
+c                 Envartot=Envartot-En
+c                 Hvartot=Hvartot-H
+                  deltaE=-En
+                  deltaH=-H
+              if((abs(deltaE).gt.1d-3).or.(abs(deltaH).gt.1d-5)) then
+                write(*,*) 'Probleme disparition'
+                write(*,*) deltaE,deltaH
+                write(*,*) xjt(j),yjt(j),zjt(j),vxjt(j),vyjt(j),vzjt(j)
+                deltaE =0.0
+                deltaH=0.0
+              endif
+              else
+                 call orbel_xv2aeq(xjt(j),yjt(j),zjt(j),vxjt(j),
+     &           vyjt(j),vzjt(j),msun,ialpha,a,e,q)
+c                 Envartot=Envartot-msun/(2*a)-En
+                  deltaE=-msun/(2*a)-En 
+                 if(e.lt.1) then
+                  deltaH=sqrt(msun*a*(1-e*e))-H 
+c                  Hvartot=Hvartot+sqrt(msun*a*(1-e*e))-H
+                 else
+                  deltaH=sqrt(msun*a*(e*e-1))-H
+c                  Hvartot=Hvartot+sqrt(msun*a*(e*e-1))-H
+                 endif
+                 if((abs(deltaE).gt.1d-3).or.(abs(deltaH).gt.1d-5)) then
+                  write(*,*) 'Probleme modification'
+                  write(*,*) deltaE,deltaH
+                  write(*,*) xjt(j),yjt(j),zjt(j),vxjt(j),vyjt(j)
+     &                       ,vzjt(j)
+                  deltaE =0.0
+                  deltaH=0.0
+                 endif  
+              endif
+              envartot = envartot + deltaE
+              hvartot= hvartot + deltaH
+           endif          
+	enddo
+
+
+	return
+	end
+c--------------------------------------------------------------------------
+

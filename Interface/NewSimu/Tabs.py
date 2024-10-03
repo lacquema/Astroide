@@ -82,22 +82,25 @@ class TabSimuFiles(GeneralTab):
 
         self.Layout.addWidget(Delimiter(Title='Input files:'))
 
-        self.StartFileName = LineEdit('General input file', 'Name you want to give to the general entry which is the shell startup file with the extension', 'start.sh')
-        self.Layout.addWidget(self.StartFileName, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.InGenFileName = LineEdit('General input file', 'Name you want to give to the general entry which is the general input file with the extension', 'general.sh')
+        self.Layout.addWidget(self.InGenFileName, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        self.InSetFileName = LineEdit('Settings input file', 'Name you want to give to the simulation settings input file with the extension', 'settings.in')
+        self.Layout.addWidget(self.InSetFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self.InBodFileName = LineEdit('Bodies input file', 'Name you want to give to the input file for bodies with the extension', 'bodies.in')
         self.Layout.addWidget(self.InBodFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        self.InParFileName = LineEdit('Particules input file', 'Name you want to give to the input file for test particules with the extension', 'particules.in')
-        self.Layout.addWidget(self.InParFileName, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.InPartFileName = LineEdit('Particules input file', 'Name you want to give to the input file for test particules with the extension', 'particules.in')
+        self.Layout.addWidget(self.InPartFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self.Layout.addWidget(Delimiter(Title='Output files:'))
 
         self.OutputFileName = LineEdit('Output binary file', 'Name you want to give to the output binary file (no extension)', 'output')
         self.Layout.addWidget(self.OutputFileName, alignment=Qt.AlignmentFlag.AlignLeft)
         self.OutputFileName.Layout.addSpacing(100)
-        self.DumpFreq = SpinBox('Frequency', 'Time between two saves to the output file [yr]', 10000, 1, None, 1)
-        self.OutputFileName.Layout.addWidget(self.DumpFreq, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.OutFreq = SpinBox('Frequency', 'Time between two saves to the output file [yr]', 10000, 1, None, 1)
+        self.OutputFileName.Layout.addWidget(self.OutFreq, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self.DumpFileName = LineEdit('Dump binary file', 'Name you want to give to the dump binary file (no extension)', 'dump')
         self.Layout.addWidget(self.DumpFileName, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -108,16 +111,16 @@ class TabSimuFiles(GeneralTab):
         self.Layout.setSpacing(0)
 
 
-class TabSimuSet(GeneralTab):
+class TabSimuSets(GeneralTab):
     
     def __init__(self):
         super().__init__()
 
     def InitWidgets(self):
 
-        self.SimuType = ComboBox('Algorithm', 'Algorithm to be used for integration', ['whm', 'whm_s6b', 'rmvs3'])
-        self.SimuType.ComboParam.setCurrentIndex(2)
-        self.Layout.addWidget(self.SimuType)
+        self.Algo = ComboBox('Algorithm', 'Algorithm to be used for integration', ['whm', 'whm_s6b', 'rmvs3'])
+        self.Algo.ComboParam.setCurrentIndex(2)
+        self.Layout.addWidget(self.Algo)
 
         self.T0 = DoubleSpinBox('Integration times', 'Time when integration begins [yr]', 0, 0)
         self.Layout.addWidget(self.T0)
@@ -133,18 +136,18 @@ class TabSimuSet(GeneralTab):
 
         self.Layout.addWidget(Delimiter(Title='Options:'))
 
-        self.CheckSpheStar = CheckBox('Central body sphericity', 'Sphericity of the central body')
-        self.CheckSpheStar.CheckParam.stateChanged.connect(self.ChangeStateSpheStar)
-        self.Layout.addWidget(self.CheckSpheStar)
-        self.CheckSpheStar.Layout.addSpacing(60)
+        self.CheckSpheBody0 = CheckBox('Central body sphericity', 'Sphericity of the central body')
+        self.CheckSpheBody0.CheckParam.stateChanged.connect(self.ChangeStateSpheBody0)
+        self.Layout.addWidget(self.CheckSpheBody0)
+        self.CheckSpheBody0.Layout.addSpacing(60)
         self.J2 = DoubleSpinBox('J2', 'Quadrupole graviational moment')
-        self.J2.setEnabled(self.CheckSpheStar.CheckParam.isChecked())
-        self.CheckSpheStar.Layout.addWidget(self.J2)
-        self.CheckSpheStar.Layout.addSpacing(20)
+        self.J2.setEnabled(self.CheckSpheBody0.CheckParam.isChecked())
+        self.CheckSpheBody0.Layout.addWidget(self.J2)
+        self.CheckSpheBody0.Layout.addSpacing(20)
         self.J4 = DoubleSpinBox('J4', 'Octopole graviational moment')
-        self.J4.setEnabled(self.CheckSpheStar.CheckParam.isChecked())
-        self.CheckSpheStar.Layout.addWidget(self.J4)
-        self.CheckSpheStar.Layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.J4.setEnabled(self.CheckSpheBody0.CheckParam.isChecked())
+        self.CheckSpheBody0.Layout.addWidget(self.J4)
+        self.CheckSpheBody0.Layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         self.Layout.addWidget(Label('Particle removal:'))
         self.CheckPartRemovedBody0 = CheckBox('by the central body', 'Remove particles that are too close or too far to the central body')
@@ -173,9 +176,9 @@ class TabSimuSet(GeneralTab):
         self.Layout.addWidget(self.CheckPartRemovedBody)
         self.CheckPartRemovedBody.Layout.insertWidget(0, Label('   '), alignment=Qt.AlignmentFlag.AlignLeft)
         self.CheckPartRemovedBody.Layout.addSpacing(60)
-        self.DistType = ComboBox(None, 'Type of distance', ['Physical radius', 'Multiple of Hill radius'])
-        self.DistType.setEnabled(self.CheckPartRemovedBody.CheckParam.isChecked())
-        self.CheckPartRemovedBody.Layout.addWidget(self.DistType)
+        self.RminBodyType = ComboBox(None, 'Type of radius', ['Physical radius', 'Multiple of Hill radius'])
+        self.RminBodyType.setEnabled(self.CheckPartRemovedBody.CheckParam.isChecked())
+        self.CheckPartRemovedBody.Layout.addWidget(self.RminBodyType)
         self.CheckPartRemovedBody.Layout.addSpacing(20)
         self.RminBody = DoubleSpinBox(None, 'Distance below which a particle is removed because it is too close to a body (-1 to ignore)')
         self.RminBody.setEnabled(self.CheckPartRemovedBody.CheckParam.isChecked())
@@ -197,7 +200,7 @@ class TabSimuSet(GeneralTab):
         self.Layout.setSpacing(0)
 
 
-    def ChangeStateSpheStar(self, state):
+    def ChangeStateSpheBody0(self, state):
         self.J2.setEnabled(state)
         self.J4.setEnabled(state)
 
@@ -208,14 +211,14 @@ class TabSimuSet(GeneralTab):
         self.PminBody0.setEnabled(state)
 
     def ChangeStatePartRemovedBody(self, state):
-        self.DistType.setEnabled(state)
+        self.RminBodyType.setEnabled(state)
         self.RminBody.setEnabled(state)
 
 
 
 
 
-class TabOrbitParamSet(GeneralTab):
+class TabOrbitsParams(GeneralTab):
     
     def __init__(self):
         super().__init__()
@@ -238,9 +241,11 @@ class TabOrbitParamSet(GeneralTab):
         self.NbBodies.Layout.addWidget(self.NbOrbits)
 
         self.Units = ComboBox('System units', 'Choice of the units used', ["AU, Msun, yr/2π", 'AU, Msun/4π^2, yr'])
+        self.Units.ComboParam.setCurrentIndex(1)
         self.LayoutV1.addWidget(self.Units)
 
         self.Coord = ComboBox('Coordinate', 'Choice of the coordinate system used', ['Ecliptic', 'Invariable plane'])
+        self.Units.ComboParam.setCurrentIndex(1)
         self.LayoutV1.addWidget(self.Coord)
 
         self.LayoutV1.addWidget(Delimiter(Title='Initial orbit parameters of particles :'))
@@ -348,7 +353,7 @@ class TabOrbitParamSet(GeneralTab):
 
 
 
-class TabStartSet(GeneralTab):
+class TabStart(GeneralTab):
     
     def __init__(self):
         super().__init__()

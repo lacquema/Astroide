@@ -1,0 +1,35 @@
+{VERSION 3 0 "IBM INTEL LINUX" "3.0" }
+{USTYLETAB {CSTYLE "Maple Input" -1 0 "Courier" 0 1 255 0 0 1 0 1 0 0 
+1 0 0 0 0 }{CSTYLE "2D Math" -1 2 "Times" 0 1 0 0 0 0 0 0 2 0 0 0 0 0 
+0 }{CSTYLE "2D Output" 2 20 "" 0 1 0 0 255 1 0 0 0 0 0 0 0 0 0 }
+{PSTYLE "Normal" -1 0 1 {CSTYLE "" -1 -1 "" 0 1 0 0 0 0 0 0 0 0 0 0 0 
+0 0 }0 0 0 -1 -1 -1 0 0 0 0 0 0 -1 0 }{PSTYLE "Maple Output" 0 11 1 
+{CSTYLE "" -1 -1 "" 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 }3 3 0 -1 -1 -1 0 0 
+0 0 0 0 -1 0 }}
+{SECT 0 {EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 93 "f:=1-1/sqrt(1+2*x*co
+s(theta)+x^2);assume(r>0);assume(ps,real);assume(epsilon>0);assume(ir>
+0);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%\"fG,&\"\"\"F&*&\"\"\"F(*$-%%
+sqrtG6#,(F&F&*&%\"xGF&-%$cosG6#%&thetaGF&\"\"#*$)F/F4F(F&F(!\"\"!\"\"
+" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 7 "g:=2-f;" }}{PARA 11 "" 
+1 "" {XPPMATH 20 "6#>%\"gG,&\"\"\"F&*&\"\"\"F(*$-%%sqrtG6#,(F&F&*&%\"x
+GF&-%$cosG6#%&thetaGF&\"\"#*$)F/F4F(F&F(!\"\"F&" }}}{EXCHG {PARA 0 "> \+
+" 0 "" {MPLTEXT 1 0 29 "h:=simplify(simplify(f*g)/g);" }}{PARA 11 "" 
+1 "" {XPPMATH 20 "6#>%\"hG*&*&%\"xG\"\"\",&-%$cosG6#%&thetaG\"\"#F'\"
+\"\"F/F(,*F/F/*&F'F/F*F/F.*$)F'F.F(F/*$-%%sqrtG6#,(F/F/F1F.F2F/F(F/!\"
+\"" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 25 "simplify(h-x*cos(thet
+a));" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#,$*&*&%\"xG\"\"\",,-%$cosG6#%&
+thetaG!\"\"F&F-*&F&\"\"\")F)\"\"#F'F1*&F)F/)F&F1F'F/*&F)F'-%%sqrtG6#,(
+F/F/*&F&F'F)F'F1*$F3F'F/F'F/F/F',*F/F/F9F1F:F/*$F5F'F/!\"\"F-" }}}
+{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 44 "vs:=\{cos(theta)=ps*ir/epsil
+on,x=epsilon*ir\};" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%#vsG<$/-%$cosG
+6#%&thetaG*&*&%$ps|irG\"\"\"%$ir|irGF.\"\"\"%)epsilon|irG!\"\"/%\"xG*&
+F1F.F/F0" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 21 "simplify(subs(v
+s,h));" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#*&*&)%$ir|irG\"\"#\"\"\",&%$
+ps|irGF'*$)%)epsilon|irGF'F(\"\"\"F.F(,*F.F.*&F%F(F*F.F'*&F,F(F%F(F.*$
+-%%sqrtG6#,(F.F.F0F'F1F.F(F.!\"\"" }}}{EXCHG {PARA 0 "> " 0 "" 
+{MPLTEXT 1 0 25 "expand(-3/2/t-(2*t-3)/t);" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6#,&*&\"\"\"F%%\"tG!\"\"#\"\"$\"\"#!\"#\"\"\"" }}}{EXCHG 
+{PARA 0 "> " 0 "" {MPLTEXT 1 0 13 "solve(%<0,t);" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6$-%*RealRangeG6$,$%)infinityG!\"\"-%%OpenG6#\"\"!-F$6$-F
+*6##\"\"$\"\"%F'" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 0 "" }}}}
+{MARK "8 0 0" 0 }{VIEWOPTS 1 1 0 1 1 1803 }

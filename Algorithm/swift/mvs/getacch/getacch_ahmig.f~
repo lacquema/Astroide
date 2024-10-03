@@ -1,0 +1,92 @@
+c*************************************************************************
+c                        GETACCH_MIG.F
+c*************************************************************************
+c This subroutine calculates the migration term acceleration on the massive particles
+c in the HELIOCENTRIC frame. This term is the direct cross terms
+
+
+      subroutine getacch_ahmig(nbod,mass,xh,yh,zh,vxh,vyh,vzh,
+     & axhmig,ayhmig,azhmig,Evar,Hvar)
+
+      include '../../swift.inc'
+
+c...  Inputs: 
+      integer nbod,ntp
+      real*8 mass(NPLMAX),xh(NPLMAX),yh(NPLMAX),zh(NPLMAX)
+      real*8 vxh(NPLMAX),vyh(NPLMAX),vzh(NPLMAX)
+      real*8 Evar,Hvar,su1,su2,cu1,cu2,tau_e
+c...  Outputs:
+      real*8 axhmig(NPLMAX),ayhmig(NPLMAX),azhmig(NPLMAX)
+
+c...  Internals:
+      integer i,j
+      real*8 dx,dy,dz,rji2,faci,facj,irij3,a,e,q,ialpha
+      real*8 capom,capm,inc,omega,avar,Evarm,Hvarm 
+      real*8 v,acc,Fx,Fy,radius,mu,u,u1,u2,n,cu,upast
+      real*8 orbel_ehybrid,cape,q,vdotr,face
+
+c------
+c...  Executable code
+    
+c      Evar=0.
+c      Hvar=0.
+
+      Evarm=Evar / mass(2)
+      Hvarm=Hvar / mass(2)
+
+      do i=1,nbod
+         axhmig(i) = 0.0d0
+         ayhmig(i) = 0.0d0
+         azhmig(i) = 0.0d0
+      enddo
+
+      tau_e=0.001d0
+      mu=mass(2)+mass(1)
+     
+
+      call orbel_xv2el(xh(2),yh(2),zh(2),vxh(2),vyh(2),vzh(2),
+     &     mu,ialpha,a,e,inc,capom,omega,capm)
+c       call orbel_xv2aeq(xh(2),yh(2),zh(2),vxh(2),vyh(2),vzh(2),
+c     &     mu,ialpha,a,e,q)
+      radius=sqrt(xh(2)**2+yh(2)**2+zh(2)**2)
+      vdotr=xh(2)*vxh(2)+yh(2)*vyh(2)+zh(2)*vzh(2)
+      if(e.gt.0) then
+        face =(a-radius)/(a*e)
+      else
+        face = 0.0
+      endif 
+c... Apr. 16/93 : watch for case where face is slightly outside unity
+             if ( face .gt. 1.d0) then
+                cape = 0.d0
+             else
+                if ( face .gt. -1.d0) then
+                   cape = acos( face )
+                else
+                   cape = PI
+                endif
+             endif
+
+            if ( vdotr.lt.0.d0 ) cape = 2.d0*PI - cape
+
+      avar = 2*a*a/mass(1)*Evarm
+      u = cape
+      n=sqrt(mu/a**3)
+
+      Fx=-2*Evarm/(a*n)*sin(u)
+      Fy=-8*(n*Hvarm-sqrt(1-e*e)*Evarm)/(7*a*n)*cos(u)**2*
+     &   e**7/(e**8+tau_e**8) 
+
+c       write(*,'(8e15.5)')Fx,Fy,avar,Evarm,Evar
+
+
+
+         axhmig(2)=(Fx*cos(omega)-Fy*sin(omega))*cos(capom)
+     &        -(Fx*sin(omega)+Fy*cos(omega))*cos(inc)*sin(capom)
+         ayhmig(2) =(Fx*cos(omega)-Fy*sin(omega))*sin(capom)
+     &        +(Fx*sin(omega)+Fy*cos(omega))*cos(inc)*cos(capom)
+         azhmig(2) = (Fx*sin(omega)+Fy*cos(omega))*sin(inc)
+       
+      return
+      end                       ! getacch_mig
+      
+

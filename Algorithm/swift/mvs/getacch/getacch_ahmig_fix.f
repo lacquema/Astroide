@@ -1,0 +1,77 @@
+c*************************************************************************
+c                        GETACCH_MIG.F
+c*************************************************************************
+c This subroutine calculates the migration term acceleration on the massive particles
+c in the HELIOCENTRIC frame. This term is the direct cross terms
+c             Input:
+c                 nbod          ==>  number of massive bodies (int scalor)
+c                 mass          ==>  mass of bodies (real array)
+c                 xh,yh,zh      ==>  position in heliocentric coord 
+c                                   (real arrays)
+c		  vxh,vyh,vzh      ==>  velocity in heliocentric coord
+c				     (real arrays)		    
+c
+c             Output:
+c                 axhmig,ayhmig,azhmig ==>  migration term of acceleration in helio coord 
+c                                     (real arrays)
+c
+c Author:  Remy Reche  
+c Date:    30/5/05
+c Last revision: 30/5/05
+
+      subroutine getacch_ahmig_fix(nbod,mass,xh,yh,zh,vxh,vyh,vzh,
+     &   avar,axhmig,
+     &   ayhmig,azhmig)
+
+      include '../../swift.inc'
+
+c...  Inputs: 
+      integer nbod
+      real*8 mass(NPLMAX),xh(NPLMAX),yh(NPLMAX),zh(NPLMAX)
+      real*8 vxh(NPLMAX),vyh(NPLMAX),vzh(NPLMAX),avar
+
+c...  Outputs:
+      real*8 axhmig(NPLMAX),ayhmig(NPLMAX),azhmig(NPLMAX)
+
+c...  Internals:
+      integer i,j
+      real*8 dx,dy,dz,rji2,faci,facj,irij3,a,e,q,ialpha,v,acc
+      real*8 r,rsad,rad,angold,ang,rsq,mu
+c------
+c...  Executable code
+      
+c      avar =0.5d-6
+
+      do i=1,nbod
+         axhmig(i) = 0.0d0
+         ayhmig(i) = 0.0d0
+         azhmig(i) = 0.0d0
+      enddo
+
+      do i=2,2
+
+             v = sqrt(vxh(i)**2+vyh(i)**2+vzh(i)**2)
+
+	     call orbel_xv2aeq(xh(i),yh(i),zh(i),vxh(i),vyh(i),vzh(i),
+     &                    (mass(i)+mass(1)),ialpha,a,e,q)
+             acc=0.5d0*avar* sqrt(mass(1)/(a*a*a))
+             axhmig(i) = acc * vxh(i) / v
+             ayhmig(i) = acc * vyh(i) / v
+             azhmig(i) = acc * vzh(i) / v
+      enddo
+
+c         rad = (xh(2)*vxh(2) + yh(2)*vyh(2))/rsq
+         
+c         ang = (xh(2)*vyh(2) - yh(2)*vxh(2))/rsq            
+         
+c         angold = ang - sqrt((mass(1)+mass(2))*r)/rsq
+
+c         axhmig(2) = axhmig(2)-1d-6*(rad*xh(2) - angold*yh(2))
+c         ayhmig(2) = ayhmig(2)-1d-6*(rad*yh(2) + angold*xh(2))
+c         azhmig(2) = azhmig(2)-1d-6*vzh(2)
+c         mu=mass(1)+mass(2)
+c         write(*,'(5e15.5)')1.0,a,e,-mu/(2*a),sqrt(mu*a*(1-e*e))
+
+      return
+      end     ! getacch_mig
+

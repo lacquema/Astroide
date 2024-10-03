@@ -1,0 +1,172 @@
+c*************************************************************************
+c                        GETACCJ_HJS_TMRP.F
+c*************************************************************************
+c This subroutine calculates the acceleration on the massive particles
+c in a hierarchical Genealized Jacobi case , with Poincare time regularization
+c         Source : Mikkola, 1997, CeMDA 67, 147
+c             Input:
+c                 nbod        ==>  number of massive bodies (int scalor)
+c                 mat         ==> Conversion matrix (Jacobi - Barycentric)
+c                 coef        ==> Coefs for time transformation
+c                 oloc        ==> Link between bodies and orbits
+c                                  (2D integer array)
+c                 eta         ==> Masses of centers for orbits (real array)
+c                 mu          ==> Masses of satellites for orbits (real arr.)
+c                 p0          ==> The conjugate momentum of time ( = -H)
+c                 mass        ==>  mass of bodies (real array)
+c                 xj,yj,zj    ==>  position in jacobi coord (real arrays)
+c                 vxj,vyj,vzj ==>  Vels. in Jacobi coords (real arrays)
+c                 xb,yb,zb    ==>  position in bary centric coord (real arrays)
+c             Output:
+c                 ir3j,irj    ==> Inverse Jacobi radii^3,^1 (real arrays)
+c                 axb,ayb,azb ==>  acceleration in bary. coord (real arrays)
+c                 axj,ayj,azj ==>  acceleration in jac. coord (real arrays)
+c                 g           ==> the local time transformation (dt = g*ds)
+c Author:  H. Beust  
+c Date:    Sep 22, 2006
+c Remarks : Adapted from getacch_hjs.f
+
+      subroutine getaccj_hjs_tmrp(nbod,mat,coef,oloc,mass,eta,mu,p0,
+     &     xj,yj,zj,vxj,vyj,vzj,xb,yb,zb,ir3j,irj,axb,ayb,azb,
+     &     axj,ayj,azj,g,hr)
+
+      include '../swift.inc'
+
+c...  Inputs: 
+      integer nbod
+      integer oloc(NPLMAX,NPLMAX)
+      real*8 coef(nbod),p0,mat(NPLMAX,NPLMAX)
+      real*8 mass(nbod),eta(nbod),mu(nbod)
+      real*8 xj(nbod),yj(nbod),zj(nbod)
+      real*8 vxj(nbod),vyj(nbod),vzj(nbod)
+      real*8 xb(nbod),yb(nbod),zb(nbod)
+
+c...  Outputs:
+      real*8 axb(nbod),ayb(nbod),azb(nbod),ir3j(nbod),irj(nbod)
+      real*8 axj(nbod),ayj(nbod),azj(nbod),g
+                
+c...  Internals:
+      integer i,j,k
+      real*8 faccen,facsat,faci,facj
+      real*8 dx(NPLMAX,NPLMAX),dy(NPLMAX,NPLMAX),dz(NPLMAX,NPLMAX)
+      real*8 rji2,irij3,vj2,eps2,irij,hr,epsx,epsy,epsz,dps,rij,irj2
+
+c----
+c...  Executable code 
+
+c...  get thr r^-3's
+      call getacch_ir3(nbod,2,xj,yj,zj,ir3j,irj)
+
+c...  Compute g and epsilon
+c      eps = 0.d0
+      g = 0.0d0
+      do i=2,nbod
+c        vj2 = vxj(i)*vxj(i)+vyj(i)*vyj(i)+vzj(i)*vzj(i)
+        g = g+coef(i)*irj(i)
+c        eps = eps + eta(i)*mu(i)*(0.5d0*vj2/(eta(i)+mu(i))-irj(i))
+      end do
+      g = 1.d0/g
+c      eps = g*(eps + p0)
+c      print*,'g',sngl(g),'eps',sngl(eps),'p0',sngl(p0)
+
+
+c...  Now compute the barycentric accelerations....
+      do i=1,nbod
+        axb(i) = 0.0d0
+        ayb(i) = 0.0d0
+        azb(i) = 0.0d0
+        hr = 0.0d0
+      end do
+
+c...  first the jacobi terms
+      do j=2,nbod
+        facsat = eta(j)*ir3j(j)
+        faccen = -mu(j)*ir3j(j)
+        do i=1,nbod
+          if (oloc(j,i).eq.1) then   !  body #i is a satellite in orbit #j
+            axb(i) = axb(i) + facsat*xj(j)
+            ayb(i) = ayb(i) + facsat*yj(j)
+            azb(i) = azb(i) + facsat*zj(j)
+          else if (oloc(j,i).eq.-1) then ! body #i is a center in orbit #j
+            axb(i) = axb(i) + faccen*xj(j)
+            ayb(i) = ayb(i) + faccen*yj(j)
+            azb(i) = azb(i) + faccen*zj(j)
+          end if
+        end do
+        hr = hr + eta(j)*mu(j)*irj(j)
+      end do
+
+c...  now the third terms
+
+      do i=1,nbod-1
+        do j=i+1,nbod
+          dx(i,j) = xb(j) - xb(i)
+          dy(i,j) = yb(j) - yb(i)
+          dz(i,j) = zb(j) - zb(i)
+          dx(j,i) = -dx(i,j)
+          dy(j,i) = -dy(i,j)
+          dz(j,i) = -dz(i,j)
+          rji2 = dx(i,j)*dx(i,j) + dy(i,j)*dy(i,j) + dz(i,j)*dz(i,j)
+c          dx = xb(j) - xb(i)
+c          dy = yb(j) - yb(i)
+c          dz = zb(j) - zb(i)
+c          rji2 = dx*dx + dy*dy + dz*dz
+          irij = 1.d0/sqrt(rji2)
+          irij3 = irij/rji2
+          faci = mass(i)*irij3
+          facj = mass(j)*irij3
+
+          axb(j) = axb(j) - faci*dx(i,j)
+          ayb(j) = ayb(j) - faci*dy(i,j)
+          azb(j) = azb(j) - faci*dz(i,j)
+
+          axb(i) = axb(i) + facj*dx(i,j)
+          ayb(i) = ayb(i) + facj*dy(i,j)
+          azb(i) = azb(i) + facj*dz(i,j)
+
+          hr = hr - mass(i)*mass(j)*irij
+        end do
+      end do
+
+c... Regular computation of hr
+c      hr = 0.d0
+      do k=2,nbod
+        do i=1,nbod
+          if (oloc(k,i).eq.-1) then  ! Body #i is center in orbit #k
+            do j=1,nbod
+              if (oloc(k,j).eq.1) then ! j = satellite, i = center
+                epsx = dx(i,j) - xj(k)
+                epsy = dy(i,j) - yj(k)
+                epsz = dz(i,j) - zj(k)
+                eps2 = epsx*epsx + epsy*epsy + epsz*epsz
+                dps = 2.d0*(epsx*xj(k) + epsy*yj(k) + epsz*zj(k))
+                irj2 = irj(k)*irj(k)
+                rij = sqrt(1.d0 + dps*irj2 + eps2*irj2)
+c                hr = hr + mass(i)*mass(j)*irj(k)
+c     &                    *irj2*(dps+eps2)/rij/(1.d0+rij) 
+              end if
+            end do
+          end if
+        end do
+      end do
+
+
+c...     Convert bary accels to Jacobi accels (use vel. procedure)
+      call coord_vb2vg(nbod,mat,mass,axb,ayb,azb,axj,ayj,azj)
+
+c...     Convert to time-regularization accels
+      do i=2,nbod    
+        vj2 = -g*hr*coef(i)*ir3j(i)*(eta(i)+mu(i))/eta(i)/mu(i)
+        axj(i) = (axj(i)+vj2*xj(i))*g
+        ayj(i) = (ayj(i)+vj2*yj(i))*g
+        azj(i) = (azj(i)+vj2*zj(i))*g
+      end do
+
+      return
+      end      ! getaccj_hjs_tmrp
+
+c---------------------------------------------------------------------
+
+
+
+

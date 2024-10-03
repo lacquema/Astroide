@@ -1,0 +1,67 @@
+c*************************************************************************
+c                            STEP_KDK_MIG_PL.F
+c*************************************************************************
+c This subroutine takes a step in helio coord.  
+c Does a KICK than a DRIFT than a KICK.
+c ONLY DOES MASSIVE PARTICLES
+
+      subroutine step_kdk_mig_fix_pl(i1st,nbod,mass,j2rp2,j4rp4,
+     &     xh,yh,zh,vxh,vyh,vzh,dt,avar)	
+
+      include '../../swift.inc'
+
+c...  Inputs Only: 
+      integer nbod,i1st
+      real*8 mass(nbod),dt,j2rp2,j4rp4
+
+c...  Inputs and Outputs:
+      real*8 xh(nbod),yh(nbod),zh(nbod)
+      real*8 vxh(nbod),vyh(nbod),vzh(nbod)
+      real*8 avar
+c...  Internals:
+      real*8 dth,entmp,htmp 
+      real*8 axh(NPLMAX),ayh(NPLMAX),azh(NPLMAX)
+      real*8 xj(NPLMAX),yj(NPLMAX),zj(NPLMAX)
+      real*8 vxj(NPLMAX),vyj(NPLMAX),vzj(NPLMAX)
+
+      save axh,ayh,azh,xj,yj,zj     ! Note this !!
+
+c----
+c...  Executable code 
+
+      dth = 0.5d0*dt
+
+      if(i1st.eq.0) then
+c...      Convert to jacobi coords
+          call coord_h2j(nbod,mass,xh,yh,zh,vxh,vyh,vzh,
+     &          xj,yj,zj,vxj,vyj,vzj)
+c...     Get the accelerations in helio frame. if frist time step
+         call getacch_mig_fix(nbod,mass,j2rp2,j4rp4,xj,yj,zj,
+     &         xh,yh,zh,vxh,vyh,vzh,axh,ayh,azh,avar)
+         i1st = 1    ! turn this off
+      endif
+
+c...  Apply a heliocentric kick for a half dt 
+      call kickvh(nbod,vxh,vyh,vzh,axh,ayh,azh,dth)
+
+c...  Convert the helio. vels. to Jac. vels. (the Jac. positions are unchanged)
+      call coord_vh2vj(nbod,mass,vxh,vyh,vzh,vxj,vyj,vzj)
+
+c..   Drift in Jacobi coords for the full step 
+      call drift(nbod,mass,xj,yj,zj,vxj,vyj,vzj,dt)
+
+c...  After drift, compute helio. xh and vh for acceleration calculations
+      call coord_j2h(nbod,mass,xj,yj,zj,vxj,vyj,vzj,
+     &             xh,yh,zh,vxh,vyh,vzh)
+
+c...  Get the accelerations in helio frame.
+      call getacch_mig_fix(nbod,mass,j2rp2,j4rp4,xj,yj,zj,xh,yh,zh,
+     &              vxh,vyh,vzh,axh,ayh,azh,avar)
+
+c...  Apply a heliocentric kick for a half dt 
+      call kickvh(nbod,vxh,vyh,vzh,axh,ayh,azh,dth)
+
+      return
+      end   ! step_kdk_pl
+c---------------------------------------------------------------------
+

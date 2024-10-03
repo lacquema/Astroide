@@ -1,0 +1,290 @@
+c*************************************************************************
+c                            SYMBA5_DUPLICATE_.F
+c*************************************************************************
+c This subroutine checks to see if a massive body enter at less than 1.
+c times the periastre of the planet. And then it duplicate the particle to
+c have a significative effect of the particles if they comes from an
+c asteroid belt
+c
+c             Input:
+c                 time          ==>  current time (real scalar)
+c                 dt            ==>  time step  (real scalar)
+c                 nbod          ==>  number of massive bodies (int scalar)
+c                 mass          ==>  mass of bodies (real array)
+c                 xh,yh,zh      ==>   position in helio coord 
+c                                    (real arrays)
+c                 vxh,vyh,vzh   ==>   pl vel in helio coord 
+c                                    (real arrays)
+c                 Mmin,Mmax     ==>  maximum and min mass to create
+c                                     random particles
+c             Output:
+c                 nbod          ==>  recalculated number of massive bodies 
+c                                       (int scalar)
+c                 mass          ==>  recalculated mass of bodies (real array)
+c                 xh,yh,zh      ==>  recalculated position in helio coord 
+c                                    (real arrays)
+c                 vxh,vyh,vzh   ==>  recalculated pl vel in helio coord 
+c                                    (real arrays)
+c
+c
+c Remarks: 
+c
+c Authors:  Hal Levison 
+c Date:    12/30/96
+c Last revision: 05/03/04 H. Beust (directory information)
+
+C-----------------------------------------------------------------
+C         Generateur aleatoire Gaussien normalise
+C------------------------------------------------------------------
+C
+        SUBROUTINE GASDEV(S)
+
+        IMPLICIT NONE
+
+        REAL*8          S,R,V(2),S1,S2   ! Parametres internes
+        INTEGER*4       J                ! aleatoire 1 ou 2
+
+
+        CALL RANDOM_NUMBER(S1)
+        J=1+FLOOR(2.d0*S1)
+        R=2.d0
+        DO WHILE(R.GE.1.d0)
+          CALL RANDOM_NUMBER(S1)
+          CALL RANDOM_NUMBER(S2)
+          V(1)=2.d0*S1-1.d0
+          V(2)=2.d0*S2-1.d0
+          R=V(1)*V(1)+V(2)*V(2)
+        END DO
+        S = V(J)*SQRT(-2.d0*LOG(R)/R)
+        END
+
+c---------------------------------------------------------------------
+C
+c...  give a random mass between Mmin and Mmax with the classical
+c...  distribution in -3.5
+
+      REAL*8 FUNCTION rand_mass(Mmin,Mmax)
+
+      implicit none 
+
+      REAL*8 Mmin,Mmax,s
+      real*8, parameter :: z = -5.d0/6.d0, uz = -6.d0/5.d0
+
+      call random_number(s)
+      rand_mass = ((Mmax**z-Mmin**z)*s+Mmin**z)**uz
+
+      RETURN
+
+      END
+
+c------------------------------------------------------------------------
+
+      SUBROUTINE duplic_part(dt,nbod,mtiny,msmall,mass,xh,yh,zh,
+     &                    vxh,vyh,vzh,rpl,rhill,needdup)
+
+c...  create nbcopy particles and add them in the list
+
+      include '../swift.inc'
+
+c...  input/output:
+
+      integer nbod
+      real*8 mtiny,msmall
+      real*8 dt,mass(NTPMAX)
+      real*8 xh(NTPMAX),yh(NTPMAX),zh(NTPMAX)
+      real*8 vxh(NTPMAX),vyh(NTPMAX),vzh(NTPMAX)
+      real*8 rpl(NTPMAX),rhill(NTPMAX)
+      logical*1 needdup(NTPMAX)
+
+c...  intern:
+
+      real*8 xtemp,ytemp,ztemp,vxtemp,vytemp,vztemp,masstemp,mbottom,s
+      real*8 rpltemp,rhilltemp
+      real*8 xadd(NTPMAX),yadd(NTPMAX),zadd(NTPMAX),massadd(NTPMAX)
+      real*8 vxadd(NTPMAX),vyadd(NTPMAX),vzadd(NTPMAX),mtot
+      real*8 rhilladd(NTPMAX),rpladd(NTPMAX)
+      real*8 rand_mass
+      real*8, parameter :: third = 1.d0/3.d0
+      integer isperih(NTPMAX)
+      integer nbodtemp, nbcopy,i,j,k
+
+      nbodtemp = nbod
+
+      mbottom = msmall**2/mtiny
+      do i=1,nbod
+         if (needdup(i))then
+
+c.... Copy of the particle to be duplicated
+
+            xtemp = xh(i)
+            ytemp = yh(i)
+            ztemp = zh(i)
+            vxtemp = vxh(i)
+            vytemp = vyh(i)
+            vztemp = vzh(i)
+            masstemp = mass(i)
+            rpltemp = rpl(i)
+            rhilltemp = rhill(i)
+
+c.... supressing the particle duplicated
+
+            call discard_mass_reorder5(i,nbodtemp,mass,xh,yh,zh,
+     &           vxh,vyh,vzh,rpl,rhill,isperih)
+
+c.... Creation of the list of particles to add
+
+            mtot= 0
+            nbcopy= 0
+
+            do while ((mtot.LT.masstemp).and.
+     &           (nbodtemp+nbcopy.LT.NTPMAX))
+
+               call gasdev(s)
+               xadd(j)= xtemp+0.5d0*vxtemp*s
+               call gasdev(s)
+               yadd(j)= ytemp+0.5d0*vytemp*s
+               call gasdev(s)
+               zadd(j)=  ztemp+0.5d0*vztemp*s
+               vxadd(j)= vxtemp
+               vyadd(j)= vytemp
+               vzadd(j)= vztemp
+               massadd(j) = rand_mass(mbottom,Msmall)
+               nbcopy = nbcopy + 1
+            end do
+
+            if (nbodtemp+nbcopy.GE.NTPMAX)then
+               write(*,*) "TOO MUCH PARTICLES: impossible to duplicate"
+               return
+            end if
+
+c.... rescaling masses
+
+            if (mtot.NE.masstemp) then
+               do j = 1,nbcopy
+                  massadd(j) = massadd(j)*(masstemp/mtot)
+               end do
+            end if
+
+c.... Calculated radii and Hill spheres             
+            do j = 1, nbcopy
+               rpladd(j) = rpltemp*(massadd(j)/masstemp)**third
+               call util_hills1(mass(1),massadd(j),
+     &             xadd(j),yadd(j),zadd(j),
+     &             vxadd(j),vyadd(j),vzadd(j),rhilladd(j))
+            end do
+         end if
+      end do
+
+c.... incorporating new particles 
+
+      do i = 1,nbcopy
+         j = nbodtemp
+
+c.... checking where to add particle i
+
+         do while (massadd(i).GT.mass(j))
+            j= j-1
+         enddo
+
+c.... we have to add in j+1
+
+         nbodtemp = nbodtemp+1
+         k = nbodtemp
+
+c.... we move particles
+
+         do while (k.GT.(j+1))
+           mass(k)= mass(k-1)
+           xh(k)  = xh(k-1)
+           yh(k)  = yh(k-1)
+           zh(k)  = zh(k-1)
+           vxh(k) = vxh(k-1)
+           vyh(k) = vyh(k-1)
+           vzh(k) = vzh(k-1)
+           mass(k) = mass(k+1)
+           rpl(k) = rpl(k+1)
+           rhill(k) = rhill(k+1)
+           k = k-1
+         end do
+         
+c.... we add the particle i
+
+         mass(j+1) = massadd(i)
+         xh(j+1) = xadd(i)
+         yh(j+1) = yadd(i)
+         zh(j+1) = zadd(i)
+         vxh(j+1) = vxadd(i)
+         vyh(j+1) = vyadd(i)
+         vzh(j+1) = vzadd(i)
+         rpl(j+1) = rpladd(i)
+         rhill(j+1) = rhilladd(i)
+      end do
+      
+      nbod = nbodtemp
+
+      END SUBROUTINE
+
+
+c -----------------------------------------------------------------
+
+
+      SUBROUTINE symba5_duplicate(nbod,nbodm,iouter,msmall,mtiny,
+     &                 mass,xh,yh,zh,vxh,vyh,vzh,rpl,rhill)
+
+      include '../swift.inc'
+
+c...  Inputs: 
+      real*8 time,dt,msmall,mtiny
+      integer iouter,nbodm
+
+c...  Input and Output
+
+      integer nbod,nbcopy
+      real*8 mass(NTPMAX),xh(NTPMAX),yh(NTPMAX),zh(NTPMAX)
+      real*8 vxh(NTPMAX),vyh(NTPMAX),vzh(NTPMAX)
+      real*8 rpl(NTPMAX),rhill(NTPMAX)
+
+c...  internal
+
+      integer i,nadd,ialpha
+      real*8 a,e,q,apoiouter,mtot
+      logical*1 needdup(NTPMAX)
+
+c.... check if there is some particles to duplicate and create a
+
+c.... boolean array to know if each particle need to be duplicated
+
+      call orbel_xv2aeq(xh(iouter),yh(iouter),zh(iouter),
+     &             vxh(iouter),vyh(iouter),vzh(iouter),
+     &             mass(iouter)+mass(1),ialpha,a,e,q)
+
+      apoiouter = a*(1.d0+e) 
+      nadd = 0
+      needdup(1:nbod) = .false.
+      do i = nbodm+1,nbod
+
+c.... we check if we have a little body face to a big one
+c.... ( planet face to an asteroid )
+
+         if (mass(i).gt.msmall) then
+           call orbel_xv2aeq(xh(i),yh(i),zh(i),vxh(i),vyh(i),vzh(i),
+     &                      mass(i)+mass(1),ialpha,a,e,q)
+           if (q.lt.(1.1d0*apoiouter)) then
+
+c.... we check if the little body get closer to 1.1 times the apoastron
+c.... of the big one
+              needdup(i)=.TRUE.
+              nadd = nadd + 1
+           end if
+         end if
+      enddo
+
+c.... If the number of particles created don't explode besides NTPMAX
+
+      if (nadd.gt.0) then
+        call duplic_part(dt,nbod,mtiny,msmall,mass,xh,yh,zh,
+     &                    vxh,vyh,vzh,rpl,rhill,needdup)
+      end if
+
+      end SUBROUTINE
+

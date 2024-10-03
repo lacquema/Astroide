@@ -1,0 +1,244 @@
+c*************************************************************************
+c                        GETACCJ_HJS_TID.F
+c*************************************************************************
+c This subroutine calculates the acceleration on the massive particles
+c in a hierarchical Genealized Jacobi case 
+c     TAKES INTO ACCOUNT TIDES & RELATIVITY
+c
+c                Source for formulas : Mardling & LIn, 2002, ApJ 573, 829 
+c             Input:
+c                 nbod        ==>  number of massive bodies (int scalor)
+c                 tid         ==> tid(k) = true => tide for this orbit
+c                 oloc        ==> Link between bodies and orbits
+c                                  (2D integer array)
+c                 inert       ==> Moments of inertia (real array)
+c                 krpl5       ==> k(apsidal consants) * r(radius)^5
+c                 Qlov        ==> Q constant's (array)
+c                 eta         ==> Masses of centers for orbits (real array)
+c                 mu          ==> Masses of satellites for orbits (real arr.)
+c                 mass        ==>  mass of bodies (real array)
+c                 xj,yj,zj    ==>  position in jacobi coord (real arrays)
+c                 vxj,vyj,vzj ==>  Velocity in Jacobi coord (real arrays)
+c                 xb,yb,zb    ==>  position in bary centric coord (real arrays)
+c                 rotx,roty,rotz ==> Spin vectors of the bodies (real arrays)
+c             Output:
+c                 ir3j         ==> Inverse Jacobi radii^3 (real arrays)
+c                 axj,ayj,azj ==>  acceleration in Jac. coord (real arrays)
+c                 drotx,droty,drotz => Derivatives of rotx,roty,rotz
+c
+c Author:  H. Beust  
+c Date:    Jun 6, 2008
+c Remarks : Adapted from getaccj_hjs.f
+
+      subroutine getaccj_hjs_tid(nbod,tid,oloc,mass,inert,krpl5,Qlov,
+     &     eta,mu,xj,yj,zj,vxj,vyj,vzj,xb,yb,zb,ir3j,
+     &     rotx,roty,rotz,axj,ayj,azj,
+     &     drotx,droty,drotz)
+
+      include '../swift.inc'
+
+c...  Inputs: 
+      integer nbod
+      integer oloc(NPLMAX,NPLMAX)
+      logical tid(nbod)
+      real*8 inert(nbod),krpl5(nbod),Qlov(nbod)
+      real*8 mass(nbod),eta(nbod),mu(nbod)
+      real*8 xj(nbod),yj(nbod),zj(nbod)
+      real*8 vxj(nbod),vyj(nbod),vzj(nbod)
+      real*8 xb(nbod),yb(nbod),zb(nbod)
+      real*8 rotx(nbod),roty(nbod),rotz(nbod)
+
+c...  Outputs:
+      real*8 axj(nbod),ayj(nbod),azj(nbod),ir3j(nbod)
+      real*8 drotx(nbod),droty(nbod),drotz(nbod)
+                
+c...  Internals:
+      integer i,j,k,ialpha
+      real*8 r2(NPLMAX),r3(NPLMAX),imas(NPLMAX),irj(NPLMAX)
+      real*8 dx(NPLMAX,NPLMAX),dy(NPLMAX,NPLMAX),dz(NPLMAX,NPLMAX)
+      real*8 fqdx(2),fqdy(2),fqdz(2),ftfx(2),ftfy(2),ftfz(2)
+      real*8 accijx(NPLMAX,NPLMAX),accijy(NPLMAX,NPLMAX)
+      real*8 frelx,frely,frelz
+      real*8 accijz(NPLMAX,NPLMAX),rij2,irij3,a,e,q
+      real*8 epsx,epsy,epsz,eps2,xx,yy,zz,ps,mm,f1,f2,ux,uy,uz,nn
+      real*8, parameter :: 
+     &           cl = 2.9979248d8*86400.d0*365.2422d0/1.4959787061d11
+      real*8, parameter :: cl2 = cl*cl
+
+c----
+c...  Executable code 
+
+c...  get thr r^-3's
+
+      do i = 2,nbod
+         r2(i) = xj(i)*xj(i) + yj(i)*yj(i) + zj(i)*zj(i)
+         irj(i) = 1.d0/sqrt(r2(i))
+         r3(i) = r2(i)/irj(i)
+         imas(i) = 1.d0/eta(i)+1.d0/mu(i)
+         ir3j(i) = 1.d0/r3(i)
+         axj(i) = 0.0d0
+         ayj(i) = 0.0d0
+         azj(i) = 0.0d0
+      end do
+      
+c...  First compute the cross terms
+
+      do i=1,nbod-1
+        do j=i+1,nbod
+          dx(i,j) = xb(j) - xb(i)
+          dy(i,j) = yb(j) - yb(i)
+          dz(i,j) = zb(j) - zb(i)
+          rij2 = dx(i,j)*dx(i,j) + dy(i,j)*dy(i,j) + dz(i,j)*dz(i,j)
+          irij3 = 1.0d0/(rij2*sqrt(rij2))
+          accijx(i,j) = mass(i)*mass(j)*dx(i,j)*irij3
+          accijy(i,j) = mass(i)*mass(j)*dy(i,j)*irij3
+          accijz(i,j) = mass(i)*mass(j)*dz(i,j)*irij3
+          dx(j,i) = -dx(i,j)
+          dy(j,i) = -dy(i,j)
+          dz(j,i) = -dz(i,j)
+          accijx(j,i) = -accijx(i,j)
+          accijy(j,i) = -accijy(i,j)
+          accijz(j,i) = -accijz(i,j)
+        end do
+      end do
+
+c... Compute accel for each orbit k
+      do k=2,nbod
+
+c...  First compute the contribution of the outer bodies
+        do j=1,nbod
+          if (oloc(k,j).eq.0) then  ! Body #j is an outer body
+            do i=1,nbod
+              if (oloc(k,i).eq.1) then !  body #i is a satellite in orbit #k
+                axj(k) = axj(k) + accijx(i,j)/mu(k)
+                ayj(k) = ayj(k) + accijy(i,j)/mu(k)
+                azj(k) = azj(k) + accijz(i,j)/mu(k)
+              else if (oloc(k,i).eq.-1) then ! body #i is a center in orbit #k
+                axj(k) = axj(k) - accijx(i,j)/eta(k)
+                ayj(k) = ayj(k) - accijy(i,j)/eta(k)
+                azj(k) = azj(k) - accijz(i,j)/eta(k)
+              end if
+            end do
+          end if
+        end do
+
+c... Now compute the internal contributions
+        do i=1,nbod
+          if (oloc(k,i).eq.1) then  
+            do j=1,nbod
+              if (oloc(k,j).eq.-1) then ! i = satellite, j = center
+                epsx = dx(i,j) - xj(k)
+                epsy = dy(i,j) - yj(k)
+                epsz = dz(i,j) - zj(k)
+                eps2 = epsx*epsx + epsy*epsy + epsz*epsz
+                ps = epsx*xj(k) + epsy*yj(k) + epsz*zj(k)
+                xx = eps2 + 2.d0*ps
+                yy = (r2(k)+xx)*sqrt(r2(k)+xx)
+                zz = -xx*ir3j(k)*(3.d0*r2(k)*r2(k)+3.d0*r2(k)*xx+xx*xx)
+     &                        /(r3(k)+yy)/yy
+                mm = imas(k)*mass(i)*mass(j)
+                axj(k) = axj(k) + mm*dx(i,j)*zz
+                ayj(k) = ayj(k) + mm*dy(i,j)*zz
+                azj(k) = azj(k) + mm*dz(i,j)*zz
+              end if
+            end do
+          end if
+        end do
+
+c...   Now compute tidal terms for orbit k
+c...   i and j will be satellite & center for this orbit. We assume 
+c...   there is only i and j
+c...   Source Mardling & Lin, 2002, ApJ 573, 829
+
+        if (tid(k)) then
+          i = 1
+          do while (oloc(k,i).ne.1)
+            i = i + 1
+          end do
+          j = 1
+          do while (oloc(k,j).ne.-1)
+            j = j + 1
+          end do
+          call orbel_xv2aeq(xj(k),yj(k),zj(j),vxj(k),vyj(k),vzj(k),
+     &                 mu(k)+eta(k),ialpha,a,e,q) 
+          nn = sqrt((eta(k)+mu(k))/a)/a
+          ux = xj(k)*irj(k)
+          uy = yj(k)*irj(k)
+          uz = zj(k)*irj(k)
+          ps = rotx(j)*ux + roty(j)*uy + rotz(j)*uz  
+          f1 = 5.d0*ps*ps 
+     &           - (rotx(j)*rotx(j)+roty(j)*roty(j)+rotz(j)*rotz(j))
+     &           - 12.d0*mu(k)*ir3j(k)   
+          f2 = (1.d0+mu(k)/eta(k))*krpl5(j)/r2(k)/r2(k)
+          
+          fqdx(1) = f2*(f1*ux-2.d0*ps*rotx(j))
+          fqdy(1) = f2*(f1*uy-2.d0*ps*roty(j))
+          fqdz(1) = f2*(f1*uz-2.d0*ps*rotz(j))      
+
+          ps = -rotx(i)*ux - roty(i)*uy - rotz(i)*uz  
+          f1 = 5.d0*ps*ps 
+     &           - (rotx(i)*rotx(i)+roty(i)*roty(i)+rotz(i)*rotz(i))
+     &           - 12.d0*eta(k)*ir3j(k)   
+          f2 = (1.d0+eta(k)/mu(k))*krpl5(i)/r2(k)/r2(k)
+
+          fqdx(2) = f2*(-f1*ux-2.d0*ps*rotx(i))
+          fqdy(2) = f2*(-f1*uy-2.d0*ps*roty(i))
+          fqdz(2) = f2*(-f1*uz-2.d0*ps*rotz(i))      
+
+          f2 = -6.d0*nn*krpl5(j)/Qlov(j)*mu(k)/eta(k)
+     &                        *(a**3)*ir3j(k)*ir3j(k)/r2(k)
+          ps = ux*vxj(k) + uy*vyj(k) + uz*vzj(k)
+
+          ftfx(1) = (2.d0*ps*ux+vxj(k)-(roty(j)*zj(k)-rotz(j)*yj(k)))*f2
+          ftfy(1) = (2.d0*ps*uy+vyj(k)-(rotz(j)*xj(k)-rotx(j)*zj(k)))*f2
+          ftfz(1) = (2.d0*ps*uz+vzj(k)-(rotx(j)*yj(k)-roty(j)*xj(k)))*f2
+
+          f2 = -6.d0*nn*krpl5(i)/Qlov(i)*eta(k)/mu(k)
+     &                        *(a**3)*ir3j(k)*ir3j(k)/r2(k)
+
+          ftfx(2) =(-2.d0*ps*ux-vxj(k)+(roty(i)*zj(k)-rotz(i)*yj(k)))*f2
+          ftfy(2) =(-2.d0*ps*uy-vyj(k)+(rotz(i)*xj(k)-rotx(i)*zj(k)))*f2
+          ftfz(2) =(-2.d0*ps*uz-vzj(k)+(rotx(i)*yj(k)-roty(i)*xj(k)))*f2
+
+          f1 = eta(k)*mu(k)/(eta(k)+mu(k))/(eta(k)+mu(k))
+          f2 = (1.d0+3.d0*f1)*
+     &           (vxj(k)*vxj(k) + vyj(k)*vyj(k) + vzj(k)*vzj(k))
+          f2 = f2 - 2.d0*(2.d0+f1)*(eta(k)+mu(k))*irj(k)-1.5d0*f1*ps*ps
+
+          frelx = -(eta(k)+mu(k))/r2(k)/cl2 *
+     &                             (f2*ux - 2.d0*(2.d0-f1)*ps*vxj(k))
+          frely = -(eta(k)+mu(k))/r2(k)/cl2 *
+     &                             (f2*uy - 2.d0*(2.d0-f1)*ps*vyj(k))
+          frelz = -(eta(k)+mu(k))/r2(k)/cl2 *
+     &                             (f2*uz - 2.d0*(2.d0-f1)*ps*vzj(k))
+
+          axj(k) = axj(k) + fqdx(1)+fqdx(2) + ftfx(1)+ftfx(2) + frelx
+          ayj(k) = ayj(k) + fqdy(1)+fqdy(2) + ftfy(1)+ftfy(2) + frely
+          azj(k) = azj(k) + fqdz(1)+fqdz(2) + ftfz(1)+ftfz(2) + frelz
+
+          f1 = -(eta(k)*mu(k))/(eta(k)+mu(k))
+          drotx(j) = f1*
+     &        (yj(k)*(ftfz(1)+fqdz(1))-zj(k)*(ftfy(1)+fqdy(1)))/inert(j)
+          droty(j) = f1*
+     &        (zj(k)*(ftfx(1)+fqdx(1))-xj(k)*(ftfz(1)+fqdz(1)))/inert(j)
+          drotz(j) = f1*
+     &        (xj(k)*(ftfy(1)+fqdy(1))-yj(k)*(ftfx(1)+fqdx(1)))/inert(j)
+          drotx(i) = -f1*
+     &        (yj(k)*(ftfz(2)+fqdz(2))-zj(k)*(ftfy(2)+fqdy(2)))/inert(i)
+          droty(i) = -f1*
+     &        (zj(k)*(ftfx(2)+fqdx(2))-xj(k)*(ftfz(2)+fqdz(2)))/inert(i)
+          drotz(i) = -f1*
+     &        (xj(k)*(ftfy(2)+fqdy(2))-yj(k)*(ftfx(2)+fqdx(2)))/inert(i)
+
+
+        end if
+      end do
+
+      return
+      end      ! getaccj_hjs_tid
+
+c---------------------------------------------------------------------
+
+
+
+
