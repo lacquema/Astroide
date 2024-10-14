@@ -15,7 +15,7 @@ class ResClass(QWidget):
 
     SignalDel = pyqtSignal(int) # Signal to transfer the identity of the resonance
 
-    def __init__(self, NbBodies, PRes, PRef):
+    def __init__(self, NbBodies):
         super().__init__()
 
         # Identity
@@ -25,17 +25,17 @@ class ResClass(QWidget):
         self.Layout = QHBoxLayout()
 
         # Reference number of the resonance
-        self.nRefWidget = SpinBox(None, 'Number of the bodie which is the reference of the resonance (counting from the center of the system outwards, including stars in first)', 0, NbBodies-1)
+        self.nRefWidget = SpinBox(None, 'Number of the bodie which is the reference of the resonance (counting from the center of the system outwards, including stars in first)', 0, 0, NbBodies-1)
         self.Layout.addWidget(self.nRefWidget)
 
         # Period ratio between the two resonating bodies
-        self.PResWidget = LineEditIntPos(None, 'Resonant orbit period', PRes)
+        self.PResWidget = SpinBox(None, 'Resonant orbit period', 1, 1, None)
         self.Layout.addWidget(self.PResWidget)
 
         self.LabelRatioWidget = QLabel(' /')
         self.Layout.addWidget(self.LabelRatioWidget)
 
-        self.PRefWidget = LineEditIntPos(None, 'Reference orbit period', PRef)
+        self.PRefWidget = SpinBox(None, 'Reference orbit period', 1, 1, None)
         self.Layout.addWidget(self.PRefWidget)
 
         # Delete the resonance

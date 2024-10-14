@@ -91,7 +91,7 @@ class WindowMainClass(QMainWindow):
         Container = QWidget()
         Container.setLayout(Layout)
         self.setCentralWidget(Container)
-
+        
         # Status bar
         self.setStatusBar(QStatusBar(self))
         

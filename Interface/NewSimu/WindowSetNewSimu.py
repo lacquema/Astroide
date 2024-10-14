@@ -39,9 +39,8 @@ class WindowSetNewSimu(QMainWindow):
         # Tab 1
         self.TabSimuFiles = TabSimuFiles()
         self.Container.addTab(self.TabSimuFiles, 'Simulation files')
-        self.TabSimuFiles.SimuPath.EditPath.textChanged.connect(self.ChangeStartOrder)
-        self.TabSimuFiles.SimuName.EditParam.textChanged.connect(self.ChangeStartOrder)
-
+        self.InitInterConnect('TabSimuFiles')
+        
         # Tab 2
         self.TabSimuSets = TabSimuSets()
         self.Container.addTab(self.TabSimuSets, 'Simulation settings')
@@ -49,20 +48,40 @@ class WindowSetNewSimu(QMainWindow):
         # Tab 3
         self.TabOrbitsParams = TabOrbitsParams()
         self.Container.addTab(self.TabOrbitsParams, 'Orbital parameters')
-        self.TabOrbitsParams.NbPart.SpinParam.valueChanged.connect(self.ChangeSumaPara)
-
+        self.InitInterConnect('TabOrbitsParams')
+        
         # Tab 4
         self.TabStart = TabStart()
         self.Container.addTab(self.TabStart, 'Starting')
-        self.TabStart.NbHours.SpinParam.valueChanged.connect(self.ChangeStartOrder)
-        self.TabStart.NbCores.SpinParam.valueChanged.connect(self.ChangeStartOrder)
-        self.TabStart.NbCores.SpinParam.valueChanged.connect(self.ChangeSumaPara)
-        self.TabStart.NbBranch.SpinParam.valueChanged.connect(self.ChangeSumaPara)
-        self.ChangeSumaPara()
-        self.TabStart.BtnReset.clicked.connect(self.ChangeSumaPara)
-        self.TabStart.BtnCreate.clicked.connect(self.CreateInputFiles)
-        # self.TabStart.BtnStart.clicked.connect(self.StartSimu)
-        
+        self.InitInterConnect('TabStart')
+
+    
+    def InitInterConnect(self, IdTab):
+        if IdTab=='TabSimuFiles':
+            self.TabSimuFiles.BtnReset.clicked.connect(lambda: self.InitInterConnect('TabSimuFiles'))
+            self.TabSimuFiles.SimuPath.EditPath.textChanged.connect(self.ChangeStartOrder)
+            self.TabSimuFiles.SimuName.EditParam.textChanged.connect(self.ChangeStartOrder)
+        elif IdTab=='TabSimuSets':
+            self.TabSimuSets.BtnReset.clicked.connect(lambda: self.InitInterConnect('TabSimuSets'))
+        elif IdTab=='TabOrbitsParams':
+            self.TabOrbitsParams.BtnReset.clicked.connect(lambda: self.InitInterConnect('TabOrbitsParams'))
+            self.TabOrbitsParams.NbPart.SpinParam.valueChanged.connect(self.ChangeSumaPara)
+        elif IdTab=='TabStart':
+            self.TabStart.BtnReset.clicked.connect(lambda: self.InitInterConnect('TabStart'))
+            self.TabStart.NbHours.SpinParam.valueChanged.connect(self.ChangeStartOrder)
+            self.TabStart.NbCores.SpinParam.valueChanged.connect(self.ChangeStartOrder)
+            self.TabStart.NbCores.SpinParam.valueChanged.connect(self.ChangeSumaPara)
+            self.TabStart.NbBranch.SpinParam.valueChanged.connect(self.ChangeSumaPara)
+            self.TabStart.BtnReset.clicked.connect(self.ChangeSumaPara)
+            self.TabStart.BtnCreate.clicked.connect(self.CreateInputFiles)
+            # self.TabStart.BtnStart.clicked.connect(self.StartSimu)
+            self.ChangeSumaPara()
+
+
+
+
+
+
 
         # Container
         self.setCentralWidget(self.Container)
@@ -88,11 +107,11 @@ class WindowSetNewSimu(QMainWindow):
         print('--------------------------')
         if len(self.TabSimuFiles.SimuPath.EditPath.text()) == 0 or len(self.TabSimuFiles.SimuName.EditParam.text()) == 0:
             print('Simulation path not given.')
-            print('Check your inputs.')
+            print('Nothing has been done.')
         else:
             if os.path.exists(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()):
                 print('This directory already exists.')
-                print('Check your inputs.')
+                print('Nothing has been done.')
             else: 
                 os.makedirs(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text())
                 print(f'{self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/ directory was created.')
@@ -100,8 +119,8 @@ class WindowSetNewSimu(QMainWindow):
                 self.DoGenInputFile()
                 self.DoOptionInputFile()
                 print('Inputs files was created.')
-                self.TabStart.BtnCreate.setEnabled(False)
-                subprocess.run(f'', shell=True, text=True)
+                # self.TabStart.BtnCreate.setEnabled(False)
+                # subprocess.run(f'', shell=True, text=True)
 
                 # if self.TabStart.CheckOrder.CheckParam.isChecked():
                 #     command = 'cd '+self.TabSimuSets.SimuPath.EditPath.text()+self.TabSimuSets.SimuName.EditParam.text()+';chmod u+x '+self.TabSimuSets.InputFileName.EditParam.text()+';'+self.TabStart.StartOrder.EditParam.text()
@@ -116,8 +135,6 @@ class WindowSetNewSimu(QMainWindow):
                 #     print('All you have to do is launch the input shell file created in the desired directory.')
 
                     
-    
-
 
     def DoGenInputFile(self):
         with open(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'+self.TabSimuFiles.InGenFileName.EditParam.text(), "w") as file:

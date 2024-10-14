@@ -374,7 +374,6 @@ class TabStart(GeneralTab):
         self.SumaPara = QLabel('')
         self.CheckParallel.Layout.addWidget(self.SumaPara)
 
-
         self.BtnCreate = QPushButton('Create startup files')
         self.Layout.addWidget(self.BtnCreate, alignment=Qt.AlignmentFlag.AlignRight)
 

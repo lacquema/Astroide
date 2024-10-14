@@ -12,6 +12,9 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QPushButton, QWidget, QStatusBar, QApplication
 from PyQt6.QtGui import QIcon
 
+# My packages
+from Parameters import *
+
 
 ### --- Parameters Window Generating --- ###
 
