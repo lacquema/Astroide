@@ -15,7 +15,7 @@ DIR = .
 SWIFT_DIR = $(DIR)/swift
 LIB_DIR = $(DIR)/lib
 BIN_DIR = $(DIR)/bin
-GEN_DIR = $(DIR)/gen
+GEN_DIR = $(SWIFT_DIR)/gen
 ALG_DIR = $(SWIFT_DIR)/main
 
 COLL_DIR = $(SWIFT_DIR)/coll
