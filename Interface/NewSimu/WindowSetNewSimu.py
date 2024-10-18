@@ -101,24 +101,27 @@ class WindowSetNewSimu(QMainWindow):
         self.SignalCloseWindowSetNewSimu.emit() 
 
     def ChangeStartOrder(self):
-        self.TabStart.StartOrder.EditParam.setText(f'oarsub -l nodes=1/core={self.NbCoresPerSimu},walltime={self.TabStart.NbHours.SpinParam.value()} --project dynapla {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/{self.TabSimuFiles.InGenFileName.EditParam.text()}')
+        self.TabStart.StartOrder.EditParam.setText(f'oarsub -l nodes=1/core={self.NbCoresPerSimu},walltime={self.TabStart.NbHours.SpinParam.value()} --project dynapla {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/gen_tout_multi.sh')
     
     def CreateInputFiles(self):
         print('--------------------------')
-        if len(self.TabSimuFiles.SimuPath.EditPath.text()) == 0 or len(self.TabSimuFiles.SimuName.EditParam.text()) == 0:
-            print('Simulation path not given.')
-            print('Nothing has been done.')
+        if len(self.TabSimuFiles.SimuPath.EditPath.text()) == 0 or len(self.TabSimuFiles.SimuName.EditParam.text()) == 0 or self.TabSimuFiles.SimuPath.EditPath.text()[-1]!='/':
+            print('Check simulation path')
+            print('Nothing has been done')
         else:
             if os.path.exists(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()):
-                print('This directory already exists.')
-                print('Nothing has been done.')
+                print('This directory already exists')
+                print('Nothing has been done')
             else: 
                 os.makedirs(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text())
-                print(f'{self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/ directory was created.')
+                print(f'{self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/ directory was created')
                 subprocess.run(f'cd {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}', shell=True, text=True)
                 self.DoGenInputFile()
                 self.DoOptionInputFile()
-                print('Inputs files was created.')
+                print('Inputs files was created')
+                subprocess.run(f'bash {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/gen_tout_multi.sh', shell=True, text=True)
+
+
                 # self.TabStart.BtnCreate.setEnabled(False)
                 # subprocess.run(f'', shell=True, text=True)
 
@@ -137,12 +140,13 @@ class WindowSetNewSimu(QMainWindow):
                     
 
     def DoGenInputFile(self):
-        with open(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'+self.TabSimuFiles.InGenFileName.EditParam.text(), "w") as file:
-            file.write(f'{self.DirPath}/../../Algorithm/gen_tout_multi <<!') # Header
+        with open(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/gen_tout_multi.sh', "w") as file:
+            file.write(f'cd {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}')
+            file.write('\n')
+            file.write(f'{self.DirPath}/../../Algorithm/bin/gen_tout_multi <<!') # Header
             file.write('\n')
             file.write(self.TabSimuSets.Algo.ComboParam.currentText())
-            if self.TabStart.CheckParallel.CheckParam.isChecked(): file.write('_parp')
-            file.write(' # Algorithm')
+            if self.TabStart.CheckParallel.CheckParam.isChecked(): file.write('_parp') # Algorithm
             file.write('\n')
             if self.TabStart.CheckParallel.CheckParam.isChecked(): file.write(str(self.NbCoresPerSimu))
             else: file.write(str(self.TabStart.NbCores.SpinParam.value()))
@@ -155,11 +159,11 @@ class WindowSetNewSimu(QMainWindow):
             file.write(f' # Coordinate: {self.TabOrbitsParams.Coord.ComboParam.currentText()}')
             file.write('\n')
             if self.TabSimuSets.CheckPartRemovedBody.CheckParam.isChecked(): 
-                file.write('0')
-                file.write(' # No radius for bodies other than the central body')
-            else: 
                 file.write(str(self.TabSimuSets.RminBodyType.ComboParam.currentIndex()+1))
                 file.write(f' # {self.TabSimuSets.RminBodyType.ComboParam.currentText()} for bodies other than the central body')
+            else: 
+                file.write('0')
+                file.write(' # No radius for bodies other than the central body')
             file.write('\n')
             if self.TabSimuSets.RminBodyType.ComboParam.currentIndex()==1:
                 file.write(str(self.TabSimuSets.RminBody.SpinParam.value()))
@@ -168,26 +172,26 @@ class WindowSetNewSimu(QMainWindow):
             file.write(str(round(float(self.TabOrbitsParams.TablePriors.item(0,0).text())*0.000954588, 3)))
             file.write(' # Mass of central body [Msun]')
             file.write('\n')
-            file.write(str(self.TabOrbitsParams.NbBodies.SpinParam.value()-1))
-            file.write(' # Number of bodies')
+            file.write(str(self.TabOrbitsParams.NbOrbitsValue))
+            file.write(' # Number of orbits')
             file.write('\n')
             for i in range(1, self.TabOrbitsParams.NbBodies.SpinParam.value()):
-                for j in range(len(self.TabOrbitsParams.LabelParams)):
+                file.write(self.TabOrbitsParams.TablePriors.item(i, 0).text())
+                file.write(f' # Initial orbit {i} mass [Mjup]')
+                file.write('\n')
+                for j in range(1, len(self.TabOrbitsParams.LabelParams)):
                     file.write(self.TabOrbitsParams.TablePriors.item(i, j).text())
                     file.write(' ')
-                file.write(f' # Initial orbit {i} parameters (m[Mjup] a[AU] e i[°] Om[°] om[°] M)')
+                file.write(f' # Initial orbit {i} parameters (a[AU] e i[°] Om[°] om[°] M)')
                 file.write('\n')
-            file.write(self.TabSimuFiles.InBodFileName.EditParam.text())
-            file.write(' # Input bodies file')
+            file.write(self.TabSimuFiles.InBodFileName.EditParam.text()) # Input bodies file
             file.write('\n')
             file.write(str(self.TabOrbitsParams.RandSeed.SpinParam.value()))
             file.write(' # Random seed')
             file.write('\n')
-            file.write(self.TabSimuFiles.InPartFileName.EditParam.text())
-            file.write(' # Input particules file')
+            file.write(self.TabSimuFiles.InPartFileName.EditParam.text()) # Input particules file
             file.write('\n')
-            file.write(self.TabSimuFiles.InSetFileName.EditParam.text())
-            file.write(' # Input settings file')
+            file.write(self.TabSimuFiles.InSetFileName.EditParam.text()) # Input settings file
             file.write('\n')
             file.write(str(self.TabOrbitsParams.NbPart.SpinParam.value()))
             file.write(' # Number of particles')
@@ -206,6 +210,8 @@ class WindowSetNewSimu(QMainWindow):
                 file.write(self.TabOrbitsParams.aMin.SpinParam.text()+' '+self.TabOrbitsParams.aMax.SpinParam.text())
                 file.write(' # Range of particles half major axis [AU]')
                 file.write('\n')
+                file.write('0')
+                file.write('\n')
                 file.write('!')
 
 
@@ -222,7 +228,7 @@ class WindowSetNewSimu(QMainWindow):
             file.write(str(self.TabSimuFiles.OutFreq.SpinParam.value()))
             file.write(' ')
             file.write(str(self.TabSimuFiles.DumpFreq.SpinParam.value()))
-            file.write(' # Output and dump frquencies [yr]')
+            file.write(' # Output and dump frequencies [yr]')
             file.write('\n')
             if self.TabSimuSets.CheckSpheBody0.CheckParam.isChecked(): file.write('T')
             else: file.write('F')
@@ -254,11 +260,9 @@ class WindowSetNewSimu(QMainWindow):
                 else: file.write('F')
                 file.write(' # Parameters for removing particles that are too far from or too close to bodies [AU]')
                 file.write('\n')
-            file.write(self.TabSimuFiles.SimuPath.EditPath.text())
-            file.write(' # Parent path of the simulation directory')
+            file.write(self.TabSimuFiles.SimuPath.EditPath.text()[:-1]) # Parent path of the simulation directory
             file.write('\n')
-            file.write(self.TabSimuFiles.SimuName.EditParam.text())
-            file.write(' # Name of the simulation directory')
+            file.write(self.TabSimuFiles.SimuName.EditParam.text()) # Name of the simulation directory')
             file.write('\n')
             file.write(self.TabSimuFiles.OutputFileName.EditParam.text())
             file.write('\n')

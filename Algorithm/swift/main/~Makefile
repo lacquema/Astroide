@@ -12,13 +12,10 @@ FFLAGS = -O3
 LDFLAGS = -O3
 
 # dahu
-ifeq ($(ARCH),Linux)
-SWIFT_DIR = /home/lacquema/bin
-SWIFT_DIR_LIB = /home/lacquema/lib
-ifeq ($(DEBUGGING),YES)
+SWIFT_DIR = /Users/lacquema/Astroide.env/Astroide/Algorithm/bin
+SWIFT_DIR_LIB = /Users/lacquema/Astroide.env/Astroide/Algorithm/lib
 FFLAGS += $(DEBUG)
 LDFLAGS = $(DEBUG)
-endif
 ifeq ($(PARALLEL),YES)
 FFLAGS += -fopenmp
 LDFLAGS += -fopenmp
@@ -27,7 +24,6 @@ else
 LOADLIBES = -L$(SWIFT_DIR_LIB) -lswift
 endif
 FC = gfortran
-endif
 
 %.o : %.f
 	$(FC) -c $(FFLAGS) $< -o $@

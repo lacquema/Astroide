@@ -82,8 +82,8 @@ class TabSimuFiles(GeneralTab):
 
         self.Layout.addWidget(Delimiter(Title='Input files:'))
 
-        self.InGenFileName = LineEdit('General input file', 'Name you want to give to the general entry which is the general input file with the extension', 'general.sh')
-        self.Layout.addWidget(self.InGenFileName, alignment=Qt.AlignmentFlag.AlignLeft)
+        # self.InGenFileName = LineEdit('General input file', 'Name you want to give to the general entry which is the general input file with the extension', 'general.sh')
+        # self.Layout.addWidget(self.InGenFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self.InSetFileName = LineEdit('Settings input file', 'Name you want to give to the simulation settings input file with the extension', 'settings.in')
         self.Layout.addWidget(self.InSetFileName, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -118,8 +118,8 @@ class TabSimuSets(GeneralTab):
 
     def InitWidgets(self):
 
-        self.Algo = ComboBox('Algorithm', 'Algorithm to be used for integration', ['whm', 'whm_s6b', 'rmvs3'])
-        self.Algo.ComboParam.setCurrentIndex(2)
+        self.Algo = ComboBox('Algorithm', 'Algorithm to be used for integration', ['whm', 'rmvs3', 'hjs', 'symba'])
+        self.Algo.ComboParam.setCurrentIndex(1)
         self.Layout.addWidget(self.Algo)
 
         self.T0 = DoubleSpinBox('Integration times', 'Time when integration begins [yr]', 0, 0)
@@ -250,7 +250,7 @@ class TabOrbitsParams(GeneralTab):
 
         self.LayoutV1.addWidget(Delimiter(Title='Initial orbit parameters of particles :'))
 
-        self.NbPart = SpinBox('Number of particles', 'Number of particles at start', 100000, 0, None)
+        self.NbPart = SpinBox('Number of particles', 'Number of particles at start', 100000, 1, None)
         self.LayoutV1.addWidget(self.NbPart)
 
 
@@ -378,18 +378,18 @@ class TabStart(GeneralTab):
         self.Layout.addWidget(self.BtnCreate, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.CheckOrder = CheckBox('Starting order', 'If you just want to create the input file, but dont want to run the command in the terminal')
-        self.Layout.addWidget(self.CheckOrder)
+        # self.Layout.addWidget(self.CheckOrder)
         self.CheckOrder.CheckParam.stateChanged.connect(self.CheckStartOrderChange)
         
         self.NbHours = SpinBox('Simulation duration', 'Simulation duration [hour]', 48, 1, None)
-        self.Layout.addWidget(self.NbHours, alignment=Qt.AlignmentFlag.AlignLeft)
+        # self.Layout.addWidget(self.NbHours, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        self.StartOrderValue = f'oarsub -l nodes=1/core=8,walltime={self.NbHours.SpinParam.value()} --project dynapla ./input.sh'
+        self.StartOrderValue = f'oarsub -l nodes=1/core=8,walltime={self.NbHours.SpinParam.value()} --project dynapla ./go.sh'
         self.StartOrder = LineEdit('Order', 'Terminal order to start the adjustment', self.StartOrderValue)
-        self.Layout.addWidget(self.StartOrder)
+        # self.Layout.addWidget(self.StartOrder)
         
         self.BtnStart = QPushButton('Start the simulation')
-        self.Layout.addWidget(self.BtnStart, alignment=Qt.AlignmentFlag.AlignRight)
+        # self.Layout.addWidget(self.BtnStart, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.CheckParallelChange(self.CheckParallel.CheckParam.isChecked())
         self.CheckStartOrderChange(self.CheckOrder.CheckParam.isChecked())

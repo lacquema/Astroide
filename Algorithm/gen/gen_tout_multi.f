@@ -4,7 +4,7 @@ C-------------------------------------------------------------------------
 C 
         PROGRAM GEN_TOUT_MULTI
 
-        include './swift/swift.inc'
+        include '../swift/swift.inc'
 
         REAL*8, PARAMETER :: SMASSYR = TWOPI*TWOPI,
      &          DR = 1.7453292519943294d-2,      ! 180/pi 
@@ -429,7 +429,7 @@ C--------------------------------------------------------------------
 C
         SUBROUTINE INVAR(NBOD,MASS,X,Y,Z,VX,VY,VZ)
 
-        include './swift/swift.inc'
+        include '../swift/swift.inc'
 
         INTEGER I,NBOD
 
@@ -743,8 +743,8 @@ c Last revision:  5/10/94 HFL
      &           iflgchk,rmin,rmax,rmaxu,qmin,lclose,dirs,
      &           gname,outfile,fopenstat)	
 
-	include './swift/swift.inc'
-	include './swift/io/io.inc'
+	include '../swift/swift.inc'
+	include '../swift/io/io.inc'
 
 c...   Inputs
 	real*8 t,tstop,dt
