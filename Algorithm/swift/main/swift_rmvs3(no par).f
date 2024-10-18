@@ -1,9 +1,8 @@
 c**********************************************************************
-c		      SWIFT_RMVS3_PAR.F
+c		      SWIFT_RMVS3.F
 c**********************************************************************
 c
-c       INCLUDES CLOSE ENCOUNTERS / OPENMP PARALLEL
-c                 takes *dtout* macrosteps	
+c                 INCLUDES CLOSE ENCOUNTERS
 c                 To run, need 3 input files. The code prompts for
 c                 the file names, but examples are :
 c
@@ -11,8 +10,9 @@ c                   parameter file like       param.in
 c		    planet file like          pl.in
 c                   test particle file like   tp.in
 c
-c Authors:  Hervé Beust
-c Date:    Apr 19, 2023
+c Authors:  Hal Levison \& Martin Duncan
+c Date:    8/25/94
+c Last revision: Feb 14 2023 H Beust (save mvsfile)
 
      
 	include '../swift.inc'
@@ -24,7 +24,7 @@ c Date:    Apr 19, 2023
 	real*8 xh(NPLMAX),yh(NPLMAX),zh(NPLMAX)
 	real*8 vxh(NPLMAX),vyh(NPLMAX),vzh(NPLMAX)
 
-	integer istat(NTPMAX,NSTAT),i1st,iencio(NTPMAX)
+	integer istat(NTPMAX,NSTAT),i1st
 	integer nbod,ntp,nleft
 	integer iflgchk,iub,iuj,iud,iue
         real*8 rstat(NTPMAX,NSTATR)
@@ -49,7 +49,7 @@ c...    print version number
 c Get data for the generic file
         write(*,*) 'Enter name of generic file : '
         read(*,999) genfile
-	
+
 c Get data for the run and the test particles
 	write(*,*) 'Enter name of parameter data file : '
 	read(*,999) inparfile
@@ -88,10 +88,9 @@ c
         end if
 
 c Initialize initial time and times for first output and first dump
-        iencio(1:ntp) = 0
 	t = t0
-	tout = t0 + dtout
-	tdump = t0 + dtdump
+c	tout = t0 + dtout
+c	tdump = t0 + dtdump
 
 c New HBeust 28 mar. 2011
         iloop = 0_8
@@ -138,19 +137,18 @@ c...    must initize discard io routine
 c***************here's the big loop *************************************
         write(*,*) ' ************** MAIN LOOP ****************** '
 
-	do while ((t.le.tstop).and.((ntp.eq.0).or.(nleft.gt.0)))
+	  do while ( (t .le. tstop) .and. 
+     &       ((ntp.eq.0).or.(nleft.gt.0)) )
 
-c           write(*,*)'t=',t
-	   call rmvs3_step_par(i1st,t,tout,tstop,nbod,ntp,mass,
-     &               j2rp2,j4rp4,xh,yh,zh,vxh,vyh,vzh,xht,yht,zht,
-     &               vxht,vyht,vzht,istat,rstat,iencio,dt)
-c           write(*,*)'ok',t
-	   
+ 	     call rmvs3_step(i1st,t,nbod,ntp,mass,j2rp2,j4rp4,
+     &         xh,yh,zh,vxh,vyh,vzh,xht,yht,zht,vxht,vyht,
+     &         vzht,istat,rstat,dt)
+
 c	     t = t + dt
-c             iloop = iloop+1_8
-c             t = t0 + dble(iloop)*dt
+             iloop = iloop+1_8
+             t = t0 + dble(iloop)*dt
 
-             if (btest(iflgchk,4))  then    ! bit 4 is set
+             if(btest(iflgchk,4))  then    ! bit 4 is set
                 call discard(t,dt,nbod,ntp,mass,xh,yh,zh,vxh,vyh,vzh,
      &               xht,yht,zht,vxht,vyht,vzht,rmin,rmax,rmaxu,
      &               qmin,lclose,rplsq,istat,rstat)
@@ -161,48 +159,52 @@ c             t = t0 + dble(iloop)*dt
                 nleft = ntp
              endif
 
-c...  Output orb. elements, 
+c if it is time, output orb. elements, 
+c	  if(t .ge. tout) then 
+          if (mod(iloop,noutloop).eq.0_8) then
 
-             if (btest(iflgchk,0))  then    ! bit 0 is set
-                call io_write_frame(t,nbod,ntp,mass,xh,yh,zh,vxh,
+             if(btest(iflgchk,0))  then    ! bit 0 is set
+                call  io_write_frame(t,nbod,ntp,mass,xh,yh,zh,vxh,
      &               vyh,vzh,xht,yht,zht,vxht,vyht,vzht,istat,
      &               trim(diro)//'/'//outfile,iub,fopenstat)
               endif
-             if (btest(iflgchk,1))  then    ! bit 1 is set
-                call io_write_frame_r(t,nbod,ntp,mass,xh,yh,zh,vxh,
+             if(btest(iflgchk,1))  then    ! bit 1 is set
+                call  io_write_frame_r(t,nbod,ntp,mass,xh,yh,zh,vxh,
      &               vyh,vzh,xht,yht,zht,vxht,vyht,vzht,istat,
      &               trim(diro)//'/'//outfile,iub,fopenstat)
-             endif
+              endif
 
-	    tout = tout + dtout
+c	    tout = tout + dtout
+	  endif
 
-c...  If it is time, do a dump
-            if (t.ge.tdump) then
+c If it is time, do a dump
+c          if(t.ge.tdump) then
+          if (mod(iloop,ndumploop).eq.0_8) then
 
-               tfrac = (t-t0)/(tstop-t0)
-               write(*,998) t,tfrac,nleft
- 998           format(' Time = ',1p1e12.5,': fraction done = ',0pf5.3,
+             tfrac = (t-t0)/(tstop-t0)
+             write(*,998) t,tfrac,nleft
+ 998         format(' Time = ',1p1e12.5,': fraction done = ',0pf5.3,
      &            ': Number of active tp =',i6)
-	       call io_dump_pl(trim(diro)//'/dump_pl.dat',nbod,mass,
+	     call io_dump_pl(trim(diro)//'/dump_pl.dat',nbod,mass,
      &           xh,yh,zh,vxh,vyh,vzh,lclose,iflgchk,rplsq,j2rp2,j4rp4)
-	       call io_dump_tp(trim(diro)//'/dump_tp.dat',ntp,
+	     call io_dump_tp(trim(diro)//'/dump_tp.dat',ntp,
      &           xht,yht,zht,vxht,vyht,vzht,istat,rstat)
-	       call io_dump_param(trim(diro)//'/'//'dump_param.dat',
+	     call io_dump_param(trim(diro)//'/'//'dump_param.dat',
      &          t,tstop,dt,dtout,dtdump,iflgchk,rmin,rmax,rmaxu,
      &	        qmin,lclose,dirs,gname,outfile) 
-	       tdump = tdump + dtdump
+c	     tdump = tdump + dtdump
 
-               if(btest(iflgchk,2))  then    ! bit 2 is set
-                  call anal_energy_write(t,nbod,mass,j2rp2,j4rp4,
+             if(btest(iflgchk,2))  then    ! bit 2 is set
+                call anal_energy_write(t,nbod,mass,j2rp2,j4rp4,
      &               xh,yh,zh,vxh,vyh,vzh,iue,fopenstat,eoff)
-               endif
-               if(btest(iflgchk,3))  then    ! bit 3 is set
-                  call anal_jacobi_write(t,nbod,ntp,mass,xh,yh,zh,vxh,
+             endif
+             if(btest(iflgchk,3))  then    ! bit 3 is set
+                call anal_jacobi_write(t,nbod,ntp,mass,xh,yh,zh,vxh,
      &               vyh,vzh,xht,yht,zht,vxht,vyht,vzht,istat,2,
      &               iuj,fopenstat)
-              end if
+             endif
 
-	    end if
+	  endif
 
 	enddo
 c********** end of the big loop from time 't0' to time 'tstop'
@@ -217,6 +219,5 @@ c Do a final dump for possible resumption later
      &          t,tstop,dt,dtout,dtdump,iflgchk,rmin,rmax,rmaxu,
      &	        qmin,lclose,dirs,gname,outfile)
         call util_exit(0)
-
-        end			! swift_rmvs3_par.f
+        end    ! swift_rmvs3.f
 c---------------------------------------------------------------------

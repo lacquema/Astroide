@@ -254,7 +254,6 @@ class TabOrbitsParams(GeneralTab):
         self.LayoutV1.addWidget(self.NbPart)
 
 
-
         self.RandSeed = SpinBox('Random seed', 'Seed used to create a random value', 654876543, 1, None)
         self.LayoutV1.addWidget(self.RandSeed)
 
