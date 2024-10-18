@@ -15,7 +15,7 @@ c Authors:  Hervé Beust
 c Date:    Apr 19, 2023
 
      
-	include '../swift.inc'
+	include '../sub/swift.inc'
 
 	real*8 xht(NTPMAX),yht(NTPMAX),zht(NTPMAX)
 	real*8 vxht(NTPMAX),vyht(NTPMAX),vzht(NTPMAX)

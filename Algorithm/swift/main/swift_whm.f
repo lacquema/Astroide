@@ -17,7 +17,7 @@ c Date:    5/7/93
 c Last revision: Oct. 9, 2006, H. Beust (directories)
 
      
-	include '../swift.inc'
+	include '../sub/swift.inc'
 
 	real*8 xht(NTPMAX),yht(NTPMAX),zht(NTPMAX)
 	real*8 vxht(NTPMAX),vyht(NTPMAX),vzht(NTPMAX)

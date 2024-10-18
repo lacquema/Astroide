@@ -19,7 +19,7 @@ c Last revision: Sep 4, 2006
 c Remark : based on swift_whm.f
 
      
-	include '../swift.inc'
+	include '../sub/swift.inc'
 
 	real*8 xjt(NTPMAX),yjt(NTPMAX),zjt(NTPMAX)
 	real*8 vxjt(NTPMAX),vyjt(NTPMAX),vzjt(NTPMAX)

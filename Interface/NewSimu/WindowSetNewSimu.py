@@ -138,7 +138,6 @@ class WindowSetNewSimu(QMainWindow):
                 #     print('All you have to do is launch the input shell file created in the desired directory.')
 
                     
-
     def DoGenInputFile(self):
         with open(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/gen_tout_multi.sh', "w") as file:
             file.write(f'cd {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}')
