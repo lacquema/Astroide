@@ -65,6 +65,7 @@ endif
 
 # Utilities
 library:
+	test ! -f $(LIB) || rm $(LIB)
 	$(F) $(LIB_FLAGS) $(ADD_FLAGS) $(ANAL_DIR)/*.f 
 	$(F) $(LIB_FLAGS) $(ADD_FLAGS) $(BS_DIR)/*.f 
 	$(F) $(LIB_FLAGS) $(ADD_FLAGS) $(COORD_DIR)/*.f   
@@ -101,8 +102,10 @@ gen_tout_multi:
 # Algorithms
 swift_%:
 ifeq ($(PARALLEL),NO)
+	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
 	$(F) $(ALG_FLAGS) $(ADD_FLAGS) $(ALG_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
 else
+	test ! -f $(BIN_DIR)/$@_par || rm $(BIN_DIR)/$@_par
 	$(F) $(ALG_FLAGS) $(ADD_FLAGS) $(ALG_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@_par
 endif
 

@@ -39,35 +39,36 @@ class WindowSetNewSimu(QMainWindow):
         # Tab 1
         self.TabSimuFiles = TabSimuFiles()
         self.Container.addTab(self.TabSimuFiles, 'Simulation files')
-        self.InitInterConnect('TabSimuFiles')
+        self.InitInterTabConnect('TabSimuFiles')
         
         # Tab 2
         self.TabSimuSets = TabSimuSets()
         self.Container.addTab(self.TabSimuSets, 'Simulation settings')
+        self.InitInterTabConnect('TabSimuSets')
 
         # Tab 3
         self.TabOrbitsParams = TabOrbitsParams()
         self.Container.addTab(self.TabOrbitsParams, 'Orbital parameters')
-        self.InitInterConnect('TabOrbitsParams')
+        self.InitInterTabConnect('TabOrbitsParams')
         
         # Tab 4
         self.TabStart = TabStart()
         self.Container.addTab(self.TabStart, 'Starting')
-        self.InitInterConnect('TabStart')
+        self.InitInterTabConnect('TabStart')
 
     
-    def InitInterConnect(self, IdTab):
+    def InitInterTabConnect(self, IdTab):
         if IdTab=='TabSimuFiles':
-            self.TabSimuFiles.BtnReset.clicked.connect(lambda: self.InitInterConnect('TabSimuFiles'))
+            self.TabSimuFiles.BtnReset.clicked.connect(lambda: self.InitInterTabConnect('TabSimuFiles'))
             self.TabSimuFiles.SimuPath.EditPath.textChanged.connect(self.ChangeStartOrder)
             self.TabSimuFiles.SimuName.EditParam.textChanged.connect(self.ChangeStartOrder)
         elif IdTab=='TabSimuSets':
-            self.TabSimuSets.BtnReset.clicked.connect(lambda: self.InitInterConnect('TabSimuSets'))
+            self.TabSimuSets.BtnReset.clicked.connect(lambda: self.InitInterTabConnect('TabSimuSets'))
         elif IdTab=='TabOrbitsParams':
-            self.TabOrbitsParams.BtnReset.clicked.connect(lambda: self.InitInterConnect('TabOrbitsParams'))
+            self.TabOrbitsParams.BtnReset.clicked.connect(lambda: self.InitInterTabConnect('TabOrbitsParams'))
             self.TabOrbitsParams.NbPart.SpinParam.valueChanged.connect(self.ChangeSumaPara)
         elif IdTab=='TabStart':
-            self.TabStart.BtnReset.clicked.connect(lambda: self.InitInterConnect('TabStart'))
+            self.TabStart.BtnReset.clicked.connect(lambda: self.InitInterTabConnect('TabStart'))
             self.TabStart.NbHours.SpinParam.valueChanged.connect(self.ChangeStartOrder)
             self.TabStart.NbCores.SpinParam.valueChanged.connect(self.ChangeStartOrder)
             self.TabStart.NbCores.SpinParam.valueChanged.connect(self.ChangeSumaPara)
@@ -139,10 +140,15 @@ class WindowSetNewSimu(QMainWindow):
 
                     
     def DoGenInputFile(self):
-        with open(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/gen_tout_multi.sh', "w") as file:
+        GenFileName = 'gen_tout_multi'
+        if self.TabStart.CheckParallel.CheckParam.isChecked(): GenFileName += '_par'
+
+        EnvPath = '/'.join(self.DirPath.split('/')[:-2])
+
+        with open(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'+GenFileName, "w") as file:
             file.write(f'cd {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}')
             file.write('\n')
-            file.write(f'{self.DirPath}/../../Algorithm/bin/gen_tout_multi <<!') # Header
+            file.write(EnvPath+'/Algorithm/bin/'+GenFileName+' <<!') # Header
             file.write('\n')
             file.write(self.TabSimuSets.Algo.ComboParam.currentText())
             if self.TabStart.CheckParallel.CheckParam.isChecked(): file.write('_parp') # Algorithm
