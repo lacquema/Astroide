@@ -26,6 +26,9 @@ class WindowSetContSimu(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        # Directory path
+        self.DirPath = os.path.dirname(__file__)
+
         # Window characteristics
         self.setWindowTitle('Settings of the running ajustement')
         self.setMinimumWidth(1000)
@@ -125,8 +128,16 @@ class WindowSetContSimu(QMainWindow):
 
 
     def DoInputContShell(self):
+        self.EnvPath = '/'.join(self.DirPath.split('/')[:-2])
+
         with open(self.SimuPath.EditPath.text()+"inputCont.sh", "w") as file:
-            file.write('#! /bin/bash\nexport OMP_NUM_THREADS=8\nexport STACKSIZE=1000000\n./astrom_mcmcop <<!') # Header
+            file.write('#! /bin/bash') # Header
+            file.write('\n')
+            file.write('export OMP_NUM_THREADS='+str(self.NbCores.SpinParam.value())) # a faire
+            file.write('\n')
+            file.write('export STACKSIZE=1000000')  
+            file.write('\n')
+            file.write(self.EnvPath+'/Code/bin/'+self.AlgoFileName+' <<!') # a faire
             file.write('\n')
             file.write('1') # continuation
             file.write(' # Simulation continuation')

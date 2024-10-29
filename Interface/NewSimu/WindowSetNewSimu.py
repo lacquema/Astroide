@@ -148,7 +148,7 @@ class WindowSetNewSimu(QMainWindow):
         with open(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'+GenFileName, "w") as file:
             file.write(f'cd {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}')
             file.write('\n')
-            file.write(EnvPath+'/Algorithm/bin/'+GenFileName+' <<!') # Header
+            file.write(EnvPath+'/Code/bin/'+GenFileName+' <<!') # Header
             file.write('\n')
             file.write(self.TabSimuSets.Algo.ComboParam.currentText())
             if self.TabStart.CheckParallel.CheckParam.isChecked(): file.write('_parp') # Algorithm
