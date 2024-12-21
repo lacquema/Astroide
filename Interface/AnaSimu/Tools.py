@@ -332,18 +332,21 @@ class SpaceView(GeneralToolClass):
             self.Subplot2D = self.WindowPlot.Canvas.fig.add_subplot(111, aspect='equal')
 
             # Plot
+            if self.indexRepres == 0:
+                self.Subplot2D.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Y[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0)
+            elif self.indexRepres == 1:
+                hist = self.Subplot2D.hist2d(self.X[self.IndexSnap][self.NbBodies-1:], self.Y[self.IndexSnap][self.NbBodies-1:], range=[[self.Xmin, self.Xmax], [self.Ymin, self.Ymax]], bins=[self.NbBinsX, self.NbBinsY], cmap='magma')
+                self.Subplot2D.clear()
+                im = self.Subplot2D.imshow(hist[0]/max(hist[0]), interpolation='bicubic', extent=[self.Xmin, self.Xmax, self.Ymin, self.Ymax], cmap='magma')
+                ColorbarAx = make_axes_locatable(self.Subplot2D).append_axes('right', size='5%', pad=0.1)
+                self.WindowPlot.Canvas.fig.colorbar(im, ColorbarAx, label='Normalised density', cmap='magma')
+            
             for k in range(self.NbBodies):
                 # self.Subplot2D.plot(self.Xbf[k], self.Ybf[k])
                 self.Subplot2D.plot(self.Xbm[k], self.Ybm[k], color=self.colorList[k], linestyle='--')
                 if self.CheckBodies.CheckParam.isChecked():
                     self.Subplot2D.plot(self.X[self.IndexSnap][k], self.Y[self.IndexSnap][k], marker='.', markersize=self.SizeBodies, color=self.colorList[k])
 
-            if self.indexRepres == 0:
-                self.Subplot2D.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Y[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0)
-            elif self.indexRepres == 1:
-                hist = self.Subplot2D.hist2d(self.X[self.IndexSnap][self.NbBodies-1:], self.Y[self.IndexSnap][self.NbBodies-1:], bins=[self.NbBinsX, self.NbBinsY], range=[[self.Xmin, self.Xmax],[self.Ymin, self.Ymax]], cmap='magma')
-                ColorbarAx = make_axes_locatable(self.Subplot2D).append_axes('right', size='5%', pad=0.1)
-                self.WindowPlot.Canvas.fig.colorbar(hist[3], ColorbarAx)
 
             # Plot features
             if self.CheckTitle.CheckParam.isChecked(): self.Subplot2D.set_title('t='+str(round(self.t, 1))+' Myr', fontsize=self.SizeLabels)

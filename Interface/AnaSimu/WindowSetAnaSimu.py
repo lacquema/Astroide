@@ -81,8 +81,8 @@ class WindowSetAnaSimu(QMainWindow):
         self.BtnStart.setEnabled(False)
         if len(self.SimuPath.EditPath.text()) == 0:
             self.BtnStart.setEnabled(True)
-            print('Simulation directory path not given.')
-            print('Check your inputs.')
+            print('Simulation directory path not given')
+            print('Check your inputs')
         else:
             self.OpenWinMain()
 
@@ -94,7 +94,7 @@ class WindowSetAnaSimu(QMainWindow):
             self.close()
             self.WinMain.show()
         except:
-            print('Data not found: check the directory path and the name of input files.')
+            print('There is a problem with the data')
         self.BtnStart.setEnabled(True)
 
     # def FindInputFiles(self):
