@@ -41,7 +41,7 @@ C
         LOGICAL OK,WIMPS,OKC
         CHARACTER*(CHLEN) INTPFILE,TPFILE,INPARFILE,PARFILE,OUTFILE
         CHARACTER*(CHLEN) DIRO,DIRS,GNAME,FOPENSTAT,GOFILE,MVSFILE
-        CHARACTER*(CHLEN) MEXTRFILE,CONTFILE,GOCFILE,GOCMD,INTEG
+        CHARACTER*(CHLEN) MEXTRFILE,CONTFILE,GOCFILE,GOCMD,INTEG,BINDIR
         CHARACTER*1 PR
         real*8 t0,tstop
         real*8 dtout,dtdump
@@ -80,6 +80,17 @@ C
         INTEGER NBOD,IALPHA,IP1,IP2,IUFLG,ICFLG,IRFLG
         INTEGER NNN1,NNN2
 
+0001    FORMAT((a),'/mbodies_multi <<!') ! added by antoine
+2204    FORMAT((a),'/swift_',(a),' < ',(a),'/',(a),'/',
+     &                         'run_',I2.2,'/mvs.in') ! modified by antoine
+0002    FORMAT((a),'/swift_',(a),' < ',(a),'/',(a),'/', ! added by antoine
+     &                'run_',I2.2,'/mvs_',I2.2,'.in')
+0003    FORMAT((a),'/swift_',(a),' < ./mvs.in') ! added by antoine
+0004    FORMAT((a),'/swift_',(a),' < ./mvs_',I2.2,'.in') ! added by antoine
+0005    FORMAT((a),'/swift_',(a),' < ',(a),'/',(a), ! added by antoine
+     &                '/mvs_',I2.2,'.in')
+0006    FORMAT('start_',I2.2,'.sh')
+0007    FORMAT('continue_',I2.2,'.sh')
 
 1000    FORMAT(I6,6(1X,F7.3))   !étiquettes de format
 2000    FORMAT((a),'_',I2.2,'.in')
@@ -92,12 +103,14 @@ C
 2201    FORMAT(I2)
 2202    FORMAT('tfin="',f10.1,'"')   
 2203    FORMAT(f10.1)
-2204    FORMAT('./swift_',(a),' < ',(a),'/',(a),'/',
-     &                         'run_',I2.2,'/mvs.in')
+
 2205    FORMAT('oarsub -l nodes=1/core=',I1,
      &       ',walltime=48 --project dynapla ./',(a))
 2206    FORMAT('export OMP_NUM_THREADS=',I1)
 c     ........entree des parametres
+
+        READ(*,'(a)')BINDIR  ! added by antoine
+
 
         MEXTRFILE='mextract_multi.sh'
         CONTFILE='continue.sh'
@@ -107,7 +120,6 @@ c     ........entree des parametres
         WRITE(51,'(a)')'unlimit'
         WRITE(51,'(a)')'export OMP_NUM_THREADS=1'
         WRITE(51,'(a)')'export STACKSIZE=1000000'
-c
         WRITE(*,*)' Name of integrator'
         WRITE(*,*)' (rmvs3,whm,whm_s6b,rmvs3_parp,whm_s6b_parp) '
         READ(*,'(a)')INTEG
@@ -248,7 +260,7 @@ c         en lien avec le choix du réf de coord (écliptique ou invariant)
         WRITE(51,'(a)')'simname="'//TRIM(GNAME)//'"'
         WRITE(PARFILE,2202)SNGL(TSTOP)
         WRITE(51,'(a)')TRIM(PARFILE)
-        WRITE(51,'(a)')'/home/lacquema/bin/mbodies_multi <<!'
+        WRITE(51,0001)TRIM(BINDIR)
 
         IPAR = INDEX(INPARFILE,'.')
         CNTFILE = 0
@@ -347,34 +359,38 @@ c
      &           lclose,trim(dirs)//'/'//trim(gname),
      &           diro,outfile,fopenstat)
                 WRITE(MVSFILE,5000)CNTFILE
-                OPEN(31,FILE=MVSFILE,STATUS='UNKNOWN')
+                OPEN(31,FILE=MVSFILE,STATUS='UNKNOWN') ! mvs file
                 WRITE(31,'(a)')'gen_tout_multi.sh'
                 WRITE(31,'(a)')TRIM(PARFILE)
                 WRITE(31,'(a)')TRIM(INPLFILE)
                 WRITE(31,'(a)')TRIM(TPFILE)
                 WRITE(31,'(a)')'1d-8'
                 CLOSE(31)
-                WRITE(GOFILE,6000)TRIM(INTEG),CNTFILE
-                WRITE(GOCFILE,6001)TRIM(INTEG),CNTFILE
-                OPEN(31,FILE=GOFILE,STATUS='UNKNOWN')
+                ! WRITE(GOFILE,6000)TRIM(INTEG),CNTFILE  ! commented by antoine
+                ! WRITE(GOCFILE,6001)TRIM(INTEG),CNTFILE  ! commented by antoine
+                WRITE(GOFILE,0006)CNTFILE  ! added by antoine
+                WRITE(GOCFILE,0007)CNTFILE  ! added by antoine
+                OPEN(31,FILE=GOFILE,STATUS='UNKNOWN') ! go file
                 WRITE(31,'(a)')'#! /bin/tcsh -f'
                 WRITE(31,'(a)')'unlimit'
                 WRITE(GOCMD,2206)NCOR
                 WRITE(31,'(a)')TRIM(GOCMD)
                 WRITE(31,'(a)')'export STACKSIZE=1000000'
-                WRITE(31,'(a)')' '
-                WRITE(31,'(a)')'./swift_'//TRIM(INTEG)//
-     &                ' < '//TRIM(MVSFILE)
+                ! WRITE(31,'(a)')' '
+                WRITE(31,0005)TRIM(BINDIR),TRIM(INTEG),TRIM(DIRS),  ! modified by antoine
+     &                        TRIM(GNAME),CNTFILE
+                ! WRITE(31,0004)TRIM(BINDIR),TRIM(INTEG),CNTFILE  ! added by antoine
                 CLOSE(31)           
-                OPEN(32,FILE=GOCFILE,STATUS='UNKNOWN')
+                OPEN(32,FILE=GOCFILE,STATUS='UNKNOWN')  ! continuation file
                 WRITE(32,'(a)')'#! /bin/tcsh -f'
                 WRITE(32,'(a)')'unlimit'
                 WRITE(GOCMD,2206)NCOR
                 WRITE(32,'(a)')TRIM(GOCMD)
                 WRITE(32,'(a)')'export STACKSIZE=1000000'
-                WRITE(32,'(a)')' '
-                WRITE(GOCMD,2204)TRIM(INTEG),TRIM(DIRS),
+                ! WRITE(32,'(a)')' '
+                WRITE(GOCMD,2204)TRIM(BINDIR),TRIM(INTEG),TRIM(DIRS),  ! modified by antoine
      &                                 TRIM(GNAME),CNTFILE
+                ! WRITE(GOCMD,0003)TRIM(BINDIR),TRIM(INTEG) ! added by antoine
                 WRITE(32,'(a)')TRIM(GOCMD)
                 CLOSE(32)           
                 CALL SYSTEM('chmod ogu+x '//TRIM(GOFILE))
@@ -418,7 +434,16 @@ c
         WRITE(51,'(a)')'!'
         CLOSE(51)
         CALL SYSTEM('chmod ogu+x '//TRIM(MEXTRFILE))
-        CALL SYSTEM('chmod ogu+x '//TRIM(CONTFILE))      
+        CALL SYSTEM('chmod ogu+x '//TRIM(CONTFILE))   
+        
+        
+        ! WRITE(*,2204)BINDIR,'1','2','3',01
+        ! WRITE(*,'(a)')TRIM(DIRS)//'/${simname}'
+        ! WRITE(*,'(a)')DIRO
+        ! WRITE(*,0001)TRIM(BINDIR)
+        ! WRITE(*,'(a)')TRIM(GOCMD)
+
+        ! write(*,*)NCOR
 
         END PROGRAM GEN_TOUT_MULTI
 

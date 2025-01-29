@@ -24,6 +24,9 @@ class GeneralTab(QWidget):
     def __init__(self):
         super().__init__()
 
+        # Directory path
+        self.DirPath = os.path.dirname(__file__)
+
         # Layout initialisation
         self.Layout = QVBoxLayout()
 
@@ -70,7 +73,6 @@ class TabSimuFiles(GeneralTab):
         super().__init__()
 
     def InitWidgets(self):
-
         
         self.SimuPath = PathBrowser('Path', 'Path where create the adjustment directory', 0)
         self.Layout.addWidget(self.SimuPath)
@@ -80,33 +82,33 @@ class TabSimuFiles(GeneralTab):
         self.SimuName = LineEdit('Directory', 'Name you want to give to the adjustment directory', '')
         self.SimuPath.Layout.addWidget(self.SimuName)
 
-        self.Layout.addWidget(Delimiter(Title='Input files:'))
+        # self.Layout.addWidget(Delimiter(Title='Input files :'))
 
         # self.InGenFileName = LineEdit('General input file', 'Name you want to give to the general entry which is the general input file with the extension', 'general.sh')
         # self.Layout.addWidget(self.InGenFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        self.InSetFileName = LineEdit('Settings input file', 'Name you want to give to the simulation settings input file with the extension', 'settings.in')
-        self.Layout.addWidget(self.InSetFileName, alignment=Qt.AlignmentFlag.AlignLeft)
+        # self.InSetFileName = LineEdit('Settings input file', 'Name you want to give to the simulation settings input file with the extension', 'settings.in')
+        # self.Layout.addWidget(self.InSetFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        self.InBodFileName = LineEdit('Bodies input file', 'Name you want to give to the input file for bodies with the extension', 'bodies.in')
-        self.Layout.addWidget(self.InBodFileName, alignment=Qt.AlignmentFlag.AlignLeft)
+        # self.InBodFileName = LineEdit('Bodies input file', 'Name you want to give to the input file for bodies with the extension', 'bodies.in')
+        # self.Layout.addWidget(self.InBodFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        self.InPartFileName = LineEdit('Particules input file', 'Name you want to give to the input file for test particules with the extension', 'particules.in')
-        self.Layout.addWidget(self.InPartFileName, alignment=Qt.AlignmentFlag.AlignLeft)
+        # self.InPartFileName = LineEdit('Particules input file', 'Name you want to give to the input file for test particules with the extension', 'particules.in')
+        # self.Layout.addWidget(self.InPartFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        self.Layout.addWidget(Delimiter(Title='Output files:'))
+        self.Layout.addWidget(Delimiter(Title='Outputs :'))
 
-        self.OutputFileName = LineEdit('Output binary file', 'Name you want to give to the output binary file (no extension)', 'output')
-        self.Layout.addWidget(self.OutputFileName, alignment=Qt.AlignmentFlag.AlignLeft)
-        self.OutputFileName.Layout.addSpacing(100)
-        self.OutFreq = SpinBox('Frequency', 'Time between two saves to the output file [yr]', 10000, 1, None, 1)
-        self.OutputFileName.Layout.addWidget(self.OutFreq, alignment=Qt.AlignmentFlag.AlignLeft)
-
-        self.DumpFileName = LineEdit('Dump binary file', 'Name you want to give to the dump binary file (no extension)', 'dump')
+        self.DumpFileName = LineEdit('Dump file', 'Name you want to give to the dump file (no extension)', 'dump')
         self.Layout.addWidget(self.DumpFileName, alignment=Qt.AlignmentFlag.AlignLeft)
         self.DumpFileName.Layout.addSpacing(100)
         self.DumpFreq = SpinBox('Frequency', 'Time between two saves to the dump file [yr]', 100000, 1, None, 1)
         self.DumpFileName.Layout.addWidget(self.DumpFreq, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        self.OutputFileName = LineEdit('Results file', 'Name you want to give to the results file (no extension)', 'simulation')
+        self.Layout.addWidget(self.OutputFileName, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.OutputFileName.Layout.addSpacing(100)
+        self.OutFreq = SpinBox('Frequency', 'Time between two saves to the results file [yr]', 10000, 1, None, 1)
+        self.OutputFileName.Layout.addWidget(self.OutFreq, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self.Layout.setSpacing(0)
 
@@ -134,7 +136,7 @@ class TabSimuSets(GeneralTab):
         self.OutputDataType = ComboBox('Output data type', 'Type in which output data is written', ['REAL*4', 'INTEGER*2'])
         self.Layout.addWidget(self.OutputDataType)
 
-        self.Layout.addWidget(Delimiter(Title='Options:'))
+        self.Layout.addWidget(Delimiter(Title='Options :'))
 
         self.CheckSpheBody0 = CheckBox('Central body sphericity', 'Sphericity of the central body')
         self.CheckSpheBody0.CheckParam.stateChanged.connect(self.ChangeStateSpheBody0)
@@ -281,20 +283,31 @@ class TabOrbitsParams(GeneralTab):
 
         self.LayoutV2 = QVBoxLayout()
 
-        self.LayoutV2.addWidget(Delimiter(Title = 'Initial orbit parameters of each bodies:', Width=0))
+        self.LayoutV2.addWidget(Delimiter(Title = 'Initial orbit parameters of bodies :'))
+
+        self.InitialCenterMass = DoubleSpinBox('Center mass', 'First guess of center mass [Msun]', 0, 0, None, 1, 2)
+        self.LayoutV2.addWidget(self.InitialCenterMass)
+
+        self.InitialOtherMassUnit = ComboBox('Other bodies mass unit', 'Unit of mass of the other bodies', ['Mjup', 'Msun'])
+        self.InitialOtherMassUnit.ComboParam.currentIndexChanged.connect(self.OtherMassUnitChange)
+        self.LayoutV2.addWidget(self.InitialOtherMassUnit)
 
         self.TablePriors = QTableWidget()
-        self.TablePriors.setStatusTip('First guess of orbits parameters of each bodies.')
-        self.TablePriors.setRowCount(self.NbBodiesValue)
+        self.TablePriors.setStatusTip('Initial orbit parameters of each bodies.')
+        self.TablePriors.setRowCount(self.NbOrbitsValue)
         self.LabelParams = ['m [Mjup]', 'a [AU]', 'e', 'i [°]', 'w [°]', 'W [°]', 'M']
         self.TablePriors.setColumnCount(len(self.LabelParams))
         self.TablePriors.setHorizontalHeaderLabels(self.LabelParams)
         self.LayoutV2.addWidget(self.TablePriors, alignment=Qt.AlignmentFlag.AlignVCenter)
-        for i in range(self.NbBodiesValue):
+        for i in range(self.NbOrbitsValue):
             for j in range(len(self.LabelParams)):
-                if i==0 and j!=0: self.TablePriors.setItem(i, j, QTableWidgetItem('X'))
-                else: self.TablePriors.setItem(i, j, QTableWidgetItem('0.'))
+                # if i==0 and j!=0: self.TablePriors.setItem(i, j, QTableWidgetItem('X'))
+                # else: 
+                self.TablePriors.setItem(i, j, QTableWidgetItem('0.'))
                 self.TablePriors.item(i, j).setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # self.TablePriors.selectRow(0)
+        # self.TablePriors.selectColumn(0)
 
         self.TablePriors.itemChanged.connect(self.ValidationItemTbl)
         self.TablePriors.cellClicked.connect(self.SaveOldTextTbl)
@@ -311,6 +324,14 @@ class TabOrbitsParams(GeneralTab):
         self.Layout.setSpacing(0)
 
 
+    def OtherMassUnitChange(self, index):
+        if index==0:
+            self.LabelParams[0] = 'm [Mjup]'
+        elif index==1: 
+            self.LabelParams[0] = 'm [Msun]'
+
+        self.TablePriors.setColumnCount(len(self.LabelParams))
+        self.TablePriors.setHorizontalHeaderLabels(self.LabelParams)
 
     def ChangeNbBodies(self):
         # Change widgets
@@ -321,31 +342,25 @@ class TabOrbitsParams(GeneralTab):
         else: self.NbOrbits.setText(f'=> {self.NbOrbitsValue} Orbits')
 
         # Change the number of row in the priors table
-        self.TablePriors.setRowCount(self.NbBodiesValue)
+        self.TablePriors.setRowCount(self.NbOrbitsValue)
 
         if self.NbBodiesValue > OldValue:
             for n in range(len(self.LabelParams)):
-                self.TablePriors.setItem(self.NbBodiesValue-1, n, QTableWidgetItem('0.'))
-                self.TablePriors.item(self.NbBodiesValue-1, n).setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.TablePriors.setItem(self.NbOrbitsValue-1, n, QTableWidgetItem('0.'))
+                self.TablePriors.item(self.NbOrbitsValue-1, n).setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             
             
     def ValidationItemTbl(self):
-        if self.TablePriors.currentRow() != -1 and self.TablePriors.currentColumn() != -1: # corresponding of initial state (-1,-1) of the table where item is None
+        if self.TablePriors.currentItem()!=None:
             TextNew = self.TablePriors.currentItem().text()
-            ListValidCharacters = '1234567890.'
-            PointSuppr = False
-            if len(TextNew)==0:
-                self.TablePriors.currentItem().setText(self.TextOld)
-            else:
-                for i in range(len(TextNew)):
-                    if TextNew[i] not in  ListValidCharacters:
-                        self.TablePriors.currentItem().setText(self.TextOld)
-                        break
-                    if TextNew[i]=='.' and PointSuppr==False: 
-                            ListValidCharacters='1234567890'
-                            PointSuppr = True 
-                if self.TablePriors.currentRow() == 0 and self.TablePriors.currentColumn() != 0:
+            try:
+                TextNew = float(TextNew)
+                if self.TablePriors.currentColumn() not in [3,4,5] and TextNew<0:
                     self.TablePriors.currentItem().setText(self.TextOld)
+            except:
+                self.TablePriors.currentItem().setText(self.TextOld)
+
+
 
     def SaveOldTextTbl(self):
         self.TextOld = self.TablePriors.currentItem().text()
@@ -359,50 +374,112 @@ class TabStart(GeneralTab):
 
 
     def InitWidgets(self):
-    
-        self.NbCores = SpinBox('Number of cores', 'Number of cores to be used', 48, 1, None, 1)
-        self.Layout.addWidget(self.NbCores, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        self.Layout.addWidget(Delimiter(Title='Options :'))
 
         self.CheckParallel = CheckBox('Parallelization', 'Parallelization of the simulation algorithm')
         self.Layout.addWidget(self.CheckParallel)
+        self.CheckParallel.CheckParam.setChecked(True)
         self.CheckParallel.Layout.addSpacing(60)
-        self.NbBranch = SpinBox('Number of branches', 'Number of parallelization branches', 6, 1, None)
-        self.CheckParallel.Layout.addWidget(self.NbBranch)
+
+        self.NbSubSimu = SpinBox('Number of sub-simulations', 'Number of sub-simulations. A kind of parallelization', 6, 1, None)
+        self.NbSubSimu.Layout.insertWidget(0, Label('   '), alignment=Qt.AlignmentFlag.AlignLeft)
+        self.Layout.addWidget(self.NbSubSimu)
+
+        self.NbCoresSubSimu = SpinBox('Number of cores per sub-simulation', 'Number of cores to be used per each sub-simulation. Real parallelization', 8, 1, None, 1)
+        self.NbCoresSubSimu.Layout.insertWidget(0, Label('   '), alignment=Qt.AlignmentFlag.AlignLeft)
+        self.Layout.addWidget(self.NbCoresSubSimu, alignment=Qt.AlignmentFlag.AlignLeft)
+        
         self.CheckParallel.CheckParam.stateChanged.connect(self.CheckParallelChange)
         self.CheckParallel.Layout.addSpacing(20)
         self.SumaPara = QLabel('')
         self.CheckParallel.Layout.addWidget(self.SumaPara)
 
+        self.CheckParallel.Layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.CheckParallel.Layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
         self.BtnCreate = QPushButton('Create startup files')
         self.Layout.addWidget(self.BtnCreate, alignment=Qt.AlignmentFlag.AlignRight)
 
-        self.CheckOrder = CheckBox('Starting order', 'If you just want to create the input file, but dont want to run the command in the terminal')
-        # self.Layout.addWidget(self.CheckOrder)
-        self.CheckOrder.CheckParam.stateChanged.connect(self.CheckStartOrderChange)
-        
-        self.NbHours = SpinBox('Simulation duration', 'Simulation duration [hour]', 48, 1, None)
-        # self.Layout.addWidget(self.NbHours, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.Layout.addWidget(Delimiter(Title='Order :'))
 
-        self.StartOrderValue = f'oarsub -l nodes=1/core=8,walltime={self.NbHours.SpinParam.value()} --project dynapla ./go.sh'
-        self.StartOrder = LineEdit('Order', 'Terminal order to start the adjustment', self.StartOrderValue)
-        # self.Layout.addWidget(self.StartOrder)
-        
+        self.NbOrdersValue = 0
+        self.OrdersValue = []
+        with open(self.DirPath+'/../Orders.txt', 'r') as file:
+            for x in file:
+                self.NbOrdersValue += 1
+                self.OrdersValue.append(x.replace('\n',''))
+
+        self.ComboOrder = ComboBox('Saved orders', 'All orders saved', self.OrdersValue)
+        self.Layout.addWidget(self.ComboOrder)
+
+        self.BtnDelOrder = QPushButton('del')
+        self.ComboOrder.Layout.addWidget(self.BtnDelOrder)
+        self.BtnDelOrder.clicked.connect(self.DelOrder)
+
+        self.BtnChangeOrder = QPushButton()
+        self.BtnChangeOrder.setIcon(QIcon(f'{self.DirPath}/../Items/arrowDown.png'))
+        self.BtnChangeOrder.clicked.connect(self.ChangeOrder)
+        self.ComboOrder.Layout.addWidget(self.BtnChangeOrder)
+
+        self.StartOrder = LineEdit('Shell order', 'Terminal order to start the adjustment', self.ComboOrder.ComboParam.currentText())
+        self.Layout.addWidget(self.StartOrder)
+
+        self.BtnSaveOrder = QPushButton('save')
+        self.StartOrder.Layout.addWidget(self.BtnSaveOrder)
+        self.BtnSaveOrder.clicked.connect(self.SaveOrder)
+
+        self.LblGo = QLabel('./start_*.sh')
+        self.StartOrder.Layout.addWidget(self.LblGo)
+
         self.BtnStart = QPushButton('Start the simulation')
-        # self.Layout.addWidget(self.BtnStart, alignment=Qt.AlignmentFlag.AlignRight)
-
-        self.CheckParallelChange(self.CheckParallel.CheckParam.isChecked())
-        self.CheckStartOrderChange(self.CheckOrder.CheckParam.isChecked())
+        self.Layout.addWidget(self.BtnStart, alignment=Qt.AlignmentFlag.AlignRight)
         
 
     def CheckParallelChange(self, state):
-        self.NbBranch.setEnabled(state)
         self.SumaPara.setEnabled(state)
+        self.NbCoresSubSimu.setEnabled(state)
+        self.NbSubSimu.setEnabled(state)
+        if state==0:
+            self.NbSubSimu.SpinParam.setValue(1)
+            self.NbCoresSubSimu.SpinParam.setValue(1)
+        else:
+            self.NbSubSimu.SpinParam.setValue(6)
+            self.NbCoresSubSimu.SpinParam.setValue(8)
 
+    def ChangeOrder(self):
+        self.StartOrder.EditParam.setText(self.ComboOrder.ComboParam.currentText())
 
-    def CheckStartOrderChange(self, state):
-        self.StartOrder.setEnabled(state)
-        self.BtnStart.setEnabled(state)
-        self.NbHours.setEnabled(state)
+    def SaveOrder(self):
+        with open(self.DirPath+'/../Orders.txt', 'a') as file:
+            file.write('\n')
+            file.write(self.StartOrder.EditParam.text())
+            self.ComboOrder.ComboParam.addItem(self.StartOrder.EditParam.text())
+            self.NbOrdersValue += 1
+            self.ComboOrder.ComboParam.setCurrentIndex(self.NbOrdersValue-1)
+
+    def DelOrder(self):
+        index = self.ComboOrder.ComboParam.currentIndex()
+        if index>2:
+            lines = []
+            c = 0 
+            with open(self.DirPath+'/../Orders.txt', 'r') as file :
+                for x in file:
+                    if c != index:
+                        lines.append(x.replace('\n',''))
+                    c += 1
+            with open(self.DirPath+'/../Orders.txt', 'w') as file :
+                file.write('\n'.join(lines))
+            self.ComboOrder.ComboParam.removeItem(index)
+            self.NbOrdersValue -= 1
+            self.ComboOrder.ComboParam.setCurrentIndex(-1)
+        else:
+            print('Impossible to remove this order')
+
+    # def CheckStartOrderChange(self, state):
+    #     self.StartOrder.setEnabled(state)
+    #     self.BtnStart.setEnabled(state)
+    #     self.NbHours.setEnabled(state)
 
 
         

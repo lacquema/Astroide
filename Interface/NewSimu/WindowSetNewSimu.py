@@ -31,7 +31,7 @@ class WindowSetNewSimu(QMainWindow):
         self.DirPath = os.path.dirname(__file__)
 
         # Window characteristics
-        self.setWindowTitle('Settings of the new simulation')
+        self.setWindowTitle('Settings of the new simulation')  
 
         # Widget Container
         self.Container = QTabWidget()
@@ -60,8 +60,8 @@ class WindowSetNewSimu(QMainWindow):
     def InitInterTabConnect(self, IdTab):
         if IdTab=='TabSimuFiles':
             self.TabSimuFiles.BtnReset.clicked.connect(lambda: self.InitInterTabConnect('TabSimuFiles'))
-            self.TabSimuFiles.SimuPath.EditPath.textChanged.connect(self.ChangeStartOrder)
-            self.TabSimuFiles.SimuName.EditParam.textChanged.connect(self.ChangeStartOrder)
+            # self.TabSimuFiles.SimuPath.EditPath.textChanged.connect(self.ChangeStartOrder)
+            # self.TabSimuFiles.SimuName.EditParam.textChanged.connect(self.ChangeStartOrder)
         elif IdTab=='TabSimuSets':
             self.TabSimuSets.BtnReset.clicked.connect(lambda: self.InitInterTabConnect('TabSimuSets'))
         elif IdTab=='TabOrbitsParams':
@@ -69,10 +69,10 @@ class WindowSetNewSimu(QMainWindow):
             self.TabOrbitsParams.NbPart.SpinParam.valueChanged.connect(self.ChangeSumaPara)
         elif IdTab=='TabStart':
             self.TabStart.BtnReset.clicked.connect(lambda: self.InitInterTabConnect('TabStart'))
-            self.TabStart.NbHours.SpinParam.valueChanged.connect(self.ChangeStartOrder)
-            self.TabStart.NbCores.SpinParam.valueChanged.connect(self.ChangeStartOrder)
-            self.TabStart.NbCores.SpinParam.valueChanged.connect(self.ChangeSumaPara)
-            self.TabStart.NbBranch.SpinParam.valueChanged.connect(self.ChangeSumaPara)
+            # self.TabStart.NbHours.SpinParam.valueChanged.connect(self.ChangeStartOrder)
+            # self.TabStart.NbCoresSubSimu.SpinParam.valueChanged.connect(self.ChangeStartOrder)
+            self.TabStart.NbCoresSubSimu.SpinParam.valueChanged.connect(self.ChangeSumaPara)
+            self.TabStart.NbSubSimu.SpinParam.valueChanged.connect(self.ChangeSumaPara)
             self.TabStart.BtnReset.clicked.connect(self.ChangeSumaPara)
             self.TabStart.BtnCreate.clicked.connect(self.CreateInputFiles)
             # self.TabStart.BtnStart.clicked.connect(self.StartSimu)
@@ -92,19 +92,28 @@ class WindowSetNewSimu(QMainWindow):
 
 
     def ChangeSumaPara(self):
-        self.NbCoresPerSimu = self.TabStart.NbCores.SpinParam.value()//self.TabStart.NbBranch.SpinParam.value()
-        self.NbPartPerSimu = int(np.ceil(self.TabOrbitsParams.NbPart.SpinParam.value()/self.TabStart.NbBranch.SpinParam.value()))
-        self.TabStart.SumaPara.setText(f'=> {self.NbPartPerSimu} particules and {self.NbCoresPerSimu} cores per simulation')
+        # self.NbCoresPerSimu = self.TabStart.NbCores.SpinParam.value()//self.TabStart.NbBranch.SpinParam.value()
+        self.NbPartSubSimu = int(np.ceil(self.TabOrbitsParams.NbPart.SpinParam.value()/self.TabStart.NbSubSimu.SpinParam.value()))
+        self.TabStart.SumaPara.setText(f'=>   {self.TabStart.NbSubSimu.SpinParam.value()} simulations with {self.NbPartSubSimu} particules on {self.TabStart.NbCoresSubSimu.SpinParam.value()} cores each')
 
 
     # Emition of the CloseEvent signal when the parameter window is closed
     def closeEvent(self, e):
         self.SignalCloseWindowSetNewSimu.emit() 
 
-    def ChangeStartOrder(self):
-        self.TabStart.StartOrder.EditParam.setText(f'oarsub -l nodes=1/core={self.NbCoresPerSimu},walltime={self.TabStart.NbHours.SpinParam.value()} --project dynapla {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/gen_tout_multi.sh')
+    # def ChangeStartOrder(self):
+    #     self.TabStart.StartOrder.EditParam.setText(f'oarsub -l nodes=1/core={self.NbCoresPerSimu},walltime={self.TabStart.NbHours.SpinParam.value()} --project dynapla {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/gen_tout_multi.sh')
+    
+
+
+
+    
+
     
     def CreateInputFiles(self):
+        self.EnvPath = '/'.join(self.DirPath.split('/')[:-2])
+        self.SimuDir = self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'
+
         print('--------------------------')
         if len(self.TabSimuFiles.SimuPath.EditPath.text()) == 0 or len(self.TabSimuFiles.SimuName.EditParam.text()) == 0 or self.TabSimuFiles.SimuPath.EditPath.text()[-1]!='/':
             print('Check simulation path')
@@ -116,12 +125,13 @@ class WindowSetNewSimu(QMainWindow):
             else: 
                 os.makedirs(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text())
                 print(f'{self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/ directory was created')
-                subprocess.run(f'cd {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}', shell=True, text=True)
+                # subprocess.run(f'cd {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}', shell=True, text=True)
                 self.DoGenInputFile()
                 self.DoOptionInputFile()
                 print('Inputs files was created')
-                subprocess.run(f'bash {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}/gen_tout_multi.sh', shell=True, text=True)
-
+                print(f'source {self.SimuDir}gen_tout_multi.sh')
+                subprocess.run(f'source {self.SimuDir}gen_tout_multi.sh', shell=True, text=True, cwd=self.SimuDir)
+                print('Sub-simulations created')
 
                 # self.TabStart.BtnCreate.setEnabled(False)
                 # subprocess.run(f'', shell=True, text=True)
@@ -140,22 +150,22 @@ class WindowSetNewSimu(QMainWindow):
 
                     
     def DoGenInputFile(self):
-        GenFileName = 'gen_tout_multi'
-        if self.TabStart.CheckParallel.CheckParam.isChecked(): GenFileName += '_par'
+        self.AlgoBinName = self.TabSimuSets.Algo.ComboParam.currentText()
+        if self.TabStart.CheckParallel.CheckParam.isChecked(): 
+            # self.GenBinName += '_par'
+            self.AlgoBinName += '_par'
 
-        EnvPath = '/'.join(self.DirPath.split('/')[:-2])
-
-        with open(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'+GenFileName, "w") as file:
-            file.write(f'cd {self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()}')
+        with open(self.SimuDir+'gen_tout_multi.sh', "w") as file:
+            file.write(f'cd {self.SimuDir}')
             file.write('\n')
-            file.write(EnvPath+'/Code/bin/'+GenFileName+' <<!') # Header
+            file.write(self.EnvPath+'/Code/bin/'+'gen_tout_multi'+' <<!') # Header
             file.write('\n')
-            file.write(self.TabSimuSets.Algo.ComboParam.currentText())
-            if self.TabStart.CheckParallel.CheckParam.isChecked(): file.write('_parp') # Algorithm
+            file.write(self.EnvPath+'/Code/bin')
             file.write('\n')
-            if self.TabStart.CheckParallel.CheckParam.isChecked(): file.write(str(self.NbCoresPerSimu))
-            else: file.write(str(self.TabStart.NbCores.SpinParam.value()))
-            file.write(' # Number of cores')
+            file.write(self.AlgoBinName)
+            file.write('\n')
+            file.write(self.TabStart.NbCoresSubSimu.SpinParam.text())
+            file.write(' # Number of cores per sub-simulation')
             file.write('\n')
             file.write(str(self.TabOrbitsParams.Units.ComboParam.currentIndex()))
             file.write(f' # Units: {self.TabOrbitsParams.Units.ComboParam.currentText()}')
@@ -174,14 +184,18 @@ class WindowSetNewSimu(QMainWindow):
                 file.write(str(self.TabSimuSets.RminBody.SpinParam.value()))
                 file.write(' # Multiple of the Hill radius')
                 file.write('\n')
-            file.write(str(round(float(self.TabOrbitsParams.TablePriors.item(0,0).text())*0.000954588, 3)))
+            # file.write(str(round(float(self.TabOrbitsParams.TablePriors.item(0,0).text())*0.000954588, 3)))
+            file.write(self.TabOrbitsParams.InitialCenterMass.SpinParam.text())
             file.write(' # Mass of central body [Msun]')
             file.write('\n')
             file.write(str(self.TabOrbitsParams.NbOrbitsValue))
             file.write(' # Number of orbits')
             file.write('\n')
-            for i in range(1, self.TabOrbitsParams.NbBodies.SpinParam.value()):
-                file.write(self.TabOrbitsParams.TablePriors.item(i, 0).text())
+            for i in range(0, self.TabOrbitsParams.NbOrbitsValue):
+                if self.TabOrbitsParams.InitialOtherMassUnit.ComboParam.currentIndex()==0:
+                    file.write(self.TabOrbitsParams.TablePriors.item(i, 0).text())
+                elif self.TabOrbitsParams.InitialOtherMassUnit.ComboParam.currentIndex()==1:
+                    file.write(str(round(float(self.TabOrbitsParams.TablePriors.item(i, 0).text())*0.000954588, 3)))
                 file.write(f' # Initial orbit {i} mass [Mjup]')
                 file.write('\n')
                 for j in range(1, len(self.TabOrbitsParams.LabelParams)):
@@ -189,21 +203,23 @@ class WindowSetNewSimu(QMainWindow):
                     file.write(' ')
                 file.write(f' # Initial orbit {i} parameters (a[AU] e i[°] Om[°] om[°] M)')
                 file.write('\n')
-            file.write(self.TabSimuFiles.InBodFileName.EditParam.text()) # Input bodies file
+            # file.write(self.TabSimuFiles.InBodFileName.EditParam.text()) # Input bodies file
+            file.write('bodies.in')
             file.write('\n')
-            file.write(str(self.TabOrbitsParams.RandSeed.SpinParam.value()))
+            file.write(self.TabOrbitsParams.RandSeed.SpinParam.text())
             file.write(' # Random seed')
             file.write('\n')
-            file.write(self.TabSimuFiles.InPartFileName.EditParam.text()) # Input particules file
+            # file.write(self.TabSimuFiles.InPartFileName.EditParam.text()) # Input particules file
+            file.write('particules.in')
             file.write('\n')
-            file.write(self.TabSimuFiles.InSetFileName.EditParam.text()) # Input settings file
+            # file.write(self.TabSimuFiles.InSetFileName.EditParam.text()) # Input settings file
+            file.write('parameters.in')
             file.write('\n')
-            file.write(str(self.TabOrbitsParams.NbPart.SpinParam.value()))
+            file.write(self.TabOrbitsParams.NbPart.SpinParam.text())
             file.write(' # Number of particles')
             file.write('\n')
             if self.TabOrbitsParams.NbPart.SpinParam.value()!=0:
-                if self.TabStart.CheckParallel.CheckParam.isChecked(): file.write(str(self.NbPartPerSimu))
-                else: file.write(str(self.TabOrbitsParams.NbPart.SpinParam.value()))
+                file.write(str(self.NbPartSubSimu))
                 file.write(' # Number of particles per simulation')
                 file.write('\n')
                 file.write(self.TabOrbitsParams.eMin.SpinParam.text()+' '+self.TabOrbitsParams.eMax.SpinParam.text())
@@ -217,12 +233,10 @@ class WindowSetNewSimu(QMainWindow):
                 file.write('\n')
                 file.write('0')
                 file.write('\n')
-                file.write('!')
-
-
+            file.write('!')
 
     def DoOptionInputFile(self):
-        with open(self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'+self.TabSimuFiles.InSetFileName.EditParam.text(), "w") as file:
+        with open(self.SimuDir+'parameters.in', "w") as file:
             file.write(str(self.TabSimuSets.T0.SpinParam.value()))
             file.write(' ')
             file.write(str(self.TabSimuSets.TMax.SpinParam.value()))
@@ -272,9 +286,6 @@ class WindowSetNewSimu(QMainWindow):
             file.write(self.TabSimuFiles.OutputFileName.EditParam.text())
             file.write('\n')
             file.write('new')
-
-
-
 
 
 # Check

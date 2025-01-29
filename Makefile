@@ -123,19 +123,21 @@ swift_rmvs3:
 
 swift_hjs:
 
-all: 
-	make packages
+compile: 
 	make library
 	make gen_tout_multi
 	make swift_whm
 	make swift_rmvs3
 	make swift_hjs
 
-binaries: 
-	make gen_tout_multi
-	make swift_whm
-	make swift_rmvs3
-	make swift_hjs
+	make library PARALLEL=YES
+	make swift_whm PARALLEL=YES
+	make swift_rmvs3 PARALLEL=YES
+	make swift_hjs PARALLEL=YES
+
+all: 
+	make packages
+	compile
 
 clean:
 	rm *.o
