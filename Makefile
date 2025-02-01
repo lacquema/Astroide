@@ -3,8 +3,8 @@
 # Makefile to build libraries and executables
 
 # Parameters to input
-COMPILF = /opt/homebrew/bin/gfortran
-PYTHON3 = /Users/lacquema/Astroide.env/bin/python3
+COMPILF = gfortran
+PYTHON3 = python3
 
 # Others parameters
 PARALLEL = NO
@@ -24,7 +24,7 @@ SWIFT_DIR = $(CODE_DIR)/swift
 SUB_DIR = $(SWIFT_DIR)/sub
 ALG_DIR = $(SWIFT_DIR)/main
 
-GEN_DIR = $(SUB_DIR)/gen
+# GEN_DIR = $(SUB_DIR)/gen
 COLL_DIR = $(SUB_DIR)/coll
 ANAL_DIR = $(SUB_DIR)/anal
 BS_DIR = $(SUB_DIR)/bs
@@ -56,16 +56,19 @@ SYMBATR_DIR = $(SUB_DIR)/symbatr
 HELIO_DIR = $(SUB_DIR)/helio
 HELIOQ_DIR = $(SUB_DIR)/helioq
 
+GEN = $(BIN_DIR)/gen_tout_multi
+MBOD = $(BIN_DIR)/mbodies_multi
+
 # Parallelization option 
 ifeq ($(PARALLEL),NO)
 LIB = $(LIB_DIR)/libswift.a
-GEN = $(BIN_DIR)/gen_tout_multi
+# GEN = $(BIN_DIR)/gen_tout_multi
 else
-GEN_FLAGS += -fopenmp
+# GEN_FLAGS += -fopenmp
 LIB_FLAGS += -fopenmp
 ALG_FLAGS += -fopenmp
 LIB = $(LIB_DIR)/libswift_par.a
-GEN = $(BIN_DIR)/gen_tout_multi_par
+# GEN = $(BIN_DIR)/gen_tout_multi_par
 endif
 
 # Utilities
@@ -105,7 +108,11 @@ packages:
 	$(PYTHON3) -m pip install -r $(DIR)/requirements.txt
 
 gen_tout_multi:
-	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(GEN_DIR)/$@.f $(LIB) -o $(GEN)
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(CODE_DIR)/$@.f $(LIB) -o $(GEN)
+
+mbodies_multi:
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(CODE_DIR)/$@.f $(LIB) -o $(MBOD)
+
 
 # Algorithms
 swift_%:
@@ -125,12 +132,15 @@ swift_hjs:
 
 compile: 
 	make library
-	make gen_tout_multi
+	
 	make swift_whm
 	make swift_rmvs3
 	make swift_hjs
+	make gen_tout_multi
+	make mbodies_multi
 
 	make library PARALLEL=YES
+	
 	make swift_whm PARALLEL=YES
 	make swift_rmvs3 PARALLEL=YES
 	make swift_hjs PARALLEL=YES
