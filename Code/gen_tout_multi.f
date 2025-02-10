@@ -41,7 +41,8 @@ C
         LOGICAL OK,WIMPS,OKC
         CHARACTER*(CHLEN) INTPFILE,TPFILE,INPARFILE,PARFILE,OUTFILE
         CHARACTER*(CHLEN) DIRO,DIRS,GNAME,FOPENSTAT,GOFILE,MVSFILE
-        CHARACTER*(CHLEN) MEXTRFILE,CONTFILE,GOCFILE,GOCMD,INTEG,BINDIR
+        CHARACTER*(CHLEN) BINDIR,MEXTRFILE,CONTFILE,STARTFILE
+        CHARACTER*(CHLEN) GOCFILE,GOCMD,INTEG
         CHARACTER*1 PR
         real*8 t0,tstop
         real*8 dtout,dtdump
@@ -114,8 +115,12 @@ c     ........entree des parametres
 
         MEXTRFILE='mextract_multi.sh'
         CONTFILE='continue.sh'
+        STARTFILE='start.sh'
+
         OPEN(51,FILE=MEXTRFILE,STATUS='UNKNOWN')
         OPEN(52,FILE=CONTFILE,STATUS='UNKNOWN')
+        OPEN(53,FILE=STARTFILE,STATUS='UNKNOWN')  ! added by antoine
+
         WRITE(51,'(a)')'#! /bin/bash'
         WRITE(51,'(a)')'unlimit'
         WRITE(51,'(a)')'export OMP_NUM_THREADS=1'
@@ -397,6 +402,7 @@ c
                 CALL SYSTEM('chmod ogu+x '//TRIM(GOCFILE))                
                 WRITE(GOCMD,2205)NCOR,TRIM(GOCFILE)
                 WRITE(52,'(a)')TRIM(GOCMD)
+                WRITE(53, 2205)NCOR,TRIM(GOFILE)  ! added by antoine
                 print*,tpfile,i,ntpt,
      &               sngl(a(i)),sngl(dt),sngl(cputime)
                WRITE(12,*)'Fichier ',TRIM(tpfile),' nb parts ',ntpt,
@@ -410,6 +416,7 @@ c
         enddo
         CLOSE(12)
         CLOSE(52)
+        close(53) ! added by antoine
 
         WRITE(51,2201)CNTFILE
         DO I=1,CNTFILE
@@ -434,7 +441,9 @@ c
         WRITE(51,'(a)')'!'
         CLOSE(51)
         CALL SYSTEM('chmod ogu+x '//TRIM(MEXTRFILE))
-        CALL SYSTEM('chmod ogu+x '//TRIM(CONTFILE))   
+        CALL SYSTEM('chmod ogu+x '//TRIM(CONTFILE))  
+        
+        CALL SYSTEM('chmod ogu+x '//TRIM(STARTFILE))  ! added by antoine
         
         
         ! WRITE(*,2204)BINDIR,'1','2','3',01

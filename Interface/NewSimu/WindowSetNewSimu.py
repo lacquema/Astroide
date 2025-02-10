@@ -27,9 +27,6 @@ class WindowSetNewSimu(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Directory path
-        self.DirPath = os.path.dirname(__file__)
-
         # Window characteristics
         self.setWindowTitle('Settings of the new simulation')  
 
@@ -56,7 +53,14 @@ class WindowSetNewSimu(QMainWindow):
         self.Container.addTab(self.TabStart, 'Starting')
         self.InitInterTabConnect('TabStart')
 
+        # Globale Variables
+        self.DirPath = os.path.dirname(__file__)
+        self.EnvPath = '/'.join(self.DirPath.split('/')[:-2])
+        self.SimuDir = self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'
+
     
+
+
     def InitInterTabConnect(self, IdTab):
         if IdTab=='TabSimuFiles':
             self.TabSimuFiles.BtnReset.clicked.connect(lambda: self.InitInterTabConnect('TabSimuFiles'))
@@ -106,14 +110,24 @@ class WindowSetNewSimu(QMainWindow):
     
 
 
+    def Start(self):
+        self.GoPath = self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/start.sh'
+        if not os.path.exists(self.GoPath):
+            self.CreateInputFiles()
+            if os.path.exists(self.GoPath):
+                print(f'{self.TabStart.StartOrder.EditParam.text()} {self.GoPath} &')
+                # subprocess.run(f'cd {self.TabSimuSet.SimuPath.EditPath.text()+self.TabSimuSet.SimuName.EditParam.text()}', shell=True, text=True)
+                subprocess.run(f'chmod +x {self.GoPath}', shell=True, text=True)
+                subprocess.run(f'{self.TabStart.StartOrder.EditParam.text()} {self.GoPath} &', shell=True, text=True, cwd=self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuSet.SimuName.EditParam.text())
+        else:
+            print(f'{self.TabStart.StartOrder.EditParam.text()} {self.GoPath} &')
+            # subprocess.run(f'cd {self.TabSimuSet.SimuPath.EditPath.text()+self.TabSimuSet.SimuName.EditParam.text()}', shell=True, text=True)
+            subprocess.run(f'chmod +x {self.GoPath}', shell=True, text=True)
+            subprocess.run(f'{self.TabStart.StartOrder.EditParam.text()} {self.GoPath} &', shell=True, text=True, cwd=self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuSet.SimuName.EditParam.text())
 
-    
 
     
     def CreateInputFiles(self):
-        self.EnvPath = '/'.join(self.DirPath.split('/')[:-2])
-        self.SimuDir = self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'
-
         print('--------------------------')
         if len(self.TabSimuFiles.SimuPath.EditPath.text()) == 0 or len(self.TabSimuFiles.SimuName.EditParam.text()) == 0 or self.TabSimuFiles.SimuPath.EditPath.text()[-1]!='/':
             print('Check simulation path')
@@ -132,6 +146,8 @@ class WindowSetNewSimu(QMainWindow):
                 print(f'source {self.SimuDir}gen_tout_multi.sh')
                 subprocess.run(f'source {self.SimuDir}gen_tout_multi.sh', shell=True, text=True, cwd=self.SimuDir)
                 print('Sub-simulations created')
+                self.DoStartFile()
+                print('Start files was created')
 
                 # self.TabStart.BtnCreate.setEnabled(False)
                 # subprocess.run(f'', shell=True, text=True)
@@ -287,6 +303,14 @@ class WindowSetNewSimu(QMainWindow):
             file.write('\n')
             file.write('new')
 
+    def DoStartFile(self):
+        with open(self.SimuDir+'start.sh', "w") as file:
+            for i in range(1, self.TabStart.NbSubSimu.SpinParam.value()+1):
+                file.write(self.TabStart.StartOrder.EditParam.text()+' '+self.SimuDir+'start_')
+                if i<10: file.write('0'+str(i))
+                else: file.write(str(i))
+                file.write('.sh')
+                file.write('\n')
 
 # Check
 if __name__=="__main__":

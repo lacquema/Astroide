@@ -6,7 +6,7 @@
 # Transverse packages
 import sys
 import os
-from numpy import cos, sin, exp, log, log10, linspace, max, loadtxt, transpose, histogram, histogram2d, arcsinh
+from numpy import cos, sin, exp, log, log10, linspace, max, loadtxt, transpose, histogram, histogram2d, arcsinh, array, float64, int8
 from math import pi, sqrt
 from random import random
 
@@ -445,6 +445,7 @@ class RadProfile(GeneralToolClass):
         self.RminWidget = SpinBox('Rmin', 'Radii minimum [AU]', self.Rmin)
         self.WindowParam.Layout.addWidget(self.RminWidget)
 
+        # print(self.R)
         self.Rmax = round(max(self.R[0]))
         self.RmaxWidget = SpinBox('Rmax', 'Radii maximum [AU]', self.Rmax)
         self.RminWidget.Layout.addWidget(self.RmaxWidget) 
@@ -811,8 +812,8 @@ class DiagramTY(GeneralToolClass):
         self.CheckTitle.setEnabled(False)
 
         # Orbit number
-        self.nOrbit = 0
-        self.nOrbitWidget = SpinBox("Bodie's number",'Number of the body which is studied (counting from the center of the system outwards, including stars in last)', 0, self.NbBodies_f-1)
+        self.nOrbit = 1
+        self.nOrbitWidget = SpinBox("Bodie's number",'Number of the body counting outwards', ParamMin=1, ParamMax=self.NbBodies_f-1)
         self.WindowParam.Layout.addWidget(self.nOrbitWidget)
 
         # Orbit parameters
@@ -821,11 +822,11 @@ class DiagramTY(GeneralToolClass):
 
         # Time limits
         self.Tmin = 0
-        self.TminWidget = SpinBox('Tmin', 'Time minimum (yr)', self.Tmin)
+        self.TminWidget = SpinBox('Tmin', 'Time minimum [yr]', self.Tmin)
         self.WindowParam.Layout.addWidget(self.TminWidget)
 
-        self.Tmax = round(max(self.t_f[0]))
-        self.TmaxWidget = SpinBox('Tmax', 'Time maximum (yr)', self.Tmax)
+        self.Tmax = round(max(self.t_f))
+        self.TmaxWidget = SpinBox('Tmax', 'Time maximum [yr]', self.Tmax)
         self.TminWidget.Layout.addWidget(self.TmaxWidget) 
 
     def UpdateParams(self):
@@ -850,12 +851,12 @@ class DiagramTY(GeneralToolClass):
             return
         
         # Specific data
-        t = [self.t_f[self.nOrbit],'Time (yr)']
+        t = [self.t_f[self.nOrbit],'Time [yr]']
         a = [self.a_f[self.nOrbit],'Semi-major axis [AU]']
         e = [self.e_f[self.nOrbit],'Eccentricity']
-        i = [self.i[self.nOrbit],'Inclinaison (deg)']
-        W = [self.W[self.nOrbit],'Longitude of ascending node (deg)']
-        w = [self.w[self.nOrbit],'Argument of periastron (deg)']
+        i = [self.i[self.nOrbit],'Inclinaison [deg]']
+        W = [self.W[self.nOrbit],'Longitude of ascending node [deg]']
+        w = [self.w[self.nOrbit],'Argument of periastron [deg]']
         M = [self.M[self.nOrbit],'Initial mean longitude']
         
         # Plot with current parameters
@@ -863,7 +864,7 @@ class DiagramTY(GeneralToolClass):
         self.Subplot.plot(t[0], self.EvalParamOrbit[0], linewidth=0.5)
 
         # Plot features
-        if self.CheckXLabel.CheckParam.isChecked(): self.Subplot.set_xlabel('Time (yr)', fontsize=self.SizeLabels)
+        if self.CheckXLabel.CheckParam.isChecked(): self.Subplot.set_xlabel('Time [yr]', fontsize=self.SizeLabels)
         self.Subplot.set_xlim(self.Tmin, self.Tmax)
         if self.CheckYLabel.CheckParam.isChecked(): self.Subplot.set_ylabel(self.EvalParamOrbit[1], fontsize=self.SizeLabels)
         
@@ -897,7 +898,7 @@ class DiagramXY(GeneralToolClass):
 
         # Ordinate quantity formula
         self.YFormula = ''
-        self.YFormulaWidget = LineEdit('Y formula','Ordinate quantity by combining t, a, e, i, w, W, [n] where n is the number of the body (counting from the center of the system outwards, including stars in last), and math fonctions', self.YFormula)
+        self.YFormulaWidget = LineEdit('Y formula','Ordinate quantity by combining t, a, e, i, w, W, [n] where n is the number of the body counting outwards, and math fonctions', self.YFormula)
         self.WindowParam.Layout.addWidget(self.YFormulaWidget)
         self.YFormulaWidget.setMinimumWidth(300)
 
@@ -909,8 +910,9 @@ class DiagramXY(GeneralToolClass):
 
         # Abscissa quantity formula
         self.XFormula = '' 
-        self.XFormulaWidget = LineEdit('X formula','Abscissa quantity by combining t, a, e, i, w, W, [n] where n is the number of the body (counting from the center of the system outwards, including stars in last), and math fonctions', self.XFormula)
+        self.XFormulaWidget = LineEdit('X formula','Abscissa quantity by combining t, a, e, i, w, W, [n] where n is the number of the body counting outwards, and math fonctions', self.XFormula)
         self.WindowParam.Layout.addWidget(self.XFormulaWidget)
+        # self.XFormulaWidget.EditParam.textEdited.connect(self.Validator)
         self.XFormulaWidget.setMinimumWidth(300)
 
         # Abscissa quantity label
@@ -923,15 +925,50 @@ class DiagramXY(GeneralToolClass):
         self.CheckXLabel.CheckParam.stateChanged.connect(lambda: self.XLabelWidget.setEnabled(self.CheckXLabel.CheckParam.isChecked()))
         self.CheckYLabel.CheckParam.stateChanged.connect(lambda: self.YLabelWidget.setEnabled(self.CheckYLabel.CheckParam.isChecked()))
 
+    # def Validator(self, text):
+    #     for pos in range(1, len(text)): 
+    #         if text[pos-1]=='[' and not 1<=text[pos]<=self.NbBodies_f-1:
+    #             self.XFormulaWidget.EditParam.setText(self.TextOld)
+
+
     def UpdateParameters(self):
         self.SizeLabels = self.SizeLabelsWidget.SpinParam.value()
         self.YFormula = self.YFormulaWidget.EditParam.text()
-        if len(self.YLabelWidget.EditParam.text()) != 0: self.YLabel = self.YLabelWidget.EditParam.text()
-        else: self.YLabel = self.YFormula
         self.XFormula = self.XFormulaWidget.EditParam.text()
         self.XLabel = self.XLabelWidget.EditParam.text()
+
+        # # Mofification of orbit count on X-formula
+        # orbit_num = []
+        # orbit_num_pos = []
+        # for pos in range(1, len(self.XFormula)): 
+        #     if self.XFormula[pos-1]=='[':
+        #         orbit_num.append(int(self.XFormula[pos]))
+        #         orbit_num_pos.append(pos)
+        # orbit_num = self.NbBodies_f-1-array(orbit_num)
+        # for j in range(len(orbit_num)): 
+        #     self.XFormula = list(self.XFormula)
+        #     self.XFormula[orbit_num_pos[j]] = str(orbit_num[j])
+        #     self.XFormula = ''.join(self.XFormula)
+
+        # # Mofification of orbit count on Y-formula
+        # orbit_num = []
+        # orbit_num_pos = []
+        # for pos in range(1, len(self.YFormula)): 
+        #     if self.YFormula[pos-1]=='[':
+        #         orbit_num.append(int(self.YFormula[pos]))
+        #         orbit_num_pos.append(pos)
+        # orbit_num = self.NbBodies_f-1-array(orbit_num)
+        # for j in range(len(orbit_num)): 
+        #     self.YFormula = list(self.YFormula)
+        #     self.YFormula[orbit_num_pos[j]] = str(orbit_num[j])
+        #     self.YFormula = ''.join(self.YFormula)
+
+        # Modification of labels
+        if len(self.YLabelWidget.EditParam.text()) != 0: self.YLabel = self.YLabelWidget.EditParam.text()
+        else: self.YLabel = self.YFormula
         if len(self.XLabelWidget.EditParam.text()) != 0: self.XLabel = self.XLabelWidget.EditParam.text()
         else: self.XLabel = self.XFormula
+                
 
     # Plot
     def Plot(self):

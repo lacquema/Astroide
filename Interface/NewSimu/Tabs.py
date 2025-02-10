@@ -382,7 +382,7 @@ class TabStart(GeneralTab):
         self.CheckParallel.CheckParam.setChecked(True)
         self.CheckParallel.Layout.addSpacing(60)
 
-        self.NbSubSimu = SpinBox('Number of sub-simulations', 'Number of sub-simulations. A kind of parallelization', 6, 1, None)
+        self.NbSubSimu = SpinBox('Number of sub-simulations', 'Number of sub-simulations. A kind of parallelization', 8, 1, None)
         self.NbSubSimu.Layout.insertWidget(0, Label('   '), alignment=Qt.AlignmentFlag.AlignLeft)
         self.Layout.addWidget(self.NbSubSimu)
 
@@ -429,11 +429,13 @@ class TabStart(GeneralTab):
         self.StartOrder.Layout.addWidget(self.BtnSaveOrder)
         self.BtnSaveOrder.clicked.connect(self.SaveOrder)
 
-        self.LblGo = QLabel('./start_*.sh')
+        self.LblGo = QLabel('./start.sh')
         self.StartOrder.Layout.addWidget(self.LblGo)
 
         self.BtnStart = QPushButton('Start the simulation')
         self.Layout.addWidget(self.BtnStart, alignment=Qt.AlignmentFlag.AlignRight)
+
+        self.Layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
 
     def CheckParallelChange(self, state):
