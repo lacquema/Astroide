@@ -92,6 +92,7 @@ C
      &                '/mvs_',I2.2,'.in')
 0006    FORMAT('start_',I2.2,'.sh')
 0007    FORMAT('continue_',I2.2,'.sh')
+0008    FORMAT('cd ',(a),'/',(a)) ! added by antoine
 
 1000    FORMAT(I6,6(1X,F7.3))   !étiquettes de format
 2000    FORMAT((a),'_',I2.2,'.in')
@@ -261,6 +262,9 @@ c         en lien avec le choix du réf de coord (écliptique ou invariant)
           print*,'dtmbod',dtbod(i),abod(i),mass(1)
         END DO
 
+        
+        WRITE(52, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
+        WRITE(53, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
 
         WRITE(51,'(a)')'simname="'//TRIM(GNAME)//'"'
         WRITE(PARFILE,2202)SNGL(TSTOP)
@@ -399,9 +403,11 @@ c
                 WRITE(32,'(a)')TRIM(GOCMD)
                 CLOSE(32)           
                 CALL SYSTEM('chmod ogu+x '//TRIM(GOFILE))
-                CALL SYSTEM('chmod ogu+x '//TRIM(GOCFILE))                
+                CALL SYSTEM('chmod ogu+x '//TRIM(GOCFILE))   
+
                 WRITE(GOCMD,2205)NCOR,TRIM(GOCFILE)
                 WRITE(52,'(a)')TRIM(GOCMD)
+
                 WRITE(53, 2205)NCOR,TRIM(GOFILE)  ! added by antoine
                 print*,tpfile,i,ntpt,
      &               sngl(a(i)),sngl(dt),sngl(cputime)
@@ -440,9 +446,9 @@ c
         WRITE(51,'(a)')'exit'
         WRITE(51,'(a)')'!'
         CLOSE(51)
+
         CALL SYSTEM('chmod ogu+x '//TRIM(MEXTRFILE))
         CALL SYSTEM('chmod ogu+x '//TRIM(CONTFILE))  
-        
         CALL SYSTEM('chmod ogu+x '//TRIM(STARTFILE))  ! added by antoine
         
         
