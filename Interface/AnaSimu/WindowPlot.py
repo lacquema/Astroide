@@ -1,67 +1,69 @@
-#! /Users/lacquema/ByeGildas/bin/python3
-
-
-### --- Packages --- ###
-
-# Transverse packages
+#! /Users/lacquema/Oracle.env/bin/python3
 import sys
 
-# PyQt packages
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QApplication
+from PyQt6.QtWidgets import QApplication, QSplitter, QMainWindow, QStatusBar
 
-# Matplotlib packages
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
+from WidgetParam import WidgetParam
+from WidgetPlot import WidgetPlot
 
+class WindowPlot(QMainWindow):
 
-### --- Canvas Generating --- ###
-
-class MplCanvas(FigureCanvasQTAgg):
-
-    def __init__(self, width=6, height=6, dpi=100):
-        self.fig = Figure(figsize=(width, height), dpi=dpi)
-        super(MplCanvas, self).__init__(self.fig)
-
-
-### --- Plot Window Generating --- ###
-
-class WindowPlotClass(QMainWindow):
-
-    SignalCloseWindowPlot = pyqtSignal() # initiation of the closeEvent signal
+    SignalCloseWindowPlot = pyqtSignal()  # initiation of the closeEvent signal
 
     def __init__(self, ToolName):
         super().__init__()
 
-        # Window characteristics
-        self.setWindowTitle(ToolName+': Plot')
-        # self.move(self.frameGeometry().topLeft())
+        # Window settings
+        self.setWindowTitle(ToolName)
 
-        # Layout
-        Layout = QVBoxLayout()
+        # Splitter widget
+        self.Splitter = QSplitter()
 
-        # Canvas initialisation
-        self.Canvas = MplCanvas()
-        
-        # Plot on the Canvas
-        Layout.addWidget(self.Canvas)
+        # Parameters widget
+        self.WidgetParam = WidgetParam()
+        self.Splitter.addWidget(self.WidgetParam)
 
-        # Toolbar
-        Toolbar = NavigationToolbar(self.Canvas, self)
-        Layout.addWidget(Toolbar)
+        # Plotting widgets
+        self.WidgetPlots = []
 
-        # Widget container
-        Container = QWidget()
-        Container.setLayout(Layout)
-        self.setCentralWidget(Container)
+        # Status bar
+        self.setStatusBar(QStatusBar(self))
 
-    # Emition of the CloseEvent signal when the plot window is closed
+        # Container
+        self.setCentralWidget(self.Splitter)
+
+
+    def add_WidgetPlot(self, plot, events_to_reset_history=None):
+        """
+        Creates a new WidgetPlot connected to the WidgetParam.
+        """
+        widget_plot = WidgetPlot(plot)
+        self.connect_events_to_reset_history(widget_plot, events_to_reset_history)
+        self.WidgetPlots.append(widget_plot)
+        self.Splitter.addWidget(widget_plot)
+        return widget_plot
+    
+    def connect_events_to_reset_history(self, widget_plot, events_to_reset_history=None):
+        """
+        Connects the events to reset the history of the widget_plot.
+        """
+        if events_to_reset_history is None:
+            return
+        else:
+            for x in events_to_reset_history:
+                x.connect(widget_plot.reset_history)
+    
+    
+
+
+    # Emission of the CloseEvent signal when the parameter window is closed
     def closeEvent(self, e):
-        self.SignalCloseWindowPlot.emit() 
+        self.SignalCloseWindowPlot.emit()
 
 
 if __name__=="__main__":
-    app = QApplication(sys.argv)
-    WindowPlot = WindowPlotClass('ToolName')
-    WindowPlot.show()
-    app.exec()
+    app = QApplication(sys.argv) # Application creation
+    Window = WindowPlot('test')
+    Window.show()
+    app.exec() # Application execution

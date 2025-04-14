@@ -1,118 +1,123 @@
 #! /Users/lacquema/Astroide.env/bin/python3
 
-
-
-
-##########################################################################################################
-###             <<< Here you must input paths to mextract.dat and followbodies.dat >>>                 ###
-##########################################################################################################
-n=8
-System = 'BetaPic'
-PathFollowbodies = '/Users/lacquema/Documents/Research/Simulations/Astroide/'+System+f'/simu_bpicbcd_{n}/followbodies.dat'
-PathMextract = '/Users/lacquema/Documents/Research/Simulations/Astroide/'+System+f'/simu_bpicbcd_{n}/mextract.dat'
-##########################################################################################################
-
-
-
-
 ### --- Packages --- ###
 
-# Transverse packages
+# Standard Python packages
 import sys
 import os
+import numpy as np
+from scipy.interpolate import interp1d
 
-# PyQt packages
-from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QStatusBar, QWidget, QApplication, QProgressBar
+# PyQt packages for GUI components and signals
+from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QStatusBar, QWidget, QApplication, QProgressBar, QGridLayout
 from PyQt6.QtCore import pyqtSignal
 
-# My packages
+# Custom modules
 from SnapSelector import SnapSelectorClass
 from Tools import *
 from TransferData import TransferDataClass
 from WindowLoad import LoadWindowClass
 
 
-
 ### --- Main Window Generating --- ###
 
 class WindowMainClass(QMainWindow):
-
+    # Signal emitted when the main window is closed
     SignalCloseWindowMain = pyqtSignal()
+
 
     def __init__(self, PathFollowbodies=str, PathMextract=str):
         super().__init__()
 
-        # Data
+        # Load data from the provided file paths
         NbSteps, NbBodies_f, t_f, a_f, e_f, i, W, w, M = TransferDataClass.OpenFollowbodies(PathFollowbodies)
         NbSnapshots, t_m, NbBodies_m, NbParticles, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R = TransferDataClass.OpenMextract(PathMextract)
+        tmax = np.max(t_m)  # Maximum time value for the simulation
 
-        # Window settings
-        self.setWindowTitle('Astroide data analysis of {}'.format(PathFollowbodies.split('/')[-2]))
+        # Set the window title based on the simulation folder name
+        self.setWindowTitle('Astroide analysis of {}'.format(PathFollowbodies.split('/')[-2]))
 
-        # Layout intialisation
+        # Initialize the main layout as a vertical box layout
         Layout = QVBoxLayout()
 
-        # SnapSelector adding
-        SnapSelectorWidget = SnapSelectorClass(NbSnapshots)
+        # Add the SnapSelector widget for snapshot selection
+        SnapSelectorWidget = SnapSelectorClass(NbSnapshots-1, tmax)
         Layout.addWidget(SnapSelectorWidget)
 
-        # Separation
-        Layout.addWidget(Delimiter())
+        # Add a visual delimiter for separation
+        Layout.addWidget(Delimiter(Title='Plots :'))
 
-        # Space view tool adding
+        # Grid layout
+        GridLayout = QGridLayout()
+
+        # Add the SpaceView widget for 3D space visualization
         SpaceViewWidget = SpaceView(t_m, NbBodies_m, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R)
-        Layout.addWidget(SpaceViewWidget)
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(SpaceViewWidget.Refresh_ActivePlots) # Refresh all active plots when the refresh button is clicked
-        SnapSelectorWidget.EditIndexSnap.valueChanged.connect(SpaceViewWidget.Change_IndexSnap) # Refresh all active plots with new snapshot index when the value of this index is changed
+        GridLayout.addWidget(SpaceViewWidget, 0, 0, 1, 3)
 
-        # Radial profile
-        RadProfileWidget = RadProfile(t_m, NbBodies_m, a_m, R)
-        Layout.addWidget(RadProfileWidget)
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(RadProfileWidget.Refresh_ActivePlots)
+        # Connect SnapSelector signals to SpaceView methods for interactivity
+        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(SpaceViewWidget.Refresh_active_plots)  # Refresh plots on button click
+        SnapSelectorWidget.EditIndexSnap.valueChanged.connect(SpaceViewWidget.Change_IndexSnap)  # Update plots on index change
+
+        # Add the Radial Profile widget for radial distribution visualization
+        RadProfileWidget = RadProfile(t_m, NbBodies_m, a_m, X, Y, Z, R)
+        GridLayout.addWidget(RadProfileWidget, 0, 3, 1, 3)
+
+        # Connect SnapSelector signals to RadProfile methods for interactivity
+        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(RadProfileWidget.Refresh_active_plots)
         SnapSelectorWidget.EditIndexSnap.valueChanged.connect(RadProfileWidget.Change_IndexSnap)
 
-        # Diagram A=F(E)
+        # Add the Diagram A=F(E) widget for energy vs semi-major axis visualization
         DiagramAEWidget = DiagramAE(t_m, NbBodies_m, a_m, e_m)
-        Layout.addWidget(DiagramAEWidget)
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(DiagramAEWidget.Refresh_ActivePlots)
+        GridLayout.addWidget(DiagramAEWidget, 2, 0, 1, 2)
+
+        # Connect SnapSelector signals to DiagramAE methods for interactivity
+        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(DiagramAEWidget.Refresh_active_plots)
         SnapSelectorWidget.EditIndexSnap.valueChanged.connect(DiagramAEWidget.Change_IndexSnap)
 
-        # Orbit Evolution tool adding
+        # Add the Orbit Evolution widget for orbital parameter evolution visualization
         DiagramTYWidget = DiagramTY(NbBodies_f, t_f, a_f, e_f, i, W, w, M)
-        Layout.addWidget(DiagramTYWidget)
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(DiagramTYWidget.Refresh_ActivePlots)
+        GridLayout.addWidget(DiagramTYWidget, 2, 2, 1, 2)
 
-        # Diagram Y=F(X)
+        # Connect SnapSelector signals to DiagramTY methods for interactivity
+        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(DiagramTYWidget.Refresh_active_plots)
+
+        # Add the Diagram Y=F(X) widget for position-based visualization
         DiagramXYWidget = DiagramXY(NbBodies_f, t_f, a_f, e_f, i, W, w, M)
-        Layout.addWidget(DiagramXYWidget)
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(DiagramXYWidget.Refresh_ActivePlots)
+        GridLayout.addWidget(DiagramXYWidget, 2, 4, 1, 2)
 
-        # Widget container
+        # Connect SnapSelector signals to DiagramXY methods for interactivity
+        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(DiagramXYWidget.Refresh_active_plots)
+
+        # Add grid layout to layout
+        Layout.addLayout(GridLayout)
+
+        # Create a container widget to hold the layout and set it as the central widget
         Container = QWidget()
         Container.setLayout(Layout)
         self.setCentralWidget(Container)
-        
-        # Status bar
-        self.setStatusBar(QStatusBar(self))
-        
-        # Showing
-        self.show()
-        # LoadWin.close()
 
-    # Close programme when the main window are closed
+        # Add a status bar to the main window
+        self.setStatusBar(QStatusBar(self))
+
+        # Display the main window
+        self.show()
+
+    # Override the closeEvent to handle application closure
     def closeEvent(self, e):
         try:
+            # Attempt to close all application windows
             app.closeAllWindows()
         except:
+            # Emit the custom signal if an exception occurs
             self.SignalCloseWindowMain.emit()
 
 
-
-
-if __name__=="__main__":
-    app = QApplication(sys.argv) # Application creation
-    # LoadWin = LoadWindowClass() # Loading window showing
-    # app.processEvents() # Continue the program
-    WindowMain = WindowMainClass(PathFollowbodies, PathMextract) # Main window showing
-    sys.exit(app.exec()) # Application execution
-    
+# Entry point of the application
+if __name__ == "__main__":
+    app = QApplication(sys.argv)  # Create the application instance
+    # LoadWin = LoadWindowClass()  # Uncomment to show a loading window
+    # app.processEvents()  # Process events to continue the program
+    PathFollowbodies = '/Users/lacquema/Simulations/twa7/twa7_cb_a_dyn/twa7_cb_a_dyn_2/followbodies.dat'
+    PathMextract = '/Users/lacquema/Simulations/twa7/twa7_cb_a_dyn/twa7_cb_a_dyn_2/mextract.dat'
+    WindowMain = WindowMainClass(PathFollowbodies, PathMextract)  # Create and show the main window
+    sys.exit(app.exec())  # Execute the application

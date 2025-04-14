@@ -16,7 +16,7 @@ from PyQt6.QtGui import QIcon
 
 class SnapSelectorClass(QWidget):
     
-    def __init__(self, NbSnap):
+    def __init__(self, NbSnap, tmax):
         super().__init__()
 
         # Directory path
@@ -24,7 +24,9 @@ class SnapSelectorClass(QWidget):
 
         # Variables
         self.NbSnap = NbSnap
+        print(self.NbSnap)
         self.IndexSnap = 0
+        self.tmax = tmax
         
         # Layout
         Layout = QHBoxLayout()
@@ -38,8 +40,13 @@ class SnapSelectorClass(QWidget):
         self.EditIndexSnap.setRange(0, NbSnap)
         Layout.addWidget(self.EditIndexSnap)
 
-        # Spacing
-        Layout.addSpacing(100)
+        Layout.addSpacing(5)
+
+        # Label time
+        self.LblTime = QLabel()
+        self.LblTime.setFixedWidth(120)
+        self.ChangeTime()
+        Layout.addWidget(self.LblTime)
 
         # Button to fist snapshot
         self.BtnFirstSnap = QPushButton()
@@ -86,12 +93,13 @@ class SnapSelectorClass(QWidget):
     # Change index snapshot and state of button
     def ChangeValueIndexSnap(self, value):
         self.IndexSnap = value
+        self.ChangeTime()
         if self.IndexSnap == 0:
             self.BtnFirstSnap.setEnabled(False)
             self.BtnPreviousSnap.setEnabled(False)
             self.BtnNextSnap.setEnabled(True)
             self.BtnLastSnap.setEnabled(True)
-        elif self.IndexSnap == self.NbSnap-1:
+        elif self.IndexSnap == self.NbSnap:
             self.BtnFirstSnap.setEnabled(True)
             self.BtnPreviousSnap.setEnabled(True)
             self.BtnNextSnap.setEnabled(False)
@@ -101,6 +109,11 @@ class SnapSelectorClass(QWidget):
             self.BtnPreviousSnap.setEnabled(True)
             self.BtnNextSnap.setEnabled(True)
             self.BtnLastSnap.setEnabled(True)
+
+    # Change time label
+    def ChangeTime(self):
+        self.time = self.tmax/self.NbSnap*self.IndexSnap/10**6
+        self.LblTime.setText(f"=>   t = {self.time:.1f} Myr")
 
     # Change index snapshot to the first directly
     def GoFirstSnap(self):
@@ -115,18 +128,18 @@ class SnapSelectorClass(QWidget):
 
     # Change index snapshot to next
     def GoNextSnap(self):
-        if self.IndexSnap != self.NbSnap-1:
+        if self.IndexSnap != self.NbSnap:
             self.IndexSnap += 1
             self.EditIndexSnap.setValue(self.IndexSnap)
 
     # Change index snapshot to the last directly
     def GoLastSnap(self):
-        self.IndexSnap = self.NbSnap-1
+        self.IndexSnap = self.NbSnap
         self.EditIndexSnap.setValue(self.IndexSnap)
 
 # Check
 if __name__=="__main__":
     app = QApplication(sys.argv) # Application creation
-    SnapSelectorWidget = SnapSelectorClass(20)
+    SnapSelectorWidget = SnapSelectorClass(20, 20000000)
     SnapSelectorWidget.show()
     app.exec() # Application execution

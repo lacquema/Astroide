@@ -30,7 +30,6 @@ class TransferDataClass():
             t_f[j], a_f[j], e_f[j], i[j], W[j], w[j], M[j] = [DataFollowbodies[j][k][:] for k in range(7)]
 
         return NbSteps, NbBodies_f, np.flip(t_f), np.flip(a_f), np.flip(e_f), np.flip(i), np.flip(W),np.flip(w), np.flip(M)
-    
 
                     
     # Open mextract.dat data
