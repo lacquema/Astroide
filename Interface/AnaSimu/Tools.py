@@ -526,6 +526,7 @@ class RadProfile(GeneralToolClass):
         self.profileNE = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_NE.dat', dtype = float))
         self.profileSW = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_SW.dat', dtype = float))
 
+
         # Parameters initialisation
         self.InitParams()
 
@@ -708,7 +709,7 @@ class RadProfile(GeneralToolClass):
                 histCount_interp = interp_func(histX_interp)
                 
                 # Tracé de la courbe interpolée
-                self.Subplot.plot(histX_interp, histCount_interp, label='Interpolated', linewidth=1, color='green')
+                self.Subplot.plot(histX_interp, histCount_interp, label='Interpolation', linewidth=1, color='green')
             except Exception as e:
                 print(f"Interpolation failed: {e}")
 
@@ -722,8 +723,8 @@ class RadProfile(GeneralToolClass):
         if self.CheckCurves.isChecked(): 
             try:
                 for i in range(len(self.CurveWidgets)):
-                    self.Curve = transpose(loadtxt(self.CurvePaths[i], dtype = float))
-                    self.Subplot.plot(self.Curve[0], self.Curve[1], linestyle='dashed', linewidth=0.5, label=self.CurveLabels[i])
+                    self.Curve = transpose(np.loadtxt(self.CurvePaths[i], dtype=float, delimiter=',' if ',' in open(self.CurvePaths[i]).readline() else '\t'))
+                    self.Subplot.plot(self.Curve[0], self.Curve[1], linestyle='dashed', linewidth=1, label=self.CurveLabels[i])
             except:
                 print('Wrong files')
                 print('Path is necessary to files in format:')
