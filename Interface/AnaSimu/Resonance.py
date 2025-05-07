@@ -25,7 +25,7 @@ class ResClass(QWidget):
         self.Layout = QHBoxLayout()
 
         # Reference number of the resonance
-        self.nRefWidget = SpinBox(None, 'Number of the bodie which is the reference of the resonance (counting from the center of the system outwards, including stars in first)', 0, 0, NbBodies-1)
+        self.nRefWidget = SpinBox(None, 'Number of the bodie which is the reference of the resonance (counting from the center of the system outwards, including stars in first)', 1, 1, NbBodies-1)
         self.Layout.addWidget(self.nRefWidget)
 
         # Period ratio between the two resonating bodies

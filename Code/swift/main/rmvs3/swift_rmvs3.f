@@ -15,7 +15,7 @@ c Authors:  Hervé Beust
 c Date:    Apr 19, 2023
 
      
-	include '../swift.inc'
+	include '../../sub/swift.inc'
 
 	real*8 xht(NTPMAX),yht(NTPMAX),zht(NTPMAX)
 	real*8 vxht(NTPMAX),vyht(NTPMAX),vzht(NTPMAX)
@@ -77,14 +77,15 @@ c
 	
         if ((fopenstat(1:3).eq.'new')
      &       .or.(fopenstat(1:3).eq.'NEW')) then
-          dataname = 'cp '//trim(inparfile)//' '//trim(diro)
-          call system(dataname)
-          dataname = 'cp '//trim(inplfile)//' '//trim(diro)
-          call system(dataname)
-          dataname = 'cp '//trim(intpfile)//' '//trim(diro)
-          call system(dataname)
-          dataname = 'cp '//trim(genfile)//' '//trim(diro)
-          call system(dataname)
+          dataname = trim(inparfile)//' '//trim(diro)
+          call system('cp '//dataname)
+          dataname = trim(inplfile)//' '//trim(diro)
+          call system('cp '//dataname)
+          dataname = trim(intpfile)//' '//trim(diro)
+          call system('cp '//dataname)
+          dataname = trim(genfile)//' '//trim(diro)
+          call system('cp '//dataname)
+
         end if
 
 c Initialize initial time and times for first output and first dump
@@ -140,10 +141,12 @@ c***************here's the big loop *************************************
 
 	do while ((t.le.tstop).and.((ntp.eq.0).or.(nleft.gt.0)))
 
- 	     call rmvs3_step_par(i1st,t,tout,tstop,nbod,ntp,mass,
+c           write(*,*)'t=',t
+	   call rmvs3_step_par(i1st,t,tout,tstop,nbod,ntp,mass,
      &               j2rp2,j4rp4,xh,yh,zh,vxh,vyh,vzh,xht,yht,zht,
      &               vxht,vyht,vzht,istat,rstat,iencio,dt)
-
+c           write(*,*)'ok',t
+	   
 c	     t = t + dt
 c             iloop = iloop+1_8
 c             t = t0 + dble(iloop)*dt

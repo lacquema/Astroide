@@ -25,7 +25,7 @@ c...  Internals
 c-----
 c...  Executable code 
 
-        mvsfile = trim(diro)//'/mvs.in'
+        mvsfile = trim(diro)//'/files.in'
 
         call io_open(7,mvsfile,'unknown','formatted',ierr)
 

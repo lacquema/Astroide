@@ -1,6 +1,7 @@
 #! /Users/lacquema/Astroide.env/bin/python3
 import sys
 import os
+sys.path.append(os.path.dirname(__file__)+'/..')
 
 ### --- Packages --- ###
 
@@ -15,12 +16,13 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from Parameters import *
 from UtilsAnaSimu import DelAllWidgetsBtw
 from WindowMain import WindowMainClass
+from WindowWithFinder import WindowWithFinder
 # from WindowMenu import LoadWindowClass
 
 
 ### --- Parameters Window Generating --- ###
 
-class WindowSetAnaSimu(QMainWindow):
+class WindowSetAnaSimu(WindowWithFinder):
 
     SignalCloseWindowSetAnaSimu = pyqtSignal()
     ReSignalCloseWindowMain = pyqtSignal()
@@ -30,7 +32,8 @@ class WindowSetAnaSimu(QMainWindow):
 
         # Window characteristics
         self.setWindowTitle('Settings of the analysis')
-        self.setMinimumWidth(600)
+        self.setMinimumWidth(1000)
+        self.setMinimumHeight(500)
 
         # Layout initialisation
         self.Layout = QVBoxLayout()
@@ -47,18 +50,20 @@ class WindowSetAnaSimu(QMainWindow):
         self.Container = QWidget()
         self.Container.setLayout(self.Layout)
 
-        # Container
-        self.setCentralWidget(self.Container)
+        # Add container to the split main window
+        self.Splitter.addWidget(self.Container)
+
+        # Connect folder to edit path
+        self.Finder.doubleClicked.connect(self.ChangePath)
 
         # Status bar
         self.setStatusBar(QStatusBar(self))
 
 
-
     def InitWidgets(self):
         
-        self.SimuPath = PathBrowser('Directory path', 'Path to the data to analyse', 0)
-        self.Layout.addWidget(self.SimuPath)
+        self.SimuFilePathW = LineEdit('Simulation file', 'Path to the simulation file to analyse', '')
+        self.Layout.addWidget(self.SimuFilePathW)
 
         self.FollowbodiesFileName = LineEdit('Followbodies file', 'Name of the followbodies file with extension', 'followbodies.dat')
         self.Layout.addWidget(self.FollowbodiesFileName, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -71,6 +76,29 @@ class WindowSetAnaSimu(QMainWindow):
         self.BtnStart.clicked.connect(self.AnalyseSimu)
 
         self.Layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+    def ChangePath(self):
+        index = self.Finder.selectedIndexes()[0]
+        info = self.Model.fileInfo(index)
+        file_path = info.absoluteFilePath()
+        if self.is_valid_file(file_path):  # Check if the file is valid
+            self.SimuFilePathW.EditParam.setText(file_path+'/')
+        else:
+            print('\nSelected directory is not valid')
+            self.ClearEdits()
+
+    def is_valid_file(self, file_path):
+        # Check if the given path is a directory
+        if os.path.isdir(file_path):
+            # Check if the directory contains at least one .dat file
+            for file_name in os.listdir(file_path):
+                if file_name.endswith('.dat'):
+                    return True
+        return False
+
+    def ClearEdits(self):
+        # self.DataFileNameW.EditParam.setText('')
+        self.SimuFilePathW.EditParam.setText('')
     
     # Reset all widgets of the parameters window
     def ResetParams(self):
@@ -78,46 +106,20 @@ class WindowSetAnaSimu(QMainWindow):
         self.InitWidgets()
 
     def AnalyseSimu(self):
-        self.BtnStart.setEnabled(False)
-        if len(self.SimuPath.EditPath.text()) == 0:
-            self.BtnStart.setEnabled(True)
-            print('Simulation directory path not given')
-            print('Check your inputs')
+        if len(self.SimuFilePathW.EditParam.text()) == 0:
+            print('\nSimulation path not given')
         else:
-            self.OpenWinMain()
-
+            try:
+                self.OpenWinMain()
+            except Exception as e:
+                print(f'\nThere is a problem with inputs: {e}')
 
     def OpenWinMain(self):
-        try:
-            self.WinMain = WindowMainClass(self.SimuPath.EditPath.text()+self.FollowbodiesFileName.EditParam.text(), self.SimuPath.EditPath.text()+self.MextractFileName.EditParam.text())
-            self.WinMain.SignalCloseWindowMain.connect(self.ReSignalCloseWindowMain.emit)
-            self.close()
-            self.WinMain.show()
-        except:
-            print('There is a problem with the data')
-        self.BtnStart.setEnabled(True)
+        self.WinMain = WindowMainClass(self.SimuFilePathW.EditParam.text()+self.FollowbodiesFileName.EditParam.text(), self.SimuFilePathW.EditParam.text()+self.MextractFileName.EditParam.text())
+        self.WinMain.SignalCloseWindowMain.connect(self.ReSignalCloseWindowMain.emit)
+        self.close()
+        self.WinMain.show()
 
-    # def FindInputFiles(self):
-    #     Files = os.listdir(self.SimuPath.EditPath.text()[:-1])
-    #     self.SimuName.EditParam.setText(self.SimuPath.EditPath.text()[:-1].split('/')[-1])
-    #     txtFiles = []
-    #     datFiles = []
-    #     for x in Files:
-    #         if x[-4:] == '.txt':
-    #             txtFiles.append(x)
-    #         if x[-4:] == '.dat':
-    #             datFiles.append(x)
-    #     if 'logfile.dat' in datFiles: datFiles.remove('logfile.dat')
-    #     if len(txtFiles) == 1:
-    #         self.DataFileName.EditParam.setText(txtFiles[0])
-    #     else:
-    #         self.DataFileName.EditParam.setText('')
-    #         print('Data file not found')
-    #     if len(datFiles) == 1:
-    #         self.SimuFileName.EditParam.setText(datFiles[0])
-    #     else:
-    #         self.SimuFileName.EditParam.setText('')
-    #         print('Simulation file not found')
         
 
     # Emition of the CloseEvent signal when the parameter window is closed

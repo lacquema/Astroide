@@ -2,9 +2,9 @@ C-------------------------------------------------------------------------
 C                   Main program
 C-------------------------------------------------------------------------
 C 
-        PROGRAM GEN_TOUT_MULTI
+        PROGRAM GEN_MULTI_RMVS3
 
-        include './swift/sub/swift.inc'
+        include '../../sub/swift.inc'
 
         REAL*8, PARAMETER :: SMASSYR = TWOPI*TWOPI,
      &          DR = 1.7453292519943294d-2,      ! 180/pi 
@@ -42,7 +42,7 @@ C
         CHARACTER*(CHLEN) INTPFILE,TPFILE,INPARFILE,PARFILE,OUTFILE
         CHARACTER*(CHLEN) DIRO,DIRS,GNAME,FOPENSTAT,GOFILE,MVSFILE
         CHARACTER*(CHLEN) BINDIR,MEXTRFILE,CONTFILE,STARTFILE
-        CHARACTER*(CHLEN) GOCFILE,GOCMD,INTEG
+        CHARACTER*(CHLEN) GOCFILE,GOCMD,INTEG, CLEARFILE, CORRFILE
         CHARACTER*1 PR
         real*8 t0,tstop
         real*8 dtout,dtdump
@@ -79,53 +79,68 @@ C
         CHARACTER*10 INPLFILE
         CHARACTER*65 FPLANETS
         INTEGER NBOD,IALPHA,IP1,IP2,IUFLG,ICFLG,IRFLG
-        INTEGER NNN1,NNN2
+        INTEGER NNN1,NNN
 
-0001    FORMAT((a),'/mbodies_multi <<!') ! added by antoine
-2204    FORMAT((a),'/swift_',(a),' < ',(a),'/',(a),'/',
-     &                         'run_',I2.2,'/mvs.in') ! modified by antoine
-0002    FORMAT((a),'/swift_',(a),' < ',(a),'/',(a),'/', ! added by antoine
-     &                'run_',I2.2,'/mvs_',I2.2,'.in')
-0003    FORMAT((a),'/swift_',(a),' < ./mvs.in') ! added by antoine
-0004    FORMAT((a),'/swift_',(a),' < ./mvs_',I2.2,'.in') ! added by antoine
-0005    FORMAT((a),'/swift_',(a),' < ',(a),'/',(a), ! added by antoine
-     &                '/mvs_',I2.2,'.in')
+0009    FORMAT('  rm -rf ./run_',I2.2) ! added by antoine
+
+0001    FORMAT((a),'mbodies_multi_rmvs3 <<!') ! added by antoine
+2204    FORMAT((a),'swift_',(a),' < ./run_',I2.2,'/files.in') ! modified by antoine
+0002    FORMAT((a),'swift_',(a),' < ',(a),'/',(a),'/', ! added by antoine
+     &                'run_',I2.2,'/files_',I2.2,'.in')
+0003    FORMAT((a),'swift_',(a),' < ./files.in') ! added by antoine
+0004    FORMAT((a),'swift_',(a),' < ./files_',I2.2,'.in') ! added by antoine
+0005    FORMAT((a),'swift_',(a),' < ',(a),'/',(a), ! added by antoine
+     &                '/files_',I2.2,'.in')
 0006    FORMAT('start_',I2.2,'.sh')
 0007    FORMAT('continue_',I2.2,'.sh')
-0008    FORMAT('cd ',(a),'/',(a)) ! added by antoine
+0008    FORMAT('cd ',(a),'/',(a),'/') ! added by antoine
 
 1000    FORMAT(I6,6(1X,F7.3))   !étiquettes de format
 2000    FORMAT((a),'_',I2.2,'.in')
 3000    format(100(a1,1x))
 4000    FORMAT((a),'_',I2.2)
-5000    FORMAT('mvs_',I2.2,'.in')
+5000    FORMAT('files_',I2.2,'.in')
 6000    FORMAT('go_',(a),'_',I2.2,'.sh')
 6001    FORMAT('cont_',(a),'_',I2.2,'.sh')
-2200    FORMAT((a),'/${simname}/run_',I2.2,'/',(a),'_',I2.2,'.in')
-2201    FORMAT(I2)
-2202    FORMAT('tfin="',f10.1,'"')   
+2200    FORMAT('./run_',I2.2,'/',(a),'_',I2.2,'.in') ! modified by antoine
+2201    FORMAT(I0) ! modified by antoine
+2202    FORMAT('tfin="',f10.1,'"')  
+22021    FORMAT('t_0=',f0.0)   ! added by antoine
+22022    FORMAT('t_f=',f0.0)   ! added by antoine
+22023    FORMAT('dt=',f0.0)   ! added by antoine 
 2203    FORMAT(f10.1)
 
-2205    FORMAT('oarsub -l nodes=1/core=',I1,
-     &       ',walltime=48 --project dynapla ./',(a))
+2205    FORMAT('order=${1:-"oarsub -l /nodes=1/cpu=1/core=',I1,
+     &       ',walltime=48 --project dynapla"}') ! modified by antoine
 2206    FORMAT('export OMP_NUM_THREADS=',I1)
 c     ........entree des parametres
 
         READ(*,'(a)')BINDIR  ! added by antoine
 
-
         MEXTRFILE='mextract_multi.sh'
         CONTFILE='continue.sh'
         STARTFILE='start.sh'
+        CLEARFILE='clear.sh'
+        CORRFILE='corr_multi.dat'
+        
+        WRITE(*,*)'Remove old files' ! added by antoine
+        CALL SYSTEM('[ -f ./'//CLEARFILE//' ] && ./'//CLEARFILE) ! added by antoine
+
+        WRITE(*,*)'Generate sub-simulations:' ! added by antoine
 
         OPEN(51,FILE=MEXTRFILE,STATUS='UNKNOWN')
         OPEN(52,FILE=CONTFILE,STATUS='UNKNOWN')
         OPEN(53,FILE=STARTFILE,STATUS='UNKNOWN')  ! added by antoine
+        OPEN(54,FILE=CLEARFILE,STATUS='UNKNOWN')  ! added by antoine
 
-        WRITE(51,'(a)')'#! /bin/bash'
-        WRITE(51,'(a)')'unlimit'
+        WRITE(53,'(a)')'#! /bin/bash' ! added by antoine
+        WRITE(54,'(a)')'#! /bin/bash' ! added by antoine
+
+        WRITE(51,'(a)')'#! /bin/bash' ! modified by antoine
+        ! WRITE(51,'(a)')'unlimit'
         WRITE(51,'(a)')'export OMP_NUM_THREADS=1'
         WRITE(51,'(a)')'export STACKSIZE=1000000'
+        
         WRITE(*,*)' Name of integrator'
         WRITE(*,*)' (rmvs3,whm,whm_s6b,rmvs3_parp,whm_s6b_parp) '
         READ(*,'(a)')INTEG
@@ -263,12 +278,21 @@ c         en lien avec le choix du réf de coord (écliptique ou invariant)
         END DO
 
         
-        WRITE(52, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
-        WRITE(53, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
+        WRITE(52,2205)NCOR ! added by antoine
+        WRITE(53,2205)NCOR ! added by antoine
 
-        WRITE(51,'(a)')'simname="'//TRIM(GNAME)//'"'
-        WRITE(PARFILE,2202)SNGL(TSTOP)
+        ! WRITE(53,'(a)')'success_count=0' ! added by antoine
+
+        ! WRITE(51,'(a)')'simname="'//TRIM(GNAME)//'"'
+        WRITE(PARFILE,22021)SNGL(T0) ! added by antoine
+        WRITE(51, '(a)')TRIM(PARFILE) ! added by antoine
+        WRITE(PARFILE,22022)SNGL(TSTOP)
         WRITE(51,'(a)')TRIM(PARFILE)
+        dt = 0.1d0*TSTOP ! added by antoine
+        WRITE(PARFILE,22023)SNGL(dt) ! added by antoine
+        WRITE(51, '(a)')TRIM(PARFILE) ! added by antoine
+
+        WRITE(51, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
         WRITE(51,0001)TRIM(BINDIR)
 
         IPAR = INDEX(INPARFILE,'.')
@@ -303,7 +327,7 @@ c         en lien avec le choix du réf de coord (écliptique ou invariant)
             END DO
 c            CALL ORDREB(A,IT,MT,NTP)
             IFILE = 1
-            OPEN(12,FILE='correspondance.dat',status='UNKNOWN')
+            OPEN(12,FILE=CORRFILE,status='UNKNOWN')
             DO I=1,NTP
               IALPHA = -1
               call random_number(rand)
@@ -369,7 +393,7 @@ c
      &           diro,outfile,fopenstat)
                 WRITE(MVSFILE,5000)CNTFILE
                 OPEN(31,FILE=MVSFILE,STATUS='UNKNOWN') ! mvs file
-                WRITE(31,'(a)')'gen_tout_multi.sh'
+                WRITE(31,'(a)')'gen_multi_rmvs3.sh'
                 WRITE(31,'(a)')TRIM(PARFILE)
                 WRITE(31,'(a)')TRIM(INPLFILE)
                 WRITE(31,'(a)')TRIM(TPFILE)
@@ -380,76 +404,105 @@ c
                 WRITE(GOFILE,0006)CNTFILE  ! added by antoine
                 WRITE(GOCFILE,0007)CNTFILE  ! added by antoine
                 OPEN(31,FILE=GOFILE,STATUS='UNKNOWN') ! go file
-                WRITE(31,'(a)')'#! /bin/tcsh -f'
-                WRITE(31,'(a)')'unlimit'
+                WRITE(31,'(a)')'#! /bin/bash' ! modified by antoine
+                ! WRITE(31,'(a)')'unlimit' ! commented by antoine
                 WRITE(GOCMD,2206)NCOR
                 WRITE(31,'(a)')TRIM(GOCMD)
                 WRITE(31,'(a)')'export STACKSIZE=1000000'
-                ! WRITE(31,'(a)')' '
-                WRITE(31,0005)TRIM(BINDIR),TRIM(INTEG),TRIM(DIRS),  ! modified by antoine
-     &                        TRIM(GNAME),CNTFILE
+                WRITE(31, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
+                WRITE(31,'(a)')TRIM(BINDIR)//'swift_'//TRIM(INTEG)//
+     &                ' < ./'//TRIM(MVSFILE) ! modified by antoine
                 ! WRITE(31,0004)TRIM(BINDIR),TRIM(INTEG),CNTFILE  ! added by antoine
                 CLOSE(31)           
                 OPEN(32,FILE=GOCFILE,STATUS='UNKNOWN')  ! continuation file
-                WRITE(32,'(a)')'#! /bin/tcsh -f'
-                WRITE(32,'(a)')'unlimit'
+                WRITE(32,'(a)')'#! /bin/bash' ! modified by antoine
+                ! WRITE(32,'(a)')'unlimit' ! commented by antoine
                 WRITE(GOCMD,2206)NCOR
                 WRITE(32,'(a)')TRIM(GOCMD)
                 WRITE(32,'(a)')'export STACKSIZE=1000000'
                 ! WRITE(32,'(a)')' '
-                WRITE(GOCMD,2204)TRIM(BINDIR),TRIM(INTEG),TRIM(DIRS),  ! modified by antoine
-     &                                 TRIM(GNAME),CNTFILE
-                ! WRITE(GOCMD,0003)TRIM(BINDIR),TRIM(INTEG) ! added by antoine
+                WRITE(32, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
+                WRITE(GOCMD,2204)TRIM(BINDIR),TRIM(INTEG),CNTFILE
                 WRITE(32,'(a)')TRIM(GOCMD)
+                ! WRITE(GOCMD,0003)TRIM(BINDIR),TRIM(INTEG) ! added by antoine
                 CLOSE(32)           
                 CALL SYSTEM('chmod ogu+x '//TRIM(GOFILE))
                 CALL SYSTEM('chmod ogu+x '//TRIM(GOCFILE))   
 
-                WRITE(GOCMD,2205)NCOR,TRIM(GOCFILE)
-                WRITE(52,'(a)')TRIM(GOCMD)
+                WRITE(53,'(a)')'${order} ./'//TRIM(GOFILE)   ! modied by antoine
+                WRITE(52,'(a)')'${order} ./'//TRIM(GOCFILE)   ! modied by antoine
 
-                WRITE(53, 2205)NCOR,TRIM(GOFILE)  ! added by antoine
                 print*,tpfile,i,ntpt,
      &               sngl(a(i)),sngl(dt),sngl(cputime)
-               WRITE(12,*)'Fichier ',TRIM(tpfile),' nb parts ',ntpt,
+                WRITE(12,*)'Fichier ',TRIM(tpfile),' nb parts ',ntpt,
      &               'derniere part :',i,'a=',sngl(a(i)),
      &               'step :',sngl(dt),'cpu : ',sngl(cputime)
                 NTPT = 0
                 CPUTIME = 0.d0
+                
+                ! Clear file
+                WRITE(54,'(a)')'rm -f ./'//TRIM(GOFILE)
+                WRITE(54,'(a)')'rm -f ./'//TRIM(GOCFILE)
+                WRITE(54,'(a)')'rm -f ./'//TRIM(MVSFILE)
+                WRITE(54,'(a)')'rm -f ./'//TRIM(PARFILE)
+                WRITE(54,'(a)')'rm -f ./'//TRIM(TPFILE)
+
+
               END IF      
             END DO
           endif
         enddo
         CLOSE(12)
         CLOSE(52)
+
+    !     WRITE(53,'(a)')'[ "$(ls start_* 2>/dev/null | wc -l)" -eq 0 ]'//
+    !  &      ' && rm -f ./start.sh' ! added by antoine
         close(53) ! added by antoine
 
         WRITE(51,2201)CNTFILE
         DO I=1,CNTFILE
-          WRITE(PARFILE,2200)TRIM(DIRS),I,INPARFILE(1:IPAR-1),I
+          WRITE(PARFILE,2200)I,INPARFILE(1:IPAR-1),I
           WRITE(51,'(a)')TRIM(PARFILE)
         END DO
-        WRITE(PARFILE,2203)SNGL(T0)
-        WRITE(51,'(a)')TRIM(PARFILE)
-        WRITE(PARFILE,2203)SNGL(0.1d0*TSTOP)
-        WRITE(51,'(a)')'${tfin}'
-        WRITE(51,'(a)')TRIM(PARFILE)
-        WRITE(51,'(a)')TRIM(DIRS)//'/${simname}/run_01/'//TRIM(INPLFILE)
+        WRITE(51,'(a)')'${t_0}'
+        WRITE(51,'(a)')'${t_f}'
+        ! WRITE(PARFILE,2203)SNGL(T0) ! commented by antoine
+        ! WRITE(51,'(a)')TRIM(PARFILE)
+        ! WRITE(PARFILE,2203)SNGL(0.1d0*TSTOP)
+        WRITE(51,'(a)')'${dt}' ! modified by antoine
+        ! WRITE(51,'(a)')TRIM(PARFILE) ! commented by antoine
+        WRITE(51,'(a)')'./run_01/'//TRIM(INPLFILE)
         WRITE(51,'(a)')'mextract'
         DO I=1,CNTFILE
-          WRITE(TPFILE,2200)TRIM(DIRS),I,INTPFILE(1:IPOINT-1),I
+          WRITE(TPFILE,2200)I,INTPFILE(1:IPOINT-1),I
           WRITE(51,'(a)')TRIM(TPFILE)
         END DO
         WRITE(51,'(a)')'1'
         WRITE(51,'(a)')'0'
         WRITE(51,'(a)')'!'
-        WRITE(51,'(a)')'exit'
-        WRITE(51,'(a)')'!'
+        ! WRITE(51,'(a)')'exit' ! commented by antoine
+        ! WRITE(51,'(a)')'!'
         CLOSE(51)
+
+        WRITE(54,'(a)')'rm -f ./'//TRIM(INPLFILE)
+        WRITE(54,'(a)')'rm -f ./'//TRIM(CONTFILE)
+        WRITE(54,'(a)')'rm -f ./'//TRIM(STARTFILE)
+        WRITE(54,'(a)')'rm -f ./fort.7'
+
+        WRITE(54,'(a)')'if [ "$1" == "all" ]; then'
+        DO I=1,CNTFILE
+          WRITE(54,0009)I
+        END DO
+        WRITE(54,'(a)')'  rm -f ./'//TRIM(MEXTRFILE)
+        WRITE(54,'(a)')'  rm -f ./'//TRIM(CORRFILE)
+        WRITE(54,'(a)')'  rm -f ./'//TRIM(CLEARFILE)
+        WRITE(54,'(a)')'fi'
+        CLOSE(54)  ! added by antoine
 
         CALL SYSTEM('chmod ogu+x '//TRIM(MEXTRFILE))
         CALL SYSTEM('chmod ogu+x '//TRIM(CONTFILE))  
         CALL SYSTEM('chmod ogu+x '//TRIM(STARTFILE))  ! added by antoine
+        CALL SYSTEM('chmod ogu+x '//TRIM(CLEARFILE))  ! added by antoine
         
         
         ! WRITE(*,2204)BINDIR,'1','2','3',01
@@ -460,7 +513,8 @@ c
 
         ! write(*,*)NCOR
 
-        END PROGRAM GEN_TOUT_MULTI
+        END PROGRAM GEN_MULTI_RMVS3
+        ! end subroutine GEN_MULTI_RMVS3
 
 C
 C--------------------------------------------------------------------
@@ -469,7 +523,7 @@ C--------------------------------------------------------------------
 C
         SUBROUTINE INVAR(NBOD,MASS,X,Y,Z,VX,VY,VZ)
 
-        ! include '../swift.inc'
+        include '../../sub/swift.inc'
 
         INTEGER I,NBOD
 
@@ -783,8 +837,8 @@ c Last revision:  5/10/94 HFL
      &           iflgchk,rmin,rmax,rmaxu,qmin,lclose,dirs,
      &           gname,outfile,fopenstat)	
 
-	include './swift/sub/swift.inc'
-	include './swift/sub/io/io.inc'
+	include '../../sub/swift.inc'
+	include '../../sub/io/io.inc'
 
 c...   Inputs
 	real*8 t,tstop,dt

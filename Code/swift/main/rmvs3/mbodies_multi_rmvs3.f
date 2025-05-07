@@ -5,7 +5,7 @@ C-------------------------------------------------------------------------
 C
         PROGRAM MULTI_EXTRACT
 
-        include  './swift/sub/swift.inc'
+        include '../../sub/swift.inc'
        
         REAL*8, PARAMETER :: BINR=1.0d0
         REAL*8, PARAMETER :: RMAXBIN=3000.0d0
@@ -424,7 +424,7 @@ C
         SUBROUTINE KEPLER_STUFF(GM,A,E,INC,CAPOM,OMEGA,CAPM,
      &                   R,CX,CY,CZ,VX,VY,VZ,EX,EY,EZ,EPX,EPY,EPZ)
 
-        include './swift/sub/swift.inc'
+        include '../../sub/swift.inc'
 
         REAL*8 GM,A,E,INC,CAPOM,OMEGA,CAPM
         REAL*8 R,RX,RY,CX,CY,CZ,VRX,VRY,VX,VY,VZ
@@ -498,7 +498,7 @@ C--------------------------------------------------------------------
 C
         SUBROUTINE INVAR(NBOD,MASS,X,Y,Z,VX,VY,VZ,A)
 
-        include './swift/sub/swift.inc'
+        include '../../sub/swift.inc'
 
         INTEGER I,NBOD
 
@@ -561,7 +561,7 @@ C
       SUBROUTINE FOLLOWBODIES(TSTOP,DTOUT,LCLOSE,IFLGCHK,
      &                NBSIMU,REFNS,DIRS,INPLFILE,DIRO,OUTFILE)
 
-        include './swift/sub/swift.inc'
+        include '../../sub/swift.inc'
 
         INTEGER*4 :: NBSIMU,REFNS,NS
         CHARACTER*(*) DIRS,INPLFILE
@@ -800,7 +800,7 @@ C--------------------------------------------------------------------
 C
         SUBROUTINE KEPLER_SMALL(A,E,INC,CAPOM,OMEGA,CAPM,CX,CY,CZ)
 
-        include './swift/sub/swift.inc'
+        include '../../sub/swift.inc'
      
         REAL*8 GM,A,E,INC,CAPOM,OMEGA,CAPM
         REAL*8 R,RX,RY,CX,CY,CZ,VRX,VRY,VX,VY,VZ

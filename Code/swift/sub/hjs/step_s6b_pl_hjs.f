@@ -19,7 +19,22 @@ c                 vxj,vyj,vzj   ==>  initial velocity in Gen. Jacobi coord
 c                                    (real arrays)
 c                 dt            ==>  time step
 c            Input & Output
-c                 xbbeg,ybbeg,zbbeg   ==>  initial position in bary coord 
+c                 xjpl,yjpl,zjpl ==>  Bodies Jacobi pos. at substeps of dt
+c                                       (real 2D arrays) 1 = begin; 4 = end 
+c                 vxjpl,vyjpl,vzjpl ==> Bodies Jacobi vels. at substeps of dt
+c                                       (real 2D arrays) 1 = begin; 4 = end 
+c                 ir3j   ==>  Bodies inverse Jac. radii^3 at substeps of dt
+c                                       (real 2D arrays) 1 = begin; 4 = end 
+c                 xbpl,ybpl,zbpl ==> Bodies Bary. pos. at substeps of dt
+c                                       (real 2D arrays) 1 = begin; 4 = end 
+c                 axbpl,aybpl,azbpl ==> Bodies Bary accels. at substeps of dt
+c                                       (real 2D arrays) 1 = begin; 4 = end 
+c                 xj,yj,zj      ==>  final position in helio coord 
+c                                       (real arrays)
+c                 vxj,vyj,vzj   ==>  final velocity in helio coord 
+c                                       (real arrays)
+c
+c     xbbeg,ybbeg,zbbeg   ==>  initial position in bary coord 
 c                                    (real arrays)
 c                 axbbeg,aybbeg,azbbeg   ==>  initial accel. in bary coord 
 c                                    (real arrays)
@@ -27,45 +42,14 @@ c                 xj,yj,zj      ==>  final position in Gen. Jacobi coord
 c                                       (real arrays)
 c                 vxj,vyj,vzj   ==>  final velocity in Gen. Jacobi coord 
 c                                       (real arrays)
-c                 ir3jbeg      ==> Inverse radii^3 beg & end (real arrays)
-c                 xj1,yj1,zj1 ==> Bodies Jac. position at substep 1          
-c                 ir3j1                (real arrays)                         
-c                 xb1,yb1,zb1 ==> Bodies bary position at subsetep 1         
-c                                       (real arrays)                        
-c                 vxj1,vyj1,vzj1 ==> Bodies Jac. veloc. at substep 1         
-c                                       (real arrays)                        
-c                 axb1,ayb1,azb1 ==> Bodies bary accs. at substep 1          
-c                                       (real arrays)                        
-c                 xj2,yj2,zj2 ==> Bodies Jac. position at substep 2          
-c                 ir3j2                (real arrays)                         
-c                 xb2,yb2,zb2 ==> Bodies bary position at subsetep 2         
-c                                       (real arrays)                        
-c                 vxj2,vyj2,vzj2 ==> Bodies Jac. veloc. at substep 2         
-c                                       (real arrays)                        
-c                 axb2,ayb2,azb2 ==> Bodies bary accs. at substep 2          
-c                                       (real arrays)                        
-c                 xj3,yj3,zj3 ==> Bodies Jac. position at substep 3          
-c                 ir3j3                (real arrays)                         
-c                 xb3,yb3,zb3 ==> Bodies bary position at subsetep 3         
-c                                       (real arrays)                        
-c                 vxj3,vyj3,vzj3 ==> Bodies Jac. veloc. at substep 3         
-c                                       (real arrays)                        
-c                 axb3,ayb3,azb3 ==> Bodies bary accs. at substep 3          
-c                                       (real arrays)         
 c
-c Remarks: Adapted from step_kdk_pl_hjs.f
+c     Remarks: Adapted from step_kdk_pl_hjs.f
 c Authors:  Herve Beust
-c Date:    Mar 24, 2010
+c Last modif:    Feb 25, 2025
 
       subroutine step_s6b_pl_hjs(i1st,nbod,oloc,umat,mat,mass,eta,mu,
-     &              ir3jbeg,xbbeg,ybbeg,zbbeg,axbbeg,aybbeg,azbbeg,
-     &              xj1,yj1,zj1,vxj1,vyj1,vzj1,
-     &              ir3j1,xb1,yb1,zb1,axb1,ayb1,azb1,
-     &              xj2,yj2,zj2,vxj2,vyj2,vzj2,
-     &              ir3j2,xb2,yb2,zb2,axb2,ayb2,azb2,
-     &              xj3,yj3,zj3,vxj3,vyj3,vzj3,
-     &              ir3j3,xb3,yb3,zb3,axb3,ayb3,azb3,
-     &              xj,yj,zj,vxj,vyj,vzj,dt)	
+     &     xjpl,yjpl,zjpl,vxjpl,vyjpl,vzjpl,ir3j,xbpl,ybpl,zbpl,
+     &     axbpl,aybpl,azbpl,xj,yj,zj,vxj,vyj,vzj,dt)
 
       include '../swift.inc'
 
@@ -77,25 +61,10 @@ c...  Inputs Only:
 c...  Inputs and Outputs:
       real*8 xj(nbod),yj(nbod),zj(nbod)
       real*8 vxj(nbod),vyj(nbod),vzj(nbod)
-      real*8 vxjh(nbod),vyjh(nbod),vzjh(nbod)
-      real*8 xbbeg(nbod),ybbeg(nbod),zbbeg(nbod)
-      real*8 axbbeg(nbod),aybbeg(nbod),azbbeg(nbod)
-      real*8 ir3jbeg(nbod)
-
-      real*8 xj1(nbod),yj1(nbod),zj1(nbod),ir3j1(nbod)
-      real*8 vxj1(nbod),vyj1(nbod),vzj1(nbod)         
-      real*8 xb1(nbod),yb1(nbod),zb1(nbod)            
-      real*8 axb1(nbod),ayb1(nbod),azb1(nbod)         
-
-      real*8 xj2(nbod),yj2(nbod),zj2(nbod),ir3j2(nbod)
-      real*8 vxj2(nbod),vyj2(nbod),vzj2(nbod)         
-      real*8 xb2(nbod),yb2(nbod),zb2(nbod)            
-      real*8 axb2(nbod),ayb2(nbod),azb2(nbod)         
-
-      real*8 xj3(nbod),yj3(nbod),zj3(nbod),ir3j3(nbod)
-      real*8 vxj3(nbod),vyj3(nbod),vzj3(nbod)         
-      real*8 xb3(nbod),yb3(nbod),zb3(nbod)            
-      real*8 axb3(nbod),ayb3(nbod),azb3(nbod)         
+      real*8 xjpl(nbod,4),yjpl(nbod,4),zjpl(nbod,4),ir3j(nbod,4)
+      real*8 vxjpl(nbod,4),vyjpl(nbod,4),vzjpl(nbod,4)
+      real*8 xbpl(nbod,4),ybpl(nbod,4),zbpl(nbod,4)
+      real*8 axbpl(nbod,4),aybpl(nbod,4),azbpl(nbod,4)
 
 c...  Internals:
       integer i
@@ -126,18 +95,28 @@ c      dt4 = -dt*kk/cc
       dt3 = t3*dt
       dt4 = t4*dt
 
+c...   Store beginning positions (#1)  (for tp's after)
+      xjpl(1:nbod,1) = xj(1:nbod)
+      yjpl(1:nbod,1) = yj(1:nbod)
+      zjpl(1:nbod,1) = zj(1:nbod)      
+      vxjpl(1:nbod,1) = vxj(1:nbod)
+      vyjpl(1:nbod,1) = vyj(1:nbod)
+      vzjpl(1:nbod,1) = vzj(1:nbod)      
+
+      
       if (i1st.eq.0) then
 c...     Compute barycentric coords
         call  coord_g2b(nbod,umat,mass,xj,yj,zj,vxj,vyj,vzj,
-     &      xbbeg,ybbeg,zbbeg,vxb,vyb,vzb)
+     &      xbpl(:,1),ybpl(:,1),zbpl(:,1),vxb,vyb,vzb)
 c...     Get the Jacobi accels if first time step
          call getaccj_hjs(nbod,oloc,mass,eta,mu,xj,yj,zj,
-     &     xbbeg,ybbeg,zbbeg,ir3jbeg,axj,ayj,azj)
+     &     xbpl(:,1),ybpl(:,1),zbpl(:,1),ir3j(:,1),axj,ayj,azj)
          call coord_g2b(nbod,umat,mass,vxj,vyj,vzj,axj,ayj,azj,
-     &     vxb,vyb,vzb,axbbeg,aybbeg,azbbeg)
+     &     vxb,vyb,vzb,axbpl(:,1),aybpl(:,1),azbpl(:,1))
         i1st = 1    ! turn this off
       endif
-c...       Apply a Jacobi kick for dt1 
+      
+c...  Apply a Jacobi kick for dt1 
       call kickvh(nbod,vxj,vyj,vzj,axj,ayj,azj,dt1)
 
 c...   First Drift in Jacobi coords for dt2
@@ -145,22 +124,21 @@ c...   First Drift in Jacobi coords for dt2
 
 c...  After drift, compute bary. xb and vb for acceleration calculations
       call coord_g2b(nbod,umat,mass,xj,yj,zj,vxj,vyj,vzj,
-     &                   xb1,yb1,zb1,vxb,vyb,vzb)
+     &         xbpl(:,2),ybpl(:,2),zbpl(:,2),vxb,vyb,vzb)
       call getaccj_hjs(nbod,oloc,mass,eta,mu,xj,yj,zj,
-     &     xb1,yb1,zb1,ir3j1,axj,ayj,azj)
+     &         xbpl(:,2),ybpl(:,2),zbpl(:,2),ir3j(:,2),axj,ayj,azj)
       call coord_g2b(nbod,umat,mass,vxj,vyj,vzj,axj,ayj,azj,
-     &     vxb,vyb,vzb,axb1,ayb1,azb1)
+     &         vxb,vyb,vzb,axbpl(:,2),aybpl(:,2),azbpl(:,2))
 
-c...  Store intermediate values #1 (for tp's after)
-      do i=1,nbod
-        xj1(i) = xj(i)
-        yj1(i) = yj(i)
-        zj1(i) = zj(i)
-        vxj1(i) = vxj(i)
-        vyj1(i) = vyj(i)
-        vzj1(i) = vzj(i)
-      end do
+c...  Store intermediate values #2 (for tp's after)
+      xjpl(1:nbod,2) = xj(1:nbod)
+      yjpl(1:nbod,2) = yj(1:nbod)
+      zjpl(1:nbod,2) = zj(1:nbod)     
+      vxjpl(1:nbod,2) = vxj(1:nbod)
+      vyjpl(1:nbod,2) = vyj(1:nbod)
+      vzjpl(1:nbod,2) = vzj(1:nbod)     
 
+      
 c...  Apply a second Jacobi kick for dt3 
       call kickvh(nbod,vxj,vyj,vzj,axj,ayj,azj,dt3)
 
@@ -169,21 +147,19 @@ c...  Second Drift in Jacobi coords for dt4
 
 c...  After drift, compute bary. xb and vb for acceleration calculations
       call coord_g2b(nbod,umat,mass,xj,yj,zj,vxj,vyj,vzj,
-     &                   xb2,yb2,zb2,vxb,vyb,vzb)
+     &                   xbpl(:,3),ybpl(:,3),zbpl(:,3),vxb,vyb,vzb)
       call getaccj_hjs(nbod,oloc,mass,eta,mu,xj,yj,zj,
-     &     xb2,yb2,zb2,ir3j2,axj,ayj,azj)
+     &     xbpl(:,3),ybpl(:,3),zbpl(:,3),ir3j(:,3),axj,ayj,azj)
       call coord_g2b(nbod,umat,mass,vxj,vyj,vzj,axj,ayj,azj,
-     &     vxb,vyb,vzb,axb2,ayb2,azb2)
+     &     vxb,vyb,vzb,axbpl(:,3),aybpl(:,3),azbpl(:,3))
 
-c...  Store intermediate values #2 (for tp's after)
-      do i=1,nbod
-        xj2(i) = xj(i)
-        yj2(i) = yj(i)
-        zj2(i) = zj(i)
-        vxj2(i) = vxj(i)
-        vyj2(i) = vyj(i)
-        vzj2(i) = vzj(i)
-      end do
+c...  Store intermediate values #3 (for tp's after)
+      xjpl(1:nbod,3) = xj(1:nbod)
+      yjpl(1:nbod,3) = yj(1:nbod)
+      zjpl(1:nbod,3) = zj(1:nbod)     
+      vxjpl(1:nbod,3) = vxj(1:nbod)
+      vyjpl(1:nbod,3) = vyj(1:nbod)
+      vzjpl(1:nbod,3) = vzj(1:nbod)     
 
 c...  Apply a third Jacobi kick for dt3 
       call kickvh(nbod,vxj,vyj,vzj,axj,ayj,azj,dt3)
@@ -193,21 +169,19 @@ c...  Third Drift in Jacobi coords for dt2
 
 c...  After drift, compute bary. xb and vb for acceleration calculations
       call coord_g2b(nbod,umat,mass,xj,yj,zj,vxj,vyj,vzj,
-     &                   xb3,yb3,zb3,vxb,vyb,vzb)
+     &                   xbpl(:,4),ybpl(:,4),zbpl(:,4),vxb,vyb,vzb)
       call getaccj_hjs(nbod,oloc,mass,eta,mu,xj,yj,zj,
-     &     xb3,yb3,zb3,ir3j3,axj,ayj,azj)
+     &     xbpl(:,4),ybpl(:,4),zbpl(:,4),ir3j(:,4),axj,ayj,azj)
       call coord_g2b(nbod,umat,mass,vxj,vyj,vzj,axj,ayj,azj,
-     &     vxb,vyb,vzb,axb3,ayb3,azb3)
+     &     vxb,vyb,vzb,axbpl(:,4),aybpl(:,4),azbpl(:,4))
 
-c...  Store intermediate values #3 (for tp's after)
-      do i=1,nbod
-        xj3(i) = xj(i)
-        yj3(i) = yj(i)
-        zj3(i) = zj(i)
-        vxj3(i) = vxj(i)
-        vyj3(i) = vyj(i)
-        vzj3(i) = vzj(i)
-      end do
+c...  Store final values #4 (for tp's after)
+      xjpl(1:nbod,4) = xj(1:nbod)
+      yjpl(1:nbod,4) = yj(1:nbod)
+      zjpl(1:nbod,4) = zj(1:nbod)     
+      vxjpl(1:nbod,4) = vxj(1:nbod)
+      vyjpl(1:nbod,4) = vyj(1:nbod)
+      vzjpl(1:nbod,4) = vzj(1:nbod)     
 
 c...  Apply a fourth Jacobi kick for dt1
       call kickvh(nbod,vxj,vyj,vzj,axj,ayj,azj,dt1)

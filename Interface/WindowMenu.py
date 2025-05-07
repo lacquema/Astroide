@@ -24,10 +24,14 @@ class WindowMenuClass(QMainWindow):
 
         # Add "New Simulation" button
         self.BtnNew = self.create_button('New Simulation', Layout)
+        self.BtnNew.setEnabled(False)
+        self.BtnNew.setStyleSheet('QPushButton {background-color: grey; color: grey; font: italic 15px;}')
 
         # Add "Continue" button
         Layout.addSpacing(20)
         self.BtnContinue = self.create_button('Continue', Layout)
+        self.BtnContinue.setEnabled(False)
+        self.BtnContinue.setStyleSheet('QPushButton {background-color: grey; color: grey; font: italic 15px;}')
 
         # Add "Analyse" button
         Layout.addSpacing(90)

@@ -22,7 +22,10 @@ BIN_DIR = $(CODE_DIR)/bin
 SWIFT_DIR = $(CODE_DIR)/swift
 
 SUB_DIR = $(SWIFT_DIR)/sub
-ALG_DIR = $(SWIFT_DIR)/main
+MAIN_DIR = $(SWIFT_DIR)/main
+
+RMVS3_MAIN_DIR = $(MAIN_DIR)/rmvs3
+HJS_MAIN_DIR = $(MAIN_DIR)/hjs
 
 # GEN_DIR = $(SUB_DIR)/gen
 COLL_DIR = $(SUB_DIR)/coll
@@ -35,10 +38,10 @@ LYAP_DIR = $(SUB_DIR)/lyap
 LYAP2_DIR = $(SUB_DIR)/lyap2
 MVITS_DIR = $(SUB_DIR)/mvits
 MVS_DIR = $(SUB_DIR)/mvs
-DRIFT_DIR = $(SUB_DIR)/mvs/drift
-GETACCH_DIR = $(SUB_DIR)/mvs/getacch
-KICKVH_DIR = $(SUB_DIR)/mvs/kickvh
-STEP_DIR =  $(SUB_DIR)/mvs/step
+DRIFT_DIR = $(MVS_DIR)/drift
+GETACCH_DIR = $(MVS_DIR)/getacch
+KICKVH_DIR = $(MVS_DIR)/kickvh
+STEP_DIR =  $(MVS_DIR)/step
 ORBEL_DIR = $(SUB_DIR)/orbel
 WIMPS_DIR = $(SUB_DIR)/wimps
 RMVS_DIR = $(SUB_DIR)/rmvs
@@ -56,19 +59,23 @@ SYMBATR_DIR = $(SUB_DIR)/symbatr
 HELIO_DIR = $(SUB_DIR)/helio
 HELIOQ_DIR = $(SUB_DIR)/helioq
 
-GEN = $(BIN_DIR)/gen_tout_multi
-MBOD = $(BIN_DIR)/mbodies_multi
+GEN_RMVS3 = $(BIN_DIR)/gen_multi_rmvs3
+GEN_HJS = $(BIN_DIR)/gen_multi_hjs
+GEN = $(BIN_DIR)/gen_multi
+
+MBOD_RMVS = $(BIN_DIR)/mbodies_multi_rmvs3
+MBOD_HJS = $(BIN_DIR)/mbodies_multi_hjs
 
 # Parallelization option 
 ifeq ($(PARALLEL),NO)
 LIB = $(LIB_DIR)/libswift.a
-# GEN = $(BIN_DIR)/gen_tout_multi
+# GEN_RMVS3 = $(BIN_DIR)/gen_tout_multi
 else
 # GEN_FLAGS += -fopenmp
 LIB_FLAGS += -fopenmp
 ALG_FLAGS += -fopenmp
 LIB = $(LIB_DIR)/libswift_par.a
-# GEN = $(BIN_DIR)/gen_tout_multi_par
+# GEN_RMVS3 = $(BIN_DIR)/gen_tout_multi_par
 endif
 
 # Utilities
@@ -107,41 +114,39 @@ library:
 packages:
 	$(PYTHON3) -m pip install -r $(DIR)/requirements.txt
 
-gen_tout_multi:
-	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(CODE_DIR)/$@.f $(LIB) -o $(GEN)
+gen_multi_rmvs3:
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f $(LIB) -o $(GEN_RMVS3)
 
-mbodies_multi:
-	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(CODE_DIR)/$@.f $(LIB) -o $(MBOD)
+gen_multi_hjs:
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f $(LIB) -o $(GEN_HJS)
 
+mbodies_multi_rmvs3:
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f $(LIB) -o $(MBOD_RMVS)
+
+mbodies_multi_hjs:
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f $(LIB) -o $(MBOD_HJS)
 
 # Algorithms
 swift_%:
 ifeq ($(PARALLEL),NO)
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(ALG_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(MAIN_DIR)/$*/$@.f $(LIB) -o $(BIN_DIR)/$@
 else
 	test ! -f $(BIN_DIR)/$@_par || rm $(BIN_DIR)/$@_par
-	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(ALG_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@_par
+	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(MAIN_DIR)/$*/$@.f $(LIB) -o $(BIN_DIR)/$@_par
 endif
 
-swift_whm:
-
-swift_rmvs3:
-
-swift_hjs:
-
 compile: 
+	make gen_multi_rmvs3
+	make mbodies_multi_rmvs3
+	make gen_multi_hjs
+	make mbodies_multi_hjs
+
 	make library
-	
-	make swift_whm
 	make swift_rmvs3
 	make swift_hjs
-	make gen_tout_multi
-	make mbodies_multi
 
 	make library PARALLEL=YES
-	
-	make swift_whm PARALLEL=YES
 	make swift_rmvs3 PARALLEL=YES
 	make swift_hjs PARALLEL=YES
 
