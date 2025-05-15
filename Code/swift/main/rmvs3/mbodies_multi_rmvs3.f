@@ -100,7 +100,8 @@ C
         IU = 20
         DR = 180.0/PI
 c        DEV=TRIM(DIRO(1))//'/'//TRIM(EXTRFILE)//'.gdf'
-        DEV=TRIM(DIRS)//'/'//TRIM(EXTRFILE)//'.dat'
+        ! DEV=TRIM(DIRS)//'/'//TRIM(EXTRFILE)//'.dat'
+        DEV='./'//TRIM(EXTRFILE)//'.dat'
 
         IF (BTEST(IFLGCHK,0)) THEN
            WRITE(*,*) ' Reading INTEGER*2 binary files '
@@ -782,7 +783,8 @@ c              end if
         END DO
 
 c        print*,DATA4(1:NB(0),7,NBOD)
-        DEV = TRIM(DIRS)//'/followbodies.dat'
+        ! DEV = TRIM(DIRS)//'/followbodies.dat'
+        DEV = './followbodies.dat'
 
 c        CALL IMWRITE(DEV,DATA4,NBMAX,DBLE(NBOD),0.,0.,7,
 c     &                    0.,0.,0.,NBOD,0.,0.,0.,

@@ -137,14 +137,14 @@ else
 endif
 
 compile: 
+	make library
+	make swift_rmvs3
+	make swift_hjs
+
 	make gen_multi_rmvs3
 	make mbodies_multi_rmvs3
 	make gen_multi_hjs
 	make mbodies_multi_hjs
-
-	make library
-	make swift_rmvs3
-	make swift_hjs
 
 	make library PARALLEL=YES
 	make swift_rmvs3 PARALLEL=YES

@@ -57,7 +57,7 @@ c...    Input
 	character*(*) infile
 
 c...  Outputs: 
-	integer iflgchk
+	integer iflgchk, pos ! pos add by antoine
 	real*8 t0,tstop,dt
 	real*8 dtout,dtdump
 	real*8 rmin,rmax,rmaxu,qmin
@@ -72,58 +72,75 @@ c...  Internals
 c-----
 c...  Executable code 
 
-	write(*,*) 'Parameter data file is ',infile
-        call io_open(7,infile,'old','formatted',ierr)
+	   write(*,*) 'Parameter data file is ',infile
+      call io_open(7,infile,'old','formatted',ierr) ! commented by antoine
 
-	read(7,*) t0,tstop,dt
-	write(*,*) 't0,tstop,dt : ',t0,tstop,dt
-	read(7,*) dtout,dtdump
-	write(*,*) 'dtout,dtdump : ',dtout,dtdump
-        read(7,*) (lflg(i),i=IO_NBITS-1,0,-1)
+      read(7,*) t0,tstop,dt
+	   write(*,*) 't0,tstop,dt : ',t0,tstop,dt
+	   read(7,*) dtout,dtdump
+	   write(*,*) 'dtout,dtdump : ',dtout,dtdump
+        
+      read(7,*) (lflg(i),i=IO_NBITS-1,0,-1)
 
-        iflgchk=0
-        do i=0,IO_NBITS-1
-           if(lflg(i)) then
+      iflgchk=0
+      do i=0,IO_NBITS-1
+         if(lflg(i)) then
               iflgchk = ibset(iflgchk,i)
-           endif
-        enddo
+         endif
+      enddo
 
-        write(*,*) (lflg(i),i=IO_NBITS-1,0,-1),' = ',iflgchk
+      write(*,*) (lflg(i),i=IO_NBITS-1,0,-1),' = ',iflgchk
 
-        if(btest(iflgchk,0) .and. btest(iflgchk,1))  then 
-           write(*,*) ' SWIFT ERROR: in io_init_param_hb:'
-           write(*,*) '    Invalid logical flags '
-           write(*,*) '    You cannot request that both a real and ',
+      if(btest(iflgchk,0) .and. btest(iflgchk,1))  then 
+         write(*,*) ' SWIFT ERROR: in io_init_param_hb:'
+         write(*,*) '    Invalid logical flags '
+         write(*,*) '    You cannot request that both a real and ',
      &                '       an integer binary file be written '
-           call util_exit(1)
-        endif
+         call util_exit(1)
+      endif
 
-        if(btest(iflgchk,4))  then ! bit 4 is set
-           read(7,*) rmin,rmax,rmaxu,qmin,lclose
-           write(*,*) 'rmin,rmax,rmaxu,qmin,lclose :',
+      if(btest(iflgchk,4))  then ! bit 4 is set
+         read(7,*) rmin,rmax,rmaxu,qmin,lclose
+         write(*,*) 'rmin,rmax,rmaxu,qmin,lclose :',
      &          rmin,rmax,rmaxu,qmin,lclose
-        else
-           rmin = -1.0
-           rmax = -1.0
-           rmaxu = -1.0
-           qmin = -1.0
-           lclose = .false.
-        endif
-        write(*,*)outfile
+      else
+         rmin = -1.0
+         rmax = -1.0
+         rmaxu = -1.0
+         qmin = -1.0
+         lclose = .false.
+      endif
+      !   write(*,*)outfile
 
-        if(btest(iflgchk,0) .or. btest(iflgchk,1))  then 
-           read(7,999) dirs
-           read(7,999) gname
-           diro = trim(dirs)//'/'//gname
-           dataname = 'mkdir '//trim(diro)
-           write(*,*)dataname
-           call system(trim(dataname))
-           read(7,999) outfile
-           write(*,*) 'outfile : ', trim(diro)//'/'//outfile
-           write(*,*) ' '
+      if(btest(iflgchk,0) .or. btest(iflgchk,1))  then 
+         read(7,999) diro  ! added by antoine
+         write(*,*) 'diro : ', diro  ! added by antoine
+         
+         pos = INDEX(diro, '/', .TRUE.)  ! .TRUE. pour chercher depuis la fin ! added by antoine
+
+         if (pos > 0) then ! added by antoine
+            dirs = TRIM(diro(1:pos-1))  ! Extraire la partie avant le dernier '/' ! added by antoine
+            gname = TRIM(diro(pos+1:))  ! Extraire la partie après le dernier '/' ! added by antoine
+         else ! added by antoine
+            write(*,*) 'Erreur : "/" non trouvé dans diro' ! added by antoine
+            dirs = '' ! added by antoine
+            gname = '' ! added by antoine
+         endif ! added by antoine
+
+         !   read(*,999) dirs  ! commented by antoine
+         !   read(*,999) gname  ! commented by antoine
+         !   diro = trim(dirs)//'/'//gname   ! commented by antoine
+
+         dataname = 'mkdir '//trim(diro)
+         write(*,*)dataname
+         call system(trim(dataname))
+            ! read(*,999) outfile  ! commented by antoine
+         outfile = 'simulation'
+         write(*,*) 'outfile : ', trim(diro)//'/'//outfile
+         write(*,*) ' '
 
         endif
-        read(7,999) fopenstat
+        read(7,*) fopenstat
         print*,fopenstat
         if(  (fopenstat(1:3).ne.'new') .and. 
      &       (fopenstat(1:3).ne.'NEW') .and.

@@ -58,9 +58,10 @@ C
         LOGICAL OK,SSYS,OKC,SAT,CEN,STARTDISK
         LOGICAL*2 LCLOSE
         CHARACTER*(CHLEN) INTPFILE,TPFILE,INPARFILE,PARFILE,OUTFILE
-        CHARACTER*(CHLEN) DIRO,DIRS,GNAME,FOPENSTAT,GOFILE,MVSFILE
+        CHARACTER*(CHLEN) DIRO,DIRS,GNAME,gname_old,FOPENSTAT,GOFILE
         CHARACTER*(CHLEN) BINDIR,GOCFILE,GOCMD,INTEG, CLEARFILE
         CHARACTER*(CHLEN) MEXTRFILE,CONTFILE,STARTFILE, CORRFILE
+        CHARACTER*(CHLEN) OPTIONFILE, MVSFILE, str
         CHARACTER*1 PR
         real*8 t0,tstop
         real*8 dtout,dtdump
@@ -97,9 +98,12 @@ C
         INTEGER NBOD,IALPHA,IP1,IP2,ICFLG,IRFLG
         INTEGER NNN1,NNN2
 
+        CHARACTER*256 LINE, TRIMMED_LINE
+        INTEGER POS_COM
+
 0009    FORMAT('  rm -rf ./run_',I2.2) ! added by antoine
 
-0008    FORMAT('cd ',(a),'/',(a), '/') ! added by antoine
+0008    FORMAT('cd ',(a),'/',(a)) ! added by antoine
 0001    FORMAT('(a)',f10.1) ! added by antoine
 1000    FORMAT(I6,6(1X,F7.3))   !étiquettes de format
 2000    FORMAT((a),'_',I2.2,'.in')
@@ -108,14 +112,14 @@ C
 5000    FORMAT('files_',I2.2,'.in') ! modified by antoine
 6000    FORMAT('start_',I2.2,'.sh') ! modified by antoine
 6001    FORMAT('continue_',I2.2,'.sh') ! modified by antoine
-2200    FORMAT('./run_',I2.2,'/',(a),'_',I2.2,'.in') ! modified by antoine
+2200    FORMAT((a),'/run_',I2.2,'/',(a),'_',I2.2,'.in') ! modified by antoine
 2201    FORMAT(I0) ! modified by antoine
 2202    FORMAT('tfin=',f10.1)
 22021    FORMAT('t_0=',f0.0)   ! added by antoine
 22022    FORMAT('t_f=',f0.0)   ! added by antoine
 22023    FORMAT('dt=',f0.0)   ! added by antoine
 2203    FORMAT(f10.1)
-2204    FORMAT((a),'swift_',(a),' < ./run_',I2.2,'/files.in') ! modified by antoine
+2204    FORMAT((a),'/swift_',(a),' < ./run_',I2.2,'/files.in') ! modified by antoine
 2205    FORMAT('order=${1:-"oarsub -l /nodes=1/cpu=1/core=',I1,
      &       ',walltime=48 --project dynapla"}') ! modified by antoine
 2206    FORMAT('export OMP_NUM_THREADS=',I1)
@@ -129,6 +133,7 @@ c ........entree des parametres
         STARTFILE='start.sh'
         CLEARFILE='clear.sh'
         CORRFILE='corr_multi.dat'
+        OPTIONFILE='options.in'
 
         WRITE(*,*)'Remove old files' ! added by antoine
         CALL SYSTEM('[ -f ./'//CLEARFILE//' ] && ./'//CLEARFILE) ! added by antoine
@@ -139,6 +144,7 @@ c ........entree des parametres
         OPEN(52,FILE=CONTFILE,STATUS='UNKNOWN')
         OPEN(53,FILE=STARTFILE,STATUS='UNKNOWN') ! added by antoine
         OPEN(54,FILE=CLEARFILE,STATUS='UNKNOWN')  ! added by antoine
+        OPEN(55,FILE=OPTIONFILE,STATUS='UNKNOWN')  ! added by antoine
 
 
         WRITE(53,'(a)')'#! /bin/bash' ! added by antoine
@@ -154,6 +160,33 @@ c
         WRITE(*,*)' Name of integrator'
         WRITE(*,*)' (hjs,hjs_parp) '
         READ(*,'(a)')INTEG
+
+        ! Ne garder que ce qui est avant le '#' dans INTEG:     ! added by antoine
+        pos_com = INDEX(INTEG, '#')  
+
+        IF (pos_com > 0) THEN 
+          INTEG = TRIM(INTEG(1:pos_com-1))  ! Garder uniquement la partie avant '#' 
+        ELSE
+          INTEG = TRIM(INTEG)
+        ENDIF
+
+        ! Ecrire le fichier options.in  ! added by antoine
+        DO I = 1, 5
+          READ(*, '(A)') LINE
+          POS_COM = INDEX(LINE, '#')
+          IF (POS_COM > 0) THEN
+            TRIMMED_LINE = TRIM(LINE(1:POS_COM-1))
+          ELSE
+            TRIMMED_LINE = TRIM(LINE)
+          END IF
+          WRITE(55, '(A)') TRIM(TRIMMED_LINE)
+        END DO
+        
+        WRITE(55, '(A)') 'new'
+        CLOSE(55)
+        CALL SYSTEM('chmod ogu+x '//TRIM(OPTIONFILE))  ! added by antoine
+
+
         WRITE(*,*)' Number of cores'
         READ(*,*)NCOR
 
@@ -306,11 +339,12 @@ c        end do
      &     VXJO(1:NBOD),VYJO(1:NBOD),VZJO(1:NBOD))
 
 
-	WRITE(*,*) ' '
-	WRITE(*,*) 'Enter name of planet data file : '
-	READ(*,'(a)')INPLFILE
-        IFLGCHK = 0
-	CALL IO_DUMP_PL_HJS(INPLFILE,NBOD,OLOC,
+	    WRITE(*,*) ' '
+	    WRITE(*,*) 'Enter name of planet data file : '
+	    ! READ(*,'(a)')INPLFILE  ! commented by antoine
+      INPLFILE = 'bodies.in'  ! added by antoine
+      IFLGCHK = 0
+	    CALL IO_DUMP_PL_HJS(INPLFILE,NBOD,OLOC,
      &       MASS(1:NBOD),UMAT,XJO(1:NBOD),
      &       YJO(1:NBOD),ZJO(1:NBOD),VXJO(1:NBOD),VYJO(1:NBOD),
      &       VZJO(1:NBOD),LCLOSE,IFLGCHK,RPLSQ(1:NBOD))
@@ -322,10 +356,12 @@ c        end do
         CALL RANDOM_SEED()
         print*,seed
         WRITE(*,*) 'Enter name of test particle data file : '
-        READ(*,'(a)')INTPFILE         
+        ! READ(*,'(a)')INTPFILE   ! commented by antoine   
+        INTPFILE = 'debris.in'  ! added by antoine       
         IPOINT = INDEX(INTPFILE,'.')
         WRITE(*,*) 'Enter name of parameter file : '
-        READ(*,'(a)')INPARFILE         
+        ! READ(*,'(a)')INPARFILE
+        INPARFILE = OPTIONFILE   ! added by antoine      
         call io_init_param_hb(inparfile,t0,tstop,dtmin,dtout,dtdump,
      &         iflgchk,rmin,rmax,rmaxu,qmin,lclose,diro,dirs,
      &         gname,outfile,fopenstat)
@@ -344,8 +380,8 @@ c        end do
         WRITE(PARFILE,22023)SNGL(dt) ! added by antoine
         WRITE(51, '(a)')TRIM(PARFILE)
         
-        WRITE(51, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
-        WRITE(51,'(a)')TRIM(BINDIR)//'mbodies_multi_hjs <<!' ! modified by antoine
+        ! WRITE(51, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
+        WRITE(51,'(a)')TRIM(BINDIR)//'/mbodies_multi_hjs <<!' ! modified by antoine
 
         IPAR = INDEX(INPARFILE,'.')
         CNTFILE = 0
@@ -624,11 +660,16 @@ c
                 CALL IO_DUMP_TP_HJS(TPFILE,NBOD,NTPT,MATP,
      &              XJT,YJT,ZJT,VXJT,VYJT,VZJT,ISTAT,RSTAT)
                 WRITE(PARFILE,2000)INPARFILE(1:IPAR-1),CNTFILE
-                WRITE(DIRO,4000)'run',CNTFILE
+
+                ! change gname in options_i.in
+                WRITE(str,4000)'/run',CNTFILE ! modified by antoine
+                gname_old = gname
+                gname = TRIM(gname) // TRIM(str) ! modified by antoine
                 CALL io_dump_param_hb(parfile,t0,tstop,dt,
-     &               dtout,dtdump,iflgchk,rmin,rmax,rmaxu,qmin,
-     &               lclose,trim(dirs)//'/'//trim(gname),
-     &               diro,outfile,fopenstat)
+     &           dtout,dtdump,iflgchk,rmin,rmax,rmaxu,qmin,
+     &           lclose,dirs,gname,outfile,fopenstat)
+                gname = gname_old ! added by antoine
+
                 WRITE(MVSFILE,5000)CNTFILE
                 OPEN(31,FILE=MVSFILE,STATUS='UNKNOWN')
                 WRITE(31,'(a)')'gen_multi_hjs.sh'
@@ -645,8 +686,8 @@ c
                 WRITE(GOCMD,2206)NCOR
                 WRITE(31,'(a)')TRIM(GOCMD)
                 WRITE(31,'(a)')'export STACKSIZE=1000000' ! modified by antoine
-                WRITE(31, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
-                WRITE(31,'(a)')TRIM(BINDIR)//'swift_'//TRIM(INTEG)//
+                ! WRITE(31, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
+                WRITE(31,'(a)')TRIM(BINDIR)//'/swift_'//TRIM(INTEG)//
      &                ' < ./'//TRIM(MVSFILE) ! modified by antoine
                 CLOSE(31)       
                 OPEN(32,FILE=GOCFILE,STATUS='UNKNOWN')
@@ -656,7 +697,7 @@ c
                 WRITE(32,'(a)')TRIM(GOCMD)
                 WRITE(32,'(a)')'export STACKSIZE=1000000'
                 ! WRITE(32,'(a)')' ' ! commented by antoine
-                WRITE(32, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
+                ! WRITE(32, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
                 WRITE(GOCMD,2204)TRIM(BINDIR),TRIM(INTEG),CNTFILE
                 WRITE(32,'(a)')TRIM(GOCMD)
                 CLOSE(32)           
@@ -694,7 +735,7 @@ c
         
         WRITE(51,2201)CNTFILE
         DO I=1,CNTFILE
-          WRITE(PARFILE,2200)I,INPARFILE(1:IPAR-1),I
+          WRITE(PARFILE,2200)TRIM(DIRO),I,INPARFILE(1:IPAR-1),I
           WRITE(51,'(a)')TRIM(PARFILE)
         END DO
         WRITE(51,'(a)')'${t_0}'
@@ -704,10 +745,10 @@ c
         ! WRITE(PARFILE,2203)SNGL(0.1d0*TSTOP)
         WRITE(51,'(a)')'${dt}' ! modified by antoine
         ! WRITE(51,'(a)')TRIM(PARFILE) ! commented by antoine
-        WRITE(51,'(a)')'./run_01/'//TRIM(INPLFILE)
+        WRITE(51,'(a)')TRIM(DIRO)//'/run_01/'//TRIM(INPLFILE)
         WRITE(51,'(a)')'mextract'
         DO I=1,CNTFILE
-          WRITE(TPFILE,2200)I,INTPFILE(1:IPOINT-1),I
+          WRITE(TPFILE,2200)TRIM(DIRO),I,INTPFILE(1:IPOINT-1),I
           WRITE(51,'(a)')TRIM(TPFILE)
         END DO
         WRITE(51,'(a)')'1'
@@ -717,15 +758,20 @@ c
         ! WRITE(51,'(a)')'!'
         CLOSE(51)
 
+        WRITE(54,'(a)')'rm -f ./'//TRIM(OPTIONFILE)
         WRITE(54,'(a)')'rm -f ./'//TRIM(INPLFILE)
         WRITE(54,'(a)')'rm -f ./'//TRIM(CONTFILE)
         WRITE(54,'(a)')'rm -f ./'//TRIM(STARTFILE)
         WRITE(54,'(a)')'rm -f ./fort.7'
 
         WRITE(54,'(a)')'if [ "$1" == "all" ]; then'
+        WRITE(54,'(a)')'  if [ "$(pwd)" != "'//TRIM(DIRO)//'" ]; then'
+        WRITE(54,'(a)')'    rm -rf '//TRIM(DIRO)
+        WRITE(54,'(a)')'  else'
         DO I=1,CNTFILE
           WRITE(54,0009)I
         END DO
+        WRITE(54,'(a)')'  fi'
         WRITE(54,'(a)')'  rm -f ./'//TRIM(MEXTRFILE)
         WRITE(54,'(a)')'  rm -f ./'//TRIM(CORRFILE)
         WRITE(54,'(a)')'  rm -f ./'//TRIM(CLEARFILE)
@@ -1107,9 +1153,10 @@ c Open parameter data file for the dump
         endif
 
         if(btest(iflgchk,0).or.btest(iflgchk,1))  then 
-           write(7,'(a)') trim(dirs)
-           write(7,'(a)') trim(gname)
-           write(7,'(a)') trim(outfile)
+           write(7,'(a)') trim(dirs)//'/'//trim(gname) ! added by antoine
+          !  write(7,'(a)') trim(dirs) ! commented by antoine
+          !  write(7,'(a)') trim(gname)
+          !  write(7,'(a)') trim(outfile)
         endif
 
 

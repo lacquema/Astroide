@@ -54,7 +54,7 @@ C
          REAL*8 ELH,ELK,ELP,ELQ,Z0,ALPHEVAP,REVAP,RADMIN,NN,TS
         REAL*8 SUMX,SUMY,SUMZ,SUMVX,SUMVY,SUMVZ,ETAL,j2rp2,j4rp4
 
-        CHARACTER*80 OUTFILE(NSMAX),INPARFILE,INPLFILE,INTPFILE(NSMAX),
+        CHARACTER*100 OUTFILE(NSMAX),INPARFILE,INPLFILE,INTPFILE(NSMAX),
      &           FOPENSTAT,DIRO(NSMAX),DIRS,GNAME(NSMAX),DEV,EXTRFILE
 
         NPO=200
@@ -100,7 +100,8 @@ C
         READ(*,'(A)') EXTRFILE
         IU = 20
         DR = 180.0/PI
-        DEV=TRIM(DIRS)//'/'//TRIM(EXTRFILE)//'.dat'
+        ! DEV=TRIM(DIRS)//'/'//TRIM(EXTRFILE)//'.dat'
+        DEV='./'//TRIM(EXTRFILE)//'.dat'
 
         IF (BTEST(IFLGCHK,0)) THEN
            WRITE(*,*) ' Reading INTEGER*2 binary files '
@@ -685,7 +686,7 @@ c-------------------------------------------------------------------------
       END DO MAIN_LOOP
       CLOSE(IU)
 
-      open(unit=15,file='particles.dat',status='unknown')
+      ! open(unit=15,file='particles.dat',status='unknown')
       SIMLOOP1 : DO NS = 1,NBSIMU
          OPEN(UNIT=IU, FILE=trim(diro(ns))//'/'//OUTFILE(NS),
      &                    STATUS='OLD',FORM='UNFORMATTED')
@@ -770,7 +771,8 @@ c-------------------------------------------------------------------------
       END DO
 
 c        print*,DATA4(1:NB(0),7,NBOD)
-      DEV = TRIM(DIRS)//'/followbodies.dat'
+      ! DEV = TRIM(DIRS)//'/followbodies.dat'
+        DEV = './followbodies.dat'
 
 c        CALL IMWRITE(DEV,DATA4,NBMAX,DBLE(NBOD),0.,0.,7,
 c     &                    0.,0.,0.,NBOD,0.,0.,0.,
