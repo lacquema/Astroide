@@ -1,14 +1,15 @@
 # Table of contents:
 
-- [Installing on personal computeur](#install_on_computer)
+- [Installation on personal computeur](#install_on_computer)
 
-- [Installing on computing server](#install_on_server)
+- [Installation on computing server](#install_on_server)
 
-- [Launch the main code](#launch)
-
-- [New simulation](#new_simulation)
-
-- [Continuation](#continuation)
+- [Simulation](#simulation)
+    - [Choice of integrator](#integrator)
+    - [Generation of sub-simulations](#generation)
+    - [Launch](#launch)
+    - [Continuation](#continuation)
+    - [Extraction](#extraction)
 
 - [Analyse](#analyse)
 
@@ -16,7 +17,7 @@
 
 <div id='install_on_computer'>  
 
-# Installing on personal computer
+# Installation on personal computer
 
 ## Prerequisites
 
@@ -71,7 +72,7 @@ Else, open the `<environment_path>/Astroide/Makefile` file and update the follow
 
 <div id='install_on_server'>  
 
-# Installing on computing server
+# Installation on computing server
 
 You can import the code from github in the same way as on your personal computer. The difference lies in the installation of the software dependencies. 
 
@@ -90,10 +91,51 @@ At this point, all that remains is to compile the fortran files in the same way 
 
 <br><br>
 
-<div id='launch'/>  
+<div id='simulation'>  
 
-# Launch the main code
+# Simulation
 
-`python3 <environment_path>/Astroide/Interface/Main.py`
+<div id='integrator'>  
+
+## Choice of integrator
+
+This code currently offers a choice of two integrators: RMVS3 and HJS, which differ in the way they calculate system dynamics.
+
+RMVS3 uses heliocentric coordinates for each body. It is well suited to planetary systems in which the planets have negligible mass compared to the central star.
+
+HJS, on the other hand, is based on Jacobi coordinates for each body in the system. It is more expensive in terms of computation time, but offers better accuracy than RMVS3. This integrator is particularly well suited to hierarchical multiple star systems.
+
+<div id='generation'>  
+
+## Generation of sub-simulations
+
+This code divides the work into sub-simulations to optimize computing time. Indeed, it's not the integration of planet dynamics that requires the most resources, but that of test particles, or debris, which is often far more numerous. To remedy this, the code decouples the calculation of particle dynamics, spreading them over several independent sub-simulations. This enables artificial parallelization: each sub-simulation can be run separately, in parallel, which significantly reduces total computation time.
+
+Once the integrator has been selected, you need to refer to the subsimulation generation file, available in the following folder :
+
+`<environment_path>/Astroide/Generator`
+
+Two scripts are available to generate sub-simulations, depending on the integrator chosen: `gen_multi_rmvs3.sh` for RMVS3 and `gen_multi_hjs.sh` for HJS.
+
+Both scripts require input parameters specific to the simulation context. The special feature of HJS is its use of Jacobi coordinates, which means that the hierarchy of orbits must be specified: for each body, you must indicate whether the others are located within its orbit, or whether they are indifferent to its dynamics at this scale. There are therefore two generation shell files, one for RMVS3 and another for HJS.
+
+<div id='launch'>  
+
+## Launch
+
+<div id='continuation'>  
+
+## Continuation
+
+<div id='extraction'>  
+
+## Extraction
 
 
+
+<br><br>
+
+<div id='analyse'>  
+
+# Analyse
+    `python3 <environment_path>/Astroide/Interface/Main.py`
