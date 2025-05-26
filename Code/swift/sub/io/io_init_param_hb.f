@@ -73,7 +73,7 @@ c-----
 c...  Executable code 
 
 	   write(*,*) 'Parameter data file is ',infile
-      call io_open(7,infile,'old','formatted',ierr) ! commented by antoine
+      call io_open(7,infile,'old','formatted',ierr)
 
       read(7,*) t0,tstop,dt
 	   write(*,*) 't0,tstop,dt : ',t0,tstop,dt
@@ -113,30 +113,30 @@ c...  Executable code
       !   write(*,*)outfile
 
       if(btest(iflgchk,0) .or. btest(iflgchk,1))  then 
-         read(7,999) diro  ! added by antoine
-         write(*,*) 'diro : ', diro  ! added by antoine
+         ! read(7,999) diro  ! added by antoine
+         ! write(*,*) 'diro : ', diro  ! added by antoine
          
-         pos = INDEX(diro, '/', .TRUE.)  ! .TRUE. pour chercher depuis la fin ! added by antoine
+         ! pos = INDEX(diro, '/', .TRUE.)  ! .TRUE. pour chercher depuis la fin ! added by antoine
 
-         if (pos > 0) then ! added by antoine
-            dirs = TRIM(diro(1:pos-1))  ! Extraire la partie avant le dernier '/' ! added by antoine
-            gname = TRIM(diro(pos+1:))  ! Extraire la partie après le dernier '/' ! added by antoine
-         else ! added by antoine
-            write(*,*) 'Erreur : "/" non trouvé dans diro' ! added by antoine
-            dirs = '' ! added by antoine
-            gname = '' ! added by antoine
-         endif ! added by antoine
+         ! if (pos > 0) then ! added by antoine
+         !    dirs = TRIM(diro(1:pos-1))  ! Extraire la partie avant le dernier '/' ! added by antoine
+         !    gname = TRIM(diro(pos+1:))  ! Extraire la partie après le dernier '/' ! added by antoine
+         ! else ! added by antoine
+         !    write(*,*) 'Erreur : "/" non trouvé dans diro' ! added by antoine
+         !    dirs = '' ! added by antoine
+         !    gname = '' ! added by antoine
+         ! endif ! added by antoine
 
-         !   read(*,999) dirs  ! commented by antoine
-         !   read(*,999) gname  ! commented by antoine
-         !   diro = trim(dirs)//'/'//gname   ! commented by antoine
+         read(7,999) dirs  ! commented by antoine
+         read(7,999) gname  ! commented by antoine
+         diro = trim(dirs)//'/'//gname   ! commented by antoine
 
          dataname = 'mkdir '//trim(diro)
-         write(*,*)dataname
+         write(*,*) dataname
          call system(trim(dataname))
-            ! read(*,999) outfile  ! commented by antoine
-         outfile = 'simulation'
-         write(*,*) 'outfile : ', trim(diro)//'/'//outfile
+         read(7,999) outfile  ! commented by antoine
+         ! outfile = 'simulation'
+         ! write(*,*) 'outfile : ', trim(diro)//'/'//outfile
          write(*,*) ' '
 
         endif

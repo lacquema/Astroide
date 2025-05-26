@@ -99,7 +99,8 @@ C
         INTEGER NNN1,NNN2
 
         CHARACTER*256 LINE, TRIMMED_LINE
-        INTEGER POS_COM
+        INTEGER POS_COM, pos_slash
+        CHARACTER*100 dirs_temp, diro_temp, gname_temp
 
 0009    FORMAT('  rm -rf ./run_',I2.2) ! added by antoine
 
@@ -115,9 +116,9 @@ C
 2200    FORMAT((a),'/run_',I2.2,'/',(a),'_',I2.2,'.in') ! modified by antoine
 2201    FORMAT(I0) ! modified by antoine
 2202    FORMAT('tfin=',f10.1)
-22021    FORMAT('t_0=',f0.0)   ! added by antoine
-22022    FORMAT('t_f=',f0.0)   ! added by antoine
-22023    FORMAT('dt=',f0.0)   ! added by antoine
+22021    FORMAT('t_0=${1:-"',f0.0,'"}')   ! added by antoine
+22022    FORMAT('t_f=${2:-"',f0.0,'"}')   ! added by antoine
+22023    FORMAT('dt=${3:-"',f0.0,'"}')   ! added by antoine
 2203    FORMAT(f10.1)
 2204    FORMAT((a),'/swift_',(a),' < ./run_',I2.2,'/files.in') ! modified by antoine
 2205    FORMAT('order=${1:-"oarsub -l /nodes=1/cpu=1/core=',I1,
@@ -179,9 +180,28 @@ c
           ELSE
             TRIMMED_LINE = TRIM(LINE)
           END IF
-          WRITE(55, '(A)') TRIM(TRIMMED_LINE)
+          IF (I .NE. 5) THEN
+            WRITE(55, '(A)') TRIM(TRIMMED_LINE)
+          END IF
+          IF (I .EQ. 5) THEN
+            diro_temp = TRIM(TRIMMED_LINE)
+            WRITE(*,*) 'diro_temp : ', diro_temp
+            pos_slash = INDEX(diro_temp, '/', .TRUE.)  ! .TRUE. pour chercher depuis la fin
+            write(*,*) 'pos_slash : ', pos_slash
+            if (pos_slash > 0) then
+              dirs_temp = TRIM(diro_temp(1:pos_slash-1))  ! Extraire la partie avant le dernier '/'
+              gname_temp = TRIM(diro_temp(pos_slash+1:))  ! Extraire la partie après le dernier '/'
+            else
+              write(*,*) 'Erreur : "/" non trouvé dans diro'
+              dirs_temp = ''
+              gname_temp = ''
+            endif
+            WRITE(55, '(A)') dirs_temp
+            WRITE(55, '(A)') gname_temp
+          END IF
         END DO
-        
+        outfile = 'simulation'
+        WRITE(55, '(A)') outfile
         WRITE(55, '(A)') 'new'
         CLOSE(55)
         CALL SYSTEM('chmod ogu+x '//TRIM(OPTIONFILE))  ! added by antoine
@@ -1153,10 +1173,10 @@ c Open parameter data file for the dump
         endif
 
         if(btest(iflgchk,0).or.btest(iflgchk,1))  then 
-           write(7,'(a)') trim(dirs)//'/'//trim(gname) ! added by antoine
-          !  write(7,'(a)') trim(dirs) ! commented by antoine
-          !  write(7,'(a)') trim(gname)
-          !  write(7,'(a)') trim(outfile)
+          !  write(7,'(a)') trim(dirs)//'/'//trim(gname) ! added by antoine
+           write(7,'(a)') trim(dirs) ! commented by antoine
+           write(7,'(a)') trim(gname)
+           write(7,'(a)') trim(outfile)
         endif
 
 
