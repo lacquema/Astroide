@@ -555,6 +555,7 @@ c
         WRITE(54,'(a)')'rm -f ./'//TRIM(CONTFILE)
         WRITE(54,'(a)')'rm -f ./'//TRIM(STARTFILE)
         WRITE(54,'(a)')'rm -f ./fort.7'
+        WRITE(54,'(a)')'rm -f ./OAR*'
 
         WRITE(54,'(a)')'if [ "$1" == "all" ]; then'
         WRITE(54,'(a)')'  if [ "$(pwd)" != "'//TRIM(DIRO)//'" ]; then'
