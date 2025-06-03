@@ -66,7 +66,7 @@ If you are using the fortran compiler `gfortran`, you can directly compile all t
 
 `make compile`
 
-Else, open the `<environment_path>/Astroide/Makefile` file and update the following parameters: COMPILF. This corresponds to the paths or simply the command for the executables of the fortran compiler installed on your computer. Then, run the commands above. 
+Else, edit the `<environment_path>/Astroide/Makefile` file by updating the COMPILF variable. This corresponds to the paths or simply the command for the executables of the fortran compiler installed on your computer. Then, run the commands above. 
 
 <br><br>
 
@@ -109,19 +109,27 @@ HJS, on the other hand, is based on Jacobi coordinates for each body in the syst
 
 ## Generation of sub-simulations
 
-This code divides the work into sub-simulations to optimize computing time. Indeed, it's not the integration of planet dynamics that requires the most resources, but that of test particles, or debris, which is often far more numerous. To remedy this, the code decouples the calculation of particle dynamics, spreading them over several independent sub-simulations. This enables artificial parallelization: each sub-simulation can be run separately, in parallel, which significantly reduces total computation time.
+To optimize computing time, this code divides the workload into multiple sub-simulations. The primary computational bottleneck is not the integration of planetary dynamics, but rather the simulation of test particles (debris), which are typically much more numerous. To address this, the code separates the calculation of particle dynamics, distributing them across several independent sub-simulations. This approach enables efficient parallelization: each sub-simulation can be executed independently and concurrently, significantly reducing the overall computation time.
 
-Once the integrator has been selected, you need to refer to the subsimulation generation file, available in the following folder :
-
-`<environment_path>/Astroide/Generator`
+Once the integrator has been selected, you need to refer to the sub-simulations generation file, available in the `<environment_path>/Astroide/Generators` folder.
 
 Two scripts are available to generate sub-simulations, depending on the integrator chosen: `gen_multi_rmvs3.sh` for RMVS3 and `gen_multi_hjs.sh` for HJS.
 
-Both scripts require input parameters specific to the simulation context. The special feature of HJS is its use of Jacobi coordinates, which means that the hierarchy of orbits must be specified: for each body, you must indicate whether the others are located within its orbit, or whether they are indifferent to its dynamics at this scale. There are therefore two generation shell files, one for RMVS3 and another for HJS.
+Both scripts require input parameters specific to the simulation context. The special feature of HJS is its use of Jacobi coordinates, which means that the hierarchy of orbits must be specified: for each body, you must indicate whether the others are located within its orbit, or whether they are indifferent to its dynamics. 
+
+Copy the appropriate script into the directory where you wish to generate the sub-simulations. You can then modify its parameters as needed and execute it using `bash`, `source`, or any other suitable command for your terminal environment.
+
+This process generates all the files required to run each sub-simulation (indexed by `i`). Each sub-simulation is now fully configured and ready for computation.
 
 <div id='launch'>  
 
 ## Launch
+
+Une fois les sous-simulations configurées, vous pouvez lancer les calculs en lancant les fichiers `start_i.sh` avec la commande adapte a ce que vous souhaitez. 
+
+Cela cree pour chaque sous-simulations un dossier `run_i` dans le repertoire que vous avez specifier en entree comme `WORKPATH` dans le fichier de generation (`gen_multi_rmvs3.sh` or `gen_multi_hjs.sh`). Et les calculs sont lances dans ce repertoire. 
+
+Vous pouvez suivre l'état 
 
 <div id='continuation'>  
 

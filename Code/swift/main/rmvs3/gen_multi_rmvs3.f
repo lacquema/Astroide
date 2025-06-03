@@ -44,7 +44,7 @@ C
         CHARACTER*(CHLEN) MVSFILE
         CHARACTER*(CHLEN) BINDIR,MEXTRFILE,CONTFILE,STARTFILE, str
         CHARACTER*(CHLEN) GOCFILE,GOCMD,INTEG, CLEARFILE, CORRFILE
-        CHARACTER*(CHLEN) OPTIONFILE
+        CHARACTER*(CHLEN) OPTIONFILE, STATESFILE
         CHARACTER*1 PR
         real*8 t0,tstop
         real*8 dtout,dtdump
@@ -125,11 +125,12 @@ c     ........entree des parametres
         ! write(*,*)TRIM(BINDIR)
 
         MEXTRFILE='mextract_multi.sh'
-        CONTFILE='continue.sh'
-        STARTFILE='start.sh'
+        CONTFILE='continues.sh'
+        STARTFILE='starts.sh'
         CLEARFILE='clear.sh'
         CORRFILE='corr_multi.dat'
         OPTIONFILE='options.in'
+        STATESFILE='states.sh'
         
         WRITE(*,*)'Remove old files' ! added by antoine
         CALL SYSTEM('[ -f ./'//CLEARFILE//' ] && ./'//CLEARFILE) ! added by antoine
@@ -568,6 +569,7 @@ c
         WRITE(54,'(a)')'  rm -f ./'//TRIM(MEXTRFILE)
         WRITE(54,'(a)')'  rm -f ./'//TRIM(CORRFILE)
         WRITE(54,'(a)')'  rm -f ./'//TRIM(CLEARFILE)
+        WRITE(54,'(a)')'  rm -f ./'//TRIM(STATESFILE)
         WRITE(54,'(a)')'fi'
         CLOSE(54)  ! added by antoine
 
@@ -584,6 +586,35 @@ c
         ! WRITE(*,'(a)')TRIM(GOCMD)
 
         ! write(*,*)NCOR
+
+        ! Création du fichier 'states.sh' pour afficher l'état des sous-simulations
+        OPEN(56, FILE=STATESFILE, STATUS='UNKNOWN')
+        WRITE(56,'(a)') '#! /bin/bash'
+        WRITE(56,'(a)') ''
+        WRITE(56,'(a)') 'WORKPATH='//TRIM(DIRO)
+        WRITE(56,'(a,i0)') 'NB_SIMU=',CNTFILE
+        WRITE(56,'(a)') ''
+        WRITE(56,'(a)') 'for ((i=1; i<=$NB_SIMU; i++)); do'
+        WRITE(56,'(a)') 'dir="$WORKPATH/run_$(printf "%02d" $i)"'
+        WRITE(56,'(a)') 'file="$dir/dump_param.dat"'
+        WRITE(56,'(a)') 'if [ ! -f "$file" ]; then'
+        WRITE(56,'(a)') 'echo "sub-simulation $(printf "%02d" $i): 0%"'
+        WRITE(56,'(a)') 'continue'
+        WRITE(56,'(a)') 'fi'
+        WRITE(56,'(a)') ''
+        WRITE(56,'(a)') 'read a b c < "$file"'
+        WRITE(56,'(a)') ''
+        WRITE(56,'(a)') 'if (( $(echo "$a < $b" | bc -l) )); then'
+        WRITE(56,'(a)') 'p=$(echo "($a/$b)*100" | bc -l)'
+        WRITE(56,'(a)') 'p=$(echo "$p/1" | bc)'
+        WRITE(56,'(a)') 'else'
+        WRITE(56,'(a)') 'p=100'
+        WRITE(56,'(a)') 'fi'
+        WRITE(56,'(a)') 'echo "sub-simulation $(printf "%02d" $i): $p%"'
+        WRITE(56,'(a)') 'done'
+        CLOSE(56)
+        CALL SYSTEM('chmod ogu+x states.sh')
+
 
         END PROGRAM GEN_MULTI_RMVS3
         ! end subroutine GEN_MULTI_RMVS3
