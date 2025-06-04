@@ -552,7 +552,7 @@ class RadProfile(GeneralToolClass):
         self.Ordinate = ComboBox('Ordinate', 'Choice of ordinate', ['Number of particules', 'Surface density'])
         self.WindowPlot.WidgetParam.Layout.addWidget(self.Ordinate)
 
-        self.Norm = ComboBox('Normalisation', 'Choice of the normalisation', ['None', 'MaxEqOne', 'SumEqOne'])
+        self.Norm = ComboBox('Normalisation', 'Choice of the normalisation', ['None', 'max=1', 'sum=1'])
         self.Norm.ComboParam.setCurrentIndex(0)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.Norm)
 

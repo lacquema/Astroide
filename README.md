@@ -12,6 +12,13 @@
     - [Extraction](#extraction)
 
 - [Analyse](#analyse)
+    - [Snap selector](#snap_selector)
+    - [Space view](#space_view)
+    - [Radial profile](#radial_profile)
+    - [Diagram a=f(e)](#diagram_ae)
+    - [Diagram y=f(t)](#diagram_yt)
+    - [Diagram y=f(x)](#diagram_yx)
+    
 
 <br><br>
 
@@ -113,11 +120,13 @@ To optimize computing time, this code divides the workload into multiple sub-sim
 
 Once the integrator has been selected, you need to refer to the sub-simulations generation file, available in the `<environment_path>/Astroide/Generators` folder.
 
-Two scripts are available to generate sub-simulations, depending on the integrator chosen: `gen_multi_rmvs3.sh` for RMVS3 and `gen_multi_hjs.sh` for HJS.
+Two scripts are available to generate sub-simulations, depending on the integrator chosen: 
+- `gen_multi_rmvs3.sh` for RMVS3.
+- `gen_multi_hjs.sh` for HJS.
 
 Both scripts require input parameters specific to the simulation context. The special feature of HJS is its use of Jacobi coordinates, which means that the hierarchy of orbits must be specified: for each body, you must indicate whether the others are located within its orbit, or whether they are indifferent to its dynamics. 
 
-Copy the appropriate script into the directory where you wish to generate the sub-simulations. You can then modify its parameters as needed and execute it using `bash`, `source`, or any other suitable command for your terminal environment.
+Copy the appropriate script into the directory where you wish to generate the sub-simulations. You can then modify its parameters as needed and execute it.
 
 This process generates all the files required to run each sub-simulation (indexed by `i`). Each sub-simulation is now fully configured and ready for computation.
 
@@ -125,25 +134,81 @@ This process generates all the files required to run each sub-simulation (indexe
 
 ## Launch
 
-Une fois les sous-simulations configurées, vous pouvez lancer les calculs en lancant les fichiers `start_i.sh` avec la commande adapte a ce que vous souhaitez. 
+Once the sub-simulations are configured, you can start the computations by executing the `start_i.sh` files using the command that best fits your workflow.
 
-Cela cree pour chaque sous-simulations un dossier `run_i` dans le repertoire que vous avez specifier en entree comme `WORKPATH` dans le fichier de generation (`gen_multi_rmvs3.sh` or `gen_multi_hjs.sh`). Et les calculs sont lances dans ce repertoire. 
+For each sub-simulation, this process creates a `run_i` directory in the location you specified as `WORKPATH` in the generation script (`gen_multi_rmvs3.sh` or `gen_multi_hjs.sh`). All computations for that sub-simulation are performed within its respective directory.
 
-Vous pouvez suivre l'état 
+To monitor the progress of the sub-simulations, you can run the `states.sh` script, which provides an overview of their current status.
 
 <div id='continuation'>  
 
 ## Continuation
 
+Regardless of the reason for the interruption—such as time limits imposed on computing servers—you can resume a simulation from the latest checkpoint by simply running `continue_i.sh`. This script will automatically pick up the computation from where it left off, ensuring no progress is lost.
+
 <div id='extraction'>  
 
 ## Extraction
 
+Once all sub-simulations have finished, you need to extract and consolidate the results. To do this, run the `mextract_multi.sh` script with up to three optional arguments: `t_0`, `t_f`, and `dt`, which specify the initial time, final time, and time step for extraction, respectively.
 
+By default, `t_0` and `t_f` are set to the simulation's start and end times, and `dt` defaults to `0.1 * t_f`.
+
+At each time step, the script generates a snapshot and writes it to the following files:
+- `mextract.dat`: Contains the complete output data for all bodies and test particles.
+- `followbodies.dat`: Contains output data for the massive bodies only.
+
+These files provide a unified dataset from all sub-simulations, ready for further analysis.
 
 <br><br>
 
 <div id='analyse'>  
 
 # Analyse
-    `python3 <environment_path>/Astroide/Interface/Main.py`
+
+You have access to a graphical interface for analyzing the results of your simulations. To launch it, run the following command:
+
+`python3 <environment_path>/Astroide/Interface/Main.py`
+
+After clicking the `Analyse` button, use the file browser on the left side of the interface to navigate and select the directory containing your simulation output files. You can double-click to choose the appropriate folder. If you have renamed your output files, you can enter their new names in the provided fields within the interface. Once everything is set, click `Analyse the simulation` to start the analysis process.
+
+![interface](interface.png)
+
+The interface offers a comprehensive set of tools for exploring and visualizing your simulation results, each designed to support different aspects of your analysis. For every feature, you can access various options to customize and refine your study according to your specific needs. Descriptions and helpful tooltips appear when you hover over different elements of the interface, making it easier to understand and utilize each function effectively.
+
+<div id='snap_selector'>  
+
+## Snap selector
+
+The selector allows you to choose the specific snapshot (corresponding to a simulation time) that you want to analyze. Additionally, the central button refreshes the active plots.
+
+<div id='space_view'>  
+
+## Space view
+
+This feature allows you to visualize the system in two or three dimensional space. You can display test particles either as individual points or as a density map using a histogram. This provides an intuitive overview of the spatial distribution and structure of both massive bodies and test particles within the simulation. 
+
+<div id='radial_profile'>  
+
+## Radial profile
+
+This feature allows you to visualize the distribution of particles as a function of distance from the center, integrated over angle. You can also overlay additional curves onto the radial profile by specifying a text file containing the curve data. The file should have two columns of equal length: the first column for the x-values (radii) and the second for the y-values (corresponding data points).
+
+<div id='diagram_ae'>  
+
+## Diagram a=f(e)
+
+This feature allows you to plot the eccentricity versus the semi-major axis for each object in the system. This is particularly useful for identifying mean-motion resonances with massive bodies. An available option enables you to calculate and overlay the positions of various mean-motion resonances associated with the different massive bodies, providing deeper insight into the system's dynamical structure.
+
+<div id='diagram_yt'>  
+
+## Diagram y=f(t)
+This feature allows you to plot the evolution of any orbital parameter (such as semi-major axis *a*, eccentricity *e*, inclination *i*, argument of periapsis $\omega$, longitude of ascending node $\Omega$, or mean anomaly *M*) as a function of time for any massive body in the system. This enables you to track and analyze the dynamical evolution of specific objects throughout the simulation.
+
+<div id='diagram_yx'>  
+
+## Diagram y=f(x)
+
+This feature allows you to plot any mathematical expression involving the orbital parameters of different bodies as a function of another expression. To specify parameters, use *[k]*, where *k* is the orbit number of the body, counted from the center outward. You can also use standard mathematical functions within your expressions. This flexibility enables you to create custom plots tailored to your specific analysis needs.
+
+
