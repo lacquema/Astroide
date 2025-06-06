@@ -17,6 +17,7 @@ from SnapSelector import SnapSelectorClass
 from Tools import *
 from TransferData import TransferDataClass
 from WindowLoad import LoadWindowClass
+from PyQt6.QtGui import QGuiApplication, QCursor
 
 
 ### --- Main Window Generating --- ###
@@ -25,9 +26,15 @@ class WindowMainClass(QMainWindow):
     # Signal emitted when the main window is closed
     SignalCloseWindowMain = pyqtSignal()
 
-
     def __init__(self, PathFollowbodies=str, PathMextract=str):
         super().__init__()
+
+        # Move the window to the top-left of the active screen (where the mouse is)
+        mouse_pos = QCursor.pos()
+        for screen in QGuiApplication.screens():
+            if screen.geometry().contains(mouse_pos):
+                geo = screen.geometry()
+                self.move(geo.x(), geo.y())
 
         # Load data from the provided file paths
         NbSteps, NbBodies_f, t_f, a_f, e_f, i, W, w, M = TransferDataClass.OpenFollowbodies(PathFollowbodies)

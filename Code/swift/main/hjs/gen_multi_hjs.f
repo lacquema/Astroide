@@ -164,13 +164,19 @@ c
         READ(*,'(a)')INTEG
 
         ! Ne garder que ce qui est avant le '#' dans INTEG:     ! added by antoine
-        pos_com = INDEX(INTEG, '#')  
+        pos_com = INDEX(INTEG, '#')
 
         IF (pos_com > 0) THEN 
-          INTEG = TRIM(INTEG(1:pos_com-1))  ! Garder uniquement la partie avant '#' 
+          INTEG = ADJUSTL(TRIM(INTEG(1:pos_com-1)))
         ELSE
-          INTEG = TRIM(INTEG)
+          INTEG = ADJUSTL(TRIM(INTEG))
         ENDIF
+        ! Supprimer les tabulations et espaces restants
+        DO I = LEN(INTEG), 1, -1
+          IF (INTEG(I:I) .EQ. CHAR(9) .OR. INTEG(I:I) .EQ. '\t') THEN
+            INTEG(I:I) = ''
+          ENDIF
+        END DO
 
         ! Ecrire le fichier options.in  ! added by antoine
         DO I = 1, 5

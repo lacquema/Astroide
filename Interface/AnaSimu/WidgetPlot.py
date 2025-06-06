@@ -20,7 +20,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
     def __init__(self):
         self.fig = Figure()
-        self.fig.subplots_adjust(left=0.2, right=0.8, top=0.9, bottom=0.15)
+        # self.fig.subplots_adjust(left=0.2, right=0.8, top=0.9, bottom=0.15)
 
         super(MplCanvas, self).__init__(self.fig)
 
@@ -89,7 +89,7 @@ class WidgetPlot(QWidget):
         self.history = []
         self.history_index = 0
         self.update_toolbar_buttons()
-        print("History reset")
+        # print("History reset")
 
     def clear_figure(self):
         # for i in range(len(self.Canvas.fig.axes)):
@@ -152,11 +152,11 @@ class WidgetPlot(QWidget):
             self.remove_undone_states()
             self.history.append(state)
             self.history_index = len(self.history) - 1
-            self.update_toolbar_buttons()
-            print('save ', self.history_index, len(self.history))
-            print(state)
+            # print('save ', self.history_index, len(self.history))
+            # print(state)
             if self.Toolbar._actions['pan'].isChecked(): self.Toolbar._actions['pan'].trigger()
             if self.Toolbar._actions['zoom'].isChecked(): self.Toolbar._actions['zoom'].trigger()
+            self.update_toolbar_buttons()
         else: 
             if (state['xlim'] != self.history[self.history_index]['xlim']) or \
                (state['ylim'] != self.history[self.history_index]['ylim']) or \
@@ -167,11 +167,11 @@ class WidgetPlot(QWidget):
                     self.remove_undone_states()
                     self.history.append(state)
                     self.history_index = len(self.history) - 1
-                    self.update_toolbar_buttons()
-                    print('save ', self.history_index, len(self.history))
-                    print(state)
+                    # print('save ', self.history_index, len(self.history))
+                    # print(state)
                     if self.Toolbar._actions['pan'].isChecked(): self.Toolbar._actions['pan'].trigger()
-                    if self.Toolbar._actions['zoom'].isChecked(): self.Toolbar._actions['zoom'].trigger()        
+                    if self.Toolbar._actions['zoom'].isChecked(): self.Toolbar._actions['zoom'].trigger() 
+                    self.update_toolbar_buttons()       
 
     def remove_undone_states(self):
         """Remove any states that were undone."""
@@ -200,32 +200,36 @@ class WidgetPlot(QWidget):
         """Revert to the previous state in history."""
         if self.history_index > 0: 
             self.history_index -= 1
-            self.update_toolbar_buttons()
-            print('undo ', self.history_index, len(self.history))
+            # print('undo ', self.history_index, len(self.history))
             self.restore_plot_state(index=self.history_index)
+            self.update_toolbar_buttons()
             # self.adapt_tight()
 
     def redo_plot_state(self):
         """Advance to the next state in history."""
         if self.history_index < len(self.history) - 1:
             self.history_index += 1
-            self.update_toolbar_buttons()
-            print('redo ', self.history_index, len(self.history))
+            # print('redo ', self.history_index, len(self.history))
             self.restore_plot_state(index=self.history_index)
+            self.update_toolbar_buttons()
             # self.adapt_tight()
 
     def restore_plot_to_initial_state(self):
-        """Reset the toolbar to its initial state."""
+        """Restor the toolbar to its initial state."""
         self.remove_undone_states()
-        self.history.append(self.history[0])
+        if self.history[0]!= self.history[-1]:
+            self.history.append(self.history[0])
         self.history_index = len(self.history)-1
-        print('home ', self.history_index, len(self.history))
+        # print('home ', self.history_index, len(self.history))
         self.restore_plot_state(index=0)
+        self.update_toolbar_buttons()
         # self.adapt_tight()
 
     def update_toolbar_buttons(self):
         """Update the state of the undo and redo buttons."""
+        # print('back ',self.history_index > 0)
         self.Toolbar._actions['back'].setEnabled(self.history_index > 0)
+        # print('forward ',self.history_index < len(self.history) - 1)
         self.Toolbar._actions['forward'].setEnabled(self.history_index < len(self.history) - 1)
 
     def adapt_tight(self):

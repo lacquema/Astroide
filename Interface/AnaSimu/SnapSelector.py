@@ -24,7 +24,7 @@ class SnapSelectorClass(QWidget):
 
         # Variables
         self.NbSnap = NbSnap
-        print(self.NbSnap)
+        # print(self.NbSnap)
         self.IndexSnap = 0
         self.tmax = tmax
         

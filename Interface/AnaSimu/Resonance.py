@@ -32,7 +32,7 @@ class ResClass(QWidget):
         self.PResWidget = SpinBox(None, 'Resonant orbit period', 1, 1, None)
         self.Layout.addWidget(self.PResWidget)
 
-        self.LabelRatioWidget = QLabel(' /')
+        self.LabelRatioWidget = QLabel(' :')
         self.Layout.addWidget(self.LabelRatioWidget)
 
         self.PRefWidget = SpinBox(None, 'Reference orbit period', 1, 1, None)

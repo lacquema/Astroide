@@ -1,11 +1,13 @@
 c**********************************************************************
-c		      SWIFT_HJS.F
+c		      SWIFT_HJS_PAR.F
 c**********************************************************************
 c  This code is a realization of Hierarchical Jacobi Symplectic
 c  n-body mapping method for hierarchical stellar systems
 c  (Beust 2003)
-c
-c                 NO CLOSE ENCOUNTERS
+c    Uses S6B 6th order symplectic algorithm (Chambers & Murison 2000)
+c       
+c                 NO CLOSE ENCOUNTERS / OPENMP PARALLEL
+c                 takes *dtout* macrosteps
 c                 To run, need 3 input files. The code prompts for
 c                 the file names, but examples are :
 c
@@ -14,9 +16,8 @@ c		    planet file like          pl.in
 c                   test particle file like   tp.in
 c
 c Authors:  Herve Beust
-c Date:    Feb. 11, 2002
-c Last revision: Sep 4, 2006
-c Remark : based on swift_whm.f
+c Date:    Feb. 26, 2025
+c Remark : based on swift_hjs.f
 
      
 	include '../../sub/swift.inc'
@@ -66,7 +67,9 @@ c Get data for the run and the test particles
 	call io_init_param_hb(inparfile,t0,tstop,dt,dtout,dtdump,
      &         iflgchk,rmin,rmax,rmaxu,qmin,lclose,diro,dirs,
      &         gname,outfile,fopenstat)
-
+c... Make dtout a multiple of dt (H. Beust, Feb 26, 2025)
+        dt = dtout/nint(dtout/dt)
+	
 c Prompt and read name of massive bodies data file
 	write(*,*) ' '
 	write(*,*) 'Enter name of massive bodies data file : '
@@ -80,7 +83,9 @@ c Get data for the run and the test particles
 	read(*,999) intpfile
         call io_init_tp_hjs(intpfile,nbod,ntp,oloc,oloct,mass,umat,
      &         etatp,matp,umatp,xjt,yjt,zjt,vxjt,vyjt,vzjt,istat,rstat)
-
+c       Save input file for further continuation (H Beust Feb 14, 2023)
+        call io_write_mvsfile(diro,genfile)
+	
 c Copy initial files input into work directory
         if ((fopenstat(1:3).eq.'new')
      &       .or.(fopenstat(1:3).eq.'NEW')) then
@@ -92,8 +97,8 @@ c Copy initial files input into work directory
           call system(dataname)
           dataname = 'cp '//trim(genfile)//' '//trim(diro)
           call system(dataname)
-          dataname = 'cp matpass.dat '//trim(diro)
-          call system(dataname)
+c          dataname = 'cp matpass.dat '//trim(diro)
+c          call system(dataname)
         end if
 
 
@@ -148,32 +153,29 @@ c	  do while ( (t .le. tstop) .and.
 c     &       ((ntp.eq.0).or.(nleft.gt.0)) )
           do while (ok)
 
-c             call step_dkd_hjs(1,i1st,t,nbod,ntp,oloc,oloct,mat,umat,
-             call step_kdk_hjs(i1st,t,nbod,ntp,oloc,oloct,mat,umat,
-     &     matp,umatp,mass,eta,mu,etatp,xj,yj,zj,vxj,vyj,vzj,
-     &     xjt,yjt,zjt,vxjt,vyjt,vzjt,istat,rstat,dt)	
-	     t = t + 1*dt
-cccccccccccccccccccccc
-
-
-             if (t.ge.tout) then 
-             print*,'t=',t
-
-             do j=2,nbod
-               call orbel_xv2el(xj(j),yj(j),zj(j),vxj(j),vyj(j),
-     &           vzj(j),eta(j)+mu(j),ialpha,a,e,inc,capom,
-     &           omega,capm)
-               print*,j,sngl(a),sngl(e)
-!     &            ,sngl(inc),sngl(capm*180./PI)
-               ok = ok.and.(e.lt.1.0d0)
-             end do
-             end if
+            call step_s6b_hjs_par(i1st,t,tout,tstop,nbod,ntp,
+     &        oloc,oloct,mat,umat,matp,umatp,mass,eta,mu,etatp,
+     &        xj,yj,zj,vxj,vyj,vzj,xjt,yjt,zjt,vxjt,vyjt,vzjt,
+     &        istat,rstat,dt)	
+	     
+c	     t = t + 1*dt
+c
+cccccccccccccccccccccccccccc
+c             if (t.ge.tout) then 
+c             print*,'t=',t
+c
+c             do j=2,nbod
+c               call orbel_xv2el(xj(j),yj(j),zj(j),vxj(j),vyj(j),
+c     &           vzj(j),eta(j)+mu(j),ialpha,a,e,inc,capom,
+c     &           omega,capm)
+c               print*,j,sngl(a),sngl(e)
+c     &            ,sngl(inc),sngl(capm*180./PI)
+c               ok = ok.and.(e.lt.1.0d0)
+c             end do
+c             end if
+cccccccccccccccccccccccccccc
+	     
              ok = (ok.and.(t.le.tstop))
-
-ccccccccccccccccccc
-
-
-
 
              if (btest(iflgchk,4))  then ! bit 4 is set
                do i=1,ntp 
@@ -199,51 +201,50 @@ ccccccccccccccccccc
                 nleft = ntp
              endif
 
-c if it is time, output orb. elements, 
-	  if (t .ge. tout) then 
-            if (btest(iflgchk,0))  then    ! bit 0 is set
-              call io_write_frame_hjs(t,nbod,ntp,oloc,matp,umat,
-     &           mass,eta,mu,xj,yj,zj,vxj,vyj,vzj,etatp,xjt,yjt,zjt,
-     &           vxjt,vyjt,vzjt,istat,trim(diro)//'/'//outfile,
-     &           iub,fopenstat)
-            endif
-            if (btest(iflgchk,1))  then ! bit 1 is set
-              call io_write_frame_r_hjs(t,nbod,ntp,oloc,matp,umat,
-     &           mass,eta,mu,xj,yj,zj,vxj,vyj,vzj,etatp,xjt,yjt,zjt,
-     &           vxjt,vyjt,vzjt,istat,trim(diro)//'/'//outfile,
-     &           iub,fopenstat)
-            endif
+c...  Output orb. elements, 
 
-	    tout = tout + dtout
-	  endif
+             if (btest(iflgchk,0))  then    ! bit 0 is set
+               call io_write_frame_hjs(t,nbod,ntp,oloc,matp,umat,
+     &           mass,eta,mu,xj,yj,zj,vxj,vyj,vzj,etatp,xjt,yjt,zjt,
+     &           vxjt,vyjt,vzjt,istat,trim(diro)//'/'//outfile,
+     &           iub,fopenstat)
+               endif
+             if (btest(iflgchk,1))  then ! bit 1 is set
+               call io_write_frame_r_hjs(t,nbod,ntp,oloc,matp,umat,
+     &           mass,eta,mu,xj,yj,zj,vxj,vyj,vzj,etatp,xjt,yjt,zjt,
+     &           vxjt,vyjt,vzjt,istat,trim(diro)//'/'//outfile,
+     &           iub,fopenstat)
+             endif
+
+	     tout = tout + dtout
 
 c If it is time, do a dump
-          if(t.ge.tdump) then
+             if (t.ge.tdump) then
 
-             tfrac = (t-t0)/(tstop-t0)
-             write(*,998) t,tfrac,nleft
- 998         format(' Time = ',1p1e12.5,': fraction done = ',0pf5.3,
+               tfrac = (t-t0)/(tstop-t0)
+               write(*,998) t,tfrac,nleft
+ 998           format(' Time = ',1p1e12.5,': fraction done = ',0pf5.3,
      &            ': Number of active tp =',i6)
-             call io_dump_pl_hjs(trim(diro)//'/'//'dump_pl.dat',
+               call io_dump_pl_hjs(trim(diro)//'/'//'dump_pl.dat',
      &                    nbod,oloc,mass,umat,
      &                    xj,yj,zj,vxj,vyj,vzj,lclose,iflgchk,rplsq)
-             call io_dump_tp_hjs(trim(diro)//'/'//'dump_tp.dat',
-     &          nbod,ntp,matp,xjt,yjt,zjt,vxjt,vyjt,vzjt,istat,rstat)
-	     call io_dump_param(trim(diro)//'/'//'dump_param.dat',
-     &          t,tstop,dt,dtout,dtdump,iflgchk,rmin,rmax,rmaxu,
-     &	        qmin,lclose,dirs,gname,outfile)
-	     tdump = tdump + dtdump
+               call io_dump_tp_hjs(trim(diro)//'/'//'dump_tp.dat',
+     &           nbod,ntp,matp,xjt,yjt,zjt,vxjt,vyjt,vzjt,istat,rstat)
+	       call io_dump_param(trim(diro)//'/'//'dump_param.dat',
+     &           t,tstop,dt,dtout,dtdump,iflgchk,rmin,rmax,rmaxu,
+     &	         qmin,lclose,dirs,gname,outfile)
+	       tdump = tdump + dtdump
 
-             if (btest(iflgchk,2))  then    ! bit 2 is set
-               call anal_energy_write_hjs(t,nbod,umat,mass,xj,yj,zj,
+               if (btest(iflgchk,2))  then    ! bit 2 is set
+                 call anal_energy_write_hjs(t,nbod,umat,mass,xj,yj,zj,
      &                           vxj,vyj,vzj,iue,fopenstat,diro,eoff)
-             endif
+               end if
 c        if(btest(iflgchk,3))  then    ! bit 3 is set
 c           call anal_jacobi_write(t0,nbod,ntp,mass,xh,yh,zh,vxh,
 c     &        vyh,vzh,xht,yht,zht,vxht,vyht,vzht,istat,2,iuj,fopenstat)
 c        endif            No Jacobi intagral in HJS...
 
-	  endif
+	     end if
 
 	enddo
 c********** end of the big loop from time 't0' to time 'tstop'
@@ -260,5 +261,5 @@ c Do a final dump for possible resumption later
      &          t,tstop,dt,dtout,dtdump,iflgchk,rmin,rmax,rmaxu,
      &	        qmin,lclose,dirs,gname,outfile)
         call util_exit(0)
-        end    ! swift_hjs.f
+        end    ! swift_hjs_par.f
 c---------------------------------------------------------------------

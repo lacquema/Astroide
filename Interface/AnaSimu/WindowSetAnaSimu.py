@@ -62,13 +62,13 @@ class WindowSetAnaSimu(WindowWithFinder):
 
     def InitWidgets(self):
         
-        self.SimuFilePathW = LineEdit('Simulation file', 'Path to the simulation file to analyse', '')
+        self.SimuFilePathW = LineEdit('Path', 'Path to the simulation files to analyse', '')
         self.Layout.addWidget(self.SimuFilePathW)
 
-        self.FollowbodiesFileName = LineEdit('Followbodies file', 'Name of the followbodies file with extension', 'followbodies.dat')
+        self.FollowbodiesFileName = LineEdit('Followbodies file', 'Name of the followbodies file with extension', '')
         self.Layout.addWidget(self.FollowbodiesFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        self.MextractFileName = LineEdit('Mextract file', 'Name of the mextract file with extension', 'mextract.dat')
+        self.MextractFileName = LineEdit('Mextract file', 'Name of the mextract file with extension', '')
         self.Layout.addWidget(self.MextractFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self.BtnStart = QPushButton('Analyse the simulation')
@@ -82,7 +82,21 @@ class WindowSetAnaSimu(WindowWithFinder):
         info = self.Model.fileInfo(index)
         file_path = info.absoluteFilePath()
         if self.is_valid_file(file_path):  # Check if the file is valid
-            self.SimuFilePathW.EditParam.setText(file_path+'/')
+            self.SimuFilePathW.EditParam.setText(file_path + '/')
+            # Set Followbodies file if exists
+            followbodies_path = os.path.join(file_path, 'followbodies.dat')
+            if os.path.isfile(followbodies_path):
+                self.FollowbodiesFileName.EditParam.setText('followbodies.dat')
+            else:
+                self.FollowbodiesFileName.EditParam.setText('')
+                print('\nFollowbodies file not found, it may has been renamed. Please check the directory.')
+            # Set Mextract file if exists
+            mextract_path = os.path.join(file_path, 'mextract.dat')
+            if os.path.isfile(mextract_path):
+                self.MextractFileName.EditParam.setText('mextract.dat')
+            else:
+                self.MextractFileName.EditParam.setText('')
+                print('\nMextract file not found, it may has been renamed. Please check the directory.')
         else:
             print('\nSelected directory is not valid')
             self.ClearEdits()
@@ -99,6 +113,8 @@ class WindowSetAnaSimu(WindowWithFinder):
     def ClearEdits(self):
         # self.DataFileNameW.EditParam.setText('')
         self.SimuFilePathW.EditParam.setText('')
+        self.FollowbodiesFileName.EditParam.setText('')
+        self.MextractFileName.EditParam.setText('')
     
     # Reset all widgets of the parameters window
     def ResetParams(self):

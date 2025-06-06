@@ -1,4 +1,8 @@
-# Table of contents:
+`Astroide` (Hervé Beust & Antoine Lacquement, 2025) is an open-source code for simulating planetary system dynamics, based on `SWIFT` (Hal Levison & Martin Duncan, 1994). It enables to simulate planetary systems that include debris disks composed of test particles. While these test particles do not affect the massive bodies, their own trajectories are influenced by the gravitational interactions with those bodies. The code also provides a graphical interface for analyzing simulation results.
+
+<br><br>
+
+# Table of contents
 
 - [Installation on personal computeur](#install_on_computer)
 

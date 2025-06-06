@@ -137,3 +137,16 @@ def DelAllWidgetsBtw(Layout, indexMin, indexMax):
             Layout.removeWidget(WidgetToRemove)
             # print(self.Layout.count())
             WidgetToRemove.setParent(None)
+
+def find_delimiter(file_path):
+    with open(file_path, 'r') as f:
+        first_line = f.readline()
+        if ',' in first_line:
+            delimiter = ','
+        elif ';' in first_line:
+            delimiter = ';'
+        elif '\t' in first_line:
+            delimiter = '\t'
+        else:
+            delimiter = None
+    return delimiter

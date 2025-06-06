@@ -24,18 +24,24 @@ class CurveClass(QWidget):
         # Layout
         self.Layout = QHBoxLayout()
 
-        # Path of the curve
-        self.PathWidget = LineEdit('Path', 'Path of the added curve', '')
-        self.Layout.addWidget(self.PathWidget)
-
         # Browse button
         self.BtnBrowse = QPushButton('Browse')
         self.Layout.addWidget(self.BtnBrowse)
         self.BtnBrowse.clicked.connect(self.DialBrowse)
 
-        # Label of the curve
-        self.LabelWidget = LineEdit('Label', 'Label of the added curve', '')
-        self.Layout.addWidget(self.LabelWidget)
+        # Path of the curve file
+        self.PathFile = ''
+
+        # Name of the curve file
+        self.NameFile = LineEdit(None, 'Name of the added curve file', '')
+        self.NameFile.EditParam.setMinimumWidth(200)
+        # self.NameFile.setEnabled(False)
+        self.NameFile.EditParam.setReadOnly(True)
+        self.Layout.addWidget(self.NameFile)
+
+        # # Label of the curve
+        # self.LabelWidget = LineEdit('Label', 'Label of the added curve', '')
+        # self.Layout.addWidget(self.LabelWidget)
 
         # Delete the curve
         self.ButtonDel = QPushButton('-')
@@ -48,7 +54,8 @@ class CurveClass(QWidget):
 
     def DialBrowse(self):
         self.File = QFileDialog.getOpenFileName(self)
-        self.PathWidget.EditParam.setText(self.File[0])
+        self.PathFile = self.File[0]
+        self.NameFile.EditParam.setText(self.PathFile.split('/')[-1])
 
 
 ### --- Check --- ###

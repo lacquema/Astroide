@@ -7,7 +7,7 @@
 import sys
 import os
 import numpy as np
-from numpy import cos, sin, exp, log, log10, linspace, max, loadtxt, transpose, histogram, histogram2d, arcsinh, array, float64, int8
+from numpy import cos, sin, exp, log, log10, linspace, max, loadtxt, transpose, histogram, histogram2d, arcsinh, array, float64, int8, genfromtxt
 from math import pi, sqrt
 from random import random
 
@@ -21,6 +21,7 @@ from Parameters import *
 from TransferData import TransferDataClass
 from Resonance import ResClass
 from Curve import CurveClass
+from UtilsAnaSimu import find_delimiter
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.interpolate import interp1d  # Import pour l'interpolation
@@ -522,9 +523,9 @@ class RadProfile(GeneralToolClass):
         self.Z = Z 
 
         # Beta Pic other curves
-        self.profileAug = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Augereau_profile.dat', dtype = float))
-        self.profileNE = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_NE.dat', dtype = float))
-        self.profileSW = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_SW.dat', dtype = float))
+        # self.profileAug = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Augereau_profile.dat', dtype = float))
+        # self.profileNE = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_NE.dat', dtype = float))
+        # self.profileSW = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_SW.dat', dtype = float))
 
 
         # Parameters initialisation
@@ -585,13 +586,13 @@ class RadProfile(GeneralToolClass):
         self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckCurves, alignment=Qt.AlignmentFlag.AlignCenter)
         self.CheckCurves.stateChanged.connect(self.CurveStateChange)
 
-        self.CheckAugWidget = QCheckBox('Aug 2001')
-        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckAugWidget)
-        self.CheckAugWidget.setEnabled(self.CheckCurves.isChecked())
+        # self.CheckAugWidget = QCheckBox('Aug 2001')
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckAugWidget)
+        # self.CheckAugWidget.setEnabled(self.CheckCurves.isChecked())
 
-        self.CheckDentWidget = QCheckBox('Dent 2014')
-        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckDentWidget)
-        self.CheckDentWidget.setEnabled(self.CheckCurves.isChecked())
+        # self.CheckDentWidget = QCheckBox('Dent 2014')
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckDentWidget)
+        # self.CheckDentWidget.setEnabled(self.CheckCurves.isChecked())
 
         self.ButAddCurve = QPushButton('+')
         self.WindowPlot.WidgetParam.Layout.addWidget(self.ButAddCurve)
@@ -629,8 +630,8 @@ class RadProfile(GeneralToolClass):
 
     def CurveStateChange(self):
         CurveState = self.CheckCurves.isChecked()
-        self.CheckAugWidget.setEnabled(CurveState)
-        self.CheckDentWidget.setEnabled(CurveState)
+        # self.CheckAugWidget.setEnabled(CurveState)
+        # self.CheckDentWidget.setEnabled(CurveState)
         self.ButAddCurve.setEnabled(CurveState)
         for i in range(len(self.CurveWidgets)):
             self.CurveWidgets[i].setEnabled(CurveState)
@@ -645,16 +646,17 @@ class RadProfile(GeneralToolClass):
             self.CurvePaths = []
             self.CurveLabels = []
             for i in range(len(self.CurveWidgets)):
-                self.CurvePaths.append(self.CurveWidgets[i].PathWidget.EditParam.text())
-                self.CurveLabels.append(self.CurveWidgets[i].LabelWidget.EditParam.text())
-                if self.CurveLabels[i] == '': self.CurveLabels[i] = self.CurvePaths[i].split('/')[-1]
+                self.CurvePaths.append(self.CurveWidgets[i].PathFile)
+                name = self.CurveWidgets[i].NameFile.EditParam.text()
+                name_without_ext = os.path.splitext(name)[0]
+                self.CurveLabels.append(name_without_ext)
 
-    def Rebin(self, data, resolution):    
-        """
-        Rebin the data to a specified resolution.
-        """
-        smooth_data, bins_edges = histogram(data, bins=(np.max(data)-np.min(data))/resolution)
-        return smooth_data 
+    # def Rebin(self, data, resolution):    
+    #     """
+    #     Rebin the data to a specified resolution.
+    #     """
+    #     smooth_data, bins_edges = histogram(data, bins=(np.max(data)-np.min(data))/resolution)
+    #     return smooth_data 
 
     # Plot
     def Plot(self):
@@ -679,7 +681,7 @@ class RadProfile(GeneralToolClass):
         # Plot with current parameters
         if self.CheckBodies.CheckParam.isChecked():
             for k in range(self.NbBodies_m[self.IndexSnap]):
-                self.Subplot.plot(self.a_m[self.IndexSnap][k], 0, color=self.colorList[k], marker='.', markersize=self.SizeBodies)
+                self.Subplot.plot(self.a_m[self.IndexSnap][k], 0, color=self.colorList[k], marker='.', markersize=self.SizeBodies, label="Marker of "+str(k+1))
 
         # Histogram
         # X_smoothed = gaussian_filter(self.X[self.IndexSnap], sigma=1)
@@ -717,25 +719,27 @@ class RadProfile(GeneralToolClass):
         self.Subplot.stairs(histCount, histX, label='Simulation', linewidth=1, color='black')
         
         # Other curves 
-        if self.CheckAugWidget.isChecked(): self.Subplot.plot(self.profileAug[0], self.profileAug[1], color='blue', linestyle='dashed', linewidth=0.5, label='Aug+2001')
-        if self.CheckDentWidget.isChecked(): self.Subplot.plot((self.profileNE[0]+self.profileSW[0])/2, (self.profileNE[1]+self.profileSW[1])/2, color='red', linestyle='dashed', linewidth=0.5, label='Dent+2014')
+        # if self.CheckAugWidget.isChecked(): self.Subplot.plot(self.profileAug[0], self.profileAug[1], color='blue', linestyle='dashed', linewidth=0.5, label='Aug+2001')
+        # if self.CheckDentWidget.isChecked(): self.Subplot.plot((self.profileNE[0]+self.profileSW[0])/2, (self.profileNE[1]+self.profileSW[1])/2, color='red', linestyle='dashed', linewidth=0.5, label='Dent+2014')
         
         if self.CheckCurves.isChecked(): 
             try:
                 for i in range(len(self.CurveWidgets)):
-                    self.Curve = transpose(np.loadtxt(self.CurvePaths[i], dtype=float, delimiter=',' if ',' in open(self.CurvePaths[i]).readline() else '\t'))
+                    # Automatic delimiter detection
+                    delimiter = find_delimiter(self.CurvePaths[i])
+                    print(delimiter)
+                    self.Curve = transpose(genfromtxt(self.CurvePaths[i], delimiter=delimiter, dtype=float))
                     self.Subplot.plot(self.Curve[0], self.Curve[1], linestyle='dashed', linewidth=1, label=self.CurveLabels[i])
-            except:
-                print('Wrong files')
-                print('Path is necessary to files in format:')
-                print('Column 1 : abscissa')
-                print('Column 2 : ordinate')
+                    self.Subplot.legend()
+            except Exception as e:
+                print(f'Wrong format: {e}')
+                print('Two columns of equal dimensions are required, corresponding to the x and y points of the curve')
 
         # Time
         self.Subplot.text(x=0.99, y=1.01, s='t='+str(round(self.t, 1))+' Myr', horizontalalignment='right', verticalalignment='bottom', transform=self.Subplot.transAxes)
 
         # Plot features
-        if self.CheckCurves.isChecked(): self.Subplot.legend()
+        # if self.CheckCurves.isChecked() and len(self.CurvePaths)>0 : self.Subplot.legend()
         self.Subplot.set_xlabel('Radius [AU]')
         self.Subplot.set_xlim(Rmin, Rmax)
         if self.Ordinate.ComboParam.currentIndex()==0: self.Subplot.set_ylabel('Number of particules')
@@ -787,17 +791,17 @@ class DiagramAE(GeneralToolClass):
         # self.WindowPlot.WidgetParam.Layout.addWidget(Delimiter())
 
         # Bodies' positions
-        self.CheckBodies = CheckBox("Bodies' position showing")
-        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckBodies, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.CheckBodies = CheckBox("Bodies position")
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckBodies)
 
         self.SizeBodies = 15
-        self.SizeBodiesWidget = SpinBox('Size of bodies', 'Plot size of bodies', self.SizeBodies)
-        self.WindowPlot.WidgetParam.Layout.addWidget(self.SizeBodiesWidget)
+        # self.SizeBodiesWidget = SpinBox('Size of bodies', 'Plot size of bodies', self.SizeBodies)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.SizeBodiesWidget)
         
-        self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked())
-        self.CheckBodies.CheckParam.stateChanged.connect(lambda: self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked()))
+        # self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked())
+        # self.CheckBodies.CheckParam.stateChanged.connect(lambda: self.SizeBodiesWidget.setEnabled(self.CheckBodies.CheckParam.isChecked()))
 
-        self.WindowPlot.WidgetParam.Layout.addWidget(Delimiter())
+        # self.WindowPlot.WidgetParam.Layout.addWidget(Delimiter())
 
         # Particules' size
         self.SizePart = 0.05
@@ -860,7 +864,7 @@ class DiagramAE(GeneralToolClass):
         # self.Emin = self.EminWidget.SpinParam.value()
         # self.Emax = self.EmaxWidget.SpinParam.value()
         self.SizePart = self.SizePartWidget.SpinParam.value()
-        self.SizeBodies = self.SizeBodiesWidget.SpinParam.value()
+        # self.SizeBodies = self.SizeBodiesWidget.SpinParam.value()
         if self.CheckRes.isChecked():
             self.nRefValues = []
             self.PResValues = []
@@ -875,6 +879,9 @@ class DiagramAE(GeneralToolClass):
         
         # Plot initialisation
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
+
+        # X, Y limits
+        (Xmin, Xmax), (Ymin, Ymax) = self.subplot_lim_2d(self.WidgetPlot, xlim_init=[self.Rmin, self.Rmax], ylim_init=[self.Emin, self.Emax])
 
         # Update of parameters
         try:
@@ -898,15 +905,15 @@ class DiagramAE(GeneralToolClass):
         # Plot with current parameters
         if self.CheckBodies.CheckParam.isChecked():
             for k in range(self.NbBodies_m[self.IndexSnap]):
-                self.Subplot.plot(self.a[k], self.e[k], color=self.colorList[k], marker='.', markersize=self.SizeBodies)
+                self.Subplot.plot(self.a[k], self.e[k], color=self.colorList[k], marker='.', markersize=self.SizeBodies, label="Marker of "+str(k+1))
         self.Subplot.scatter(self.a[self.NbBodies_m[self.IndexSnap]:], self.e[self.NbBodies_m[self.IndexSnap]:], s=self.SizePart, c='black', linewidths=0)
 
         if self.CheckRes.isChecked():
             for i in range(len(self.ResWidgets)):
                 colorRef = self.colorList[self.nRefValues[i]]
-                self.Subplot.axvline(self.aResValues[i], linewidth=1, color=colorRef, linestyle='--')
+                self.Subplot.axvline(self.aResValues[i], linewidth=1, color=colorRef, linestyle='--', label='Resonance '+str(self.PResValues[i])+':'+str(self.PRefValues[i])+' of '+str(self.nRefValues[i]))
                 # self.Subplot.annotate(str(self.PResValues[i])+':'+str(self.PRefValues[i]), xy=(self.aResValues[i], 0.9), bbox=dict(boxstyle='round', facecolor='white', edgecolor=colorRef))
-                self.Subplot.text(self.aResValues[i], 0.9, ' '+str(self.PResValues[i])+':'+str(self.PRefValues[i])+' ', rotation=90, color=colorRef, bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor=colorRef), fontsize=7, va='center', ha='center')
+                self.Subplot.text(self.aResValues[i], 0.9*Ymax, ' '+str(self.PResValues[i])+':'+str(self.PRefValues[i])+' ', rotation=90, color=colorRef, bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor=colorRef), fontsize=7, va='center', ha='center')
 
         # Time
         self.Subplot.text(x=0.99, y=1.01, s='t='+str(round(self.t, 1))+' Myr', horizontalalignment='right', verticalalignment='bottom', transform=self.Subplot.transAxes)

@@ -160,10 +160,16 @@ c     ........entree des parametres
         pos_com = INDEX(INTEG, '#')
 
         IF (pos_com > 0) THEN 
-          INTEG = ADJUSTL(TRIM(INTEG(1:pos_com-1)))  ! Garder uniquement la partie avant '#' et supprimer les tabulations
+          INTEG = ADJUSTL(TRIM(INTEG(1:pos_com-1)))
         ELSE
-          INTEG = ADJUSTL(TRIM(INTEG))  ! Supprimer les tabulations
+          INTEG = ADJUSTL(TRIM(INTEG))
         ENDIF
+        ! Supprimer les tabulations et espaces restants
+        DO I = LEN(INTEG), 1, -1
+          IF (INTEG(I:I) .EQ. CHAR(9) .OR. INTEG(I:I) .EQ. '\t') THEN
+            INTEG(I:I) = ''
+          ENDIF
+        END DO
 
         ! Ecrire le fichier options.in  ! added by antoine
         DO I = 1, 5
