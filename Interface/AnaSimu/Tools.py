@@ -7,9 +7,9 @@
 import sys
 import os
 import numpy as np
-from numpy import cos, sin, exp, log, log10, linspace, max, loadtxt, transpose, histogram, histogram2d, arcsinh, array, float64, int8, genfromtxt
 from math import pi, sqrt
 from random import random
+import re
 
 # PyQt packages
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QCheckBox
@@ -128,6 +128,37 @@ class GeneralToolClass(QWidget):
     def Plot(self):
         return
     
+    def replace_params_in_formula(self, formula, prefixe):
+        """Replace parameters and functions in the formula with their corresponding values."""
+        print(formula)
+        # for num in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+        #     formula = formula.replace(f'[{num}]', f'[{str(int(num)-1)}]') # Replace [n] by [n-1]
+        for param in ['t', 'a', 'e', 'i', 'w', 'W']:
+            formula = re.sub(r'\b' + param + r'\b', f'{prefixe}{param}', formula) # Replace the parameter by its value
+        for param in ['i', 'w', 'W']:
+            formula = re.sub(r'\b' + param + r'\b(?!\[)', f'np.radians({param})', formula) # Convert to radians
+            formula = re.sub(r'\b' + param + r'\b', f'np.radians({prefixe}{param})', formula) # Convert to radians and replace the parameter by its value
+        for fonction in ['sin', 'cos', 'tan', 'arcsin', 'arccos', 'arctan', 'arctan2', 'hypot', 'sinh', 'cosh', 'tanh', 'arcsinh', 'arccosh', 'arctanh', 'exp', 'expm1', 'exp2', 'log', 'log10', 'log2', 'log1p', 'sqrt', 'square', 'cbrt', 'power', 'erf', 'erfc', 'gamma', 'lgamma', 'digamma', 'beta']:
+            formula = re.sub(r'\b' + fonction + r'\b', f'np.{fonction}', formula) # Replace the function by its numpy equivalent
+        # Convert the result to degrees if it is an angle in radians
+        if any(f'np.{angle_func}' in formula for angle_func in ['arcsin', 'arccos', 'arctan', 'arctan2']):
+            formula = f'np.degrees({formula})'
+        print('Formula is: '+formula)
+        return formula
+    
+    def evaluate_formula(self, formula, prefix):
+        """Evaluate a formula."""
+        print(formula)
+        if not formula:
+            return None
+        formula = self.replace_params_in_formula(formula, prefix)
+        print(formula)
+        try:
+            return eval(formula)
+        except Exception as e:
+            print(f'Error evaluating formula: {e}')
+            return None
+    
 
 
 class SpaceView(GeneralToolClass):
@@ -169,7 +200,7 @@ class SpaceView(GeneralToolClass):
         self.ViewWidget.ComboParam.currentIndexChanged.connect(self.indexViewChanged)
 
         # X limits
-        self.LimDefault = int(round(max(self.a_m[0])*(1+max(self.e_m[0]))))
+        self.LimDefault = int(round(np.max(self.a_m[0])*(1+np.max(self.e_m[0]))))
 
         # self.Xmin = -LimDefault
         # self.XminWidget = SpinBox('Xmin', 'X minimum [AU]', self.Xmin)
@@ -375,7 +406,7 @@ class SpaceView(GeneralToolClass):
             self.SubplotXY.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Y[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0, label='Particles')
         
         elif self.indexRepres == 1:
-            hist, xedges, yedges = histogram2d(
+            hist, xedges, yedges = np.histogram2d(
                 self.X[self.IndexSnap][self.NbBodies-1:], 
                 self.Y[self.IndexSnap][self.NbBodies-1:], 
                 range=[[Xmin, Xmax], [Ymin, Ymax]], 
@@ -427,7 +458,7 @@ class SpaceView(GeneralToolClass):
             self.SubplotXZ.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Z[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0, label='Particles')
         
         elif self.indexRepres == 1:
-            hist, xedges, yedges = histogram2d(
+            hist, xedges, yedges = np.histogram2d(
                 self.X[self.IndexSnap][self.NbBodies-1:], 
                 self.Z[self.IndexSnap][self.NbBodies-1:], 
                 range=[[Xmin, Xmax], [Zmin, Zmax]], 
@@ -501,10 +532,10 @@ class SpaceView(GeneralToolClass):
         # Add legend
     def Ellipse2(self, a, e, Ex, Ey, Ez, Epx, Epy, Epz):
 
-        E = linspace(-pi, pi, 100)
-        x = Ex*a*(cos(E)-e) + Epx*a*sqrt(1-e**2)*sin(E)
-        y = Ey*a*(cos(E)-e) + Epy*a*sqrt(1-e**2)*sin(E)
-        z = Ez*a*(cos(E)-e) + Epz*a*sqrt(1-e**2)*sin(E)
+        E = np.linspace(-pi, pi, 100)
+        x = Ex*a*(np.cos(E)-e) + Epx*a*sqrt(1-e**2)*np.sin(E)
+        y = Ey*a*(np.cos(E)-e) + Epy*a*sqrt(1-e**2)*np.sin(E)
+        z = Ez*a*(np.cos(E)-e) + Epz*a*sqrt(1-e**2)*np.sin(E)
 
         return x, y, z
 
@@ -543,7 +574,7 @@ class RadProfile(GeneralToolClass):
         # self.WindowPlot.WidgetParam.Layout.addWidget(self.RminWidget)
 
         # # print(self.R)
-        self.Rmax = round(max(self.R[0]))
+        self.Rmax = round(np.max(self.R[0]))
         # self.RmaxWidget = SpinBox('Rmax', 'Radii maximum [AU]', self.Rmax)
         # self.RminWidget.Layout.addWidget(self.RmaxWidget) 
 
@@ -688,15 +719,15 @@ class RadProfile(GeneralToolClass):
         # Y_smoothed = gaussian_filter(self.Y[self.IndexSnap], sigma=1)
         # Z_smoothed = gaussian_filter(self.Z[self.IndexSnap], sigma=1)
         # self.R = np.sqrt(self.X[self.IndexSnap]**2+self.Y[self.IndexSnap]**2+self.Z[self.IndexSnap]**2)
-        histCount, histX = histogram([x for x in self.R[self.IndexSnap]  if Rmin<x<Rmax], bins=self.NbBins)
+        histCount, histX = np.histogram([x for x in self.R[self.IndexSnap]  if Rmin<x<Rmax], bins=self.NbBins)
 
         # Surface density computatiom
         if self.Ordinate.ComboParam.currentIndex()==1: histCount = histCount/(2*pi*histX[:-1]) # surface density
 
         # Normalisation computation
         self.NormDiv = 1
-        if self.Norm.ComboParam.currentIndex()==1: self.NormDiv = max(histCount) # normalisation of max equal one
-        elif self.Norm.ComboParam.currentIndex()==2: self.NormDiv = sum(histCount) # normalisation of sum equal one
+        if self.Norm.ComboParam.currentIndex()==1: self.NormDiv = np.max(histCount) # normalisation of max equal one
+        elif self.Norm.ComboParam.currentIndex()==2: self.NormDiv = np.sum(histCount) # normalisation of sum equal one
         histCount = histCount/self.NormDiv
 
         # Interpolation si la checkbox est cochée
@@ -707,7 +738,7 @@ class RadProfile(GeneralToolClass):
                 interp_func = interp1d(histX_mid, histCount, kind='cubic', fill_value="extrapolate")
                 
                 # Génération de points interpolés
-                histX_interp = linspace(histX_mid[0], histX_mid[-1], 1000)  # Plus de points pour une courbe lisse
+                histX_interp = np.linspace(histX_mid[0], histX_mid[-1], 1000)  # Plus de points pour une courbe lisse
                 histCount_interp = interp_func(histX_interp)
                 
                 # Tracé de la courbe interpolée
@@ -728,7 +759,7 @@ class RadProfile(GeneralToolClass):
                     # Automatic delimiter detection
                     delimiter = find_delimiter(self.CurvePaths[i])
                     print(delimiter)
-                    self.Curve = transpose(genfromtxt(self.CurvePaths[i], delimiter=delimiter, dtype=float))
+                    self.Curve = np.transpose(np.genfromtxt(self.CurvePaths[i], delimiter=delimiter, dtype=float))
                     self.Subplot.plot(self.Curve[0], self.Curve[1], linestyle='dashed', linewidth=1, label=self.CurveLabels[i])
                     self.Subplot.legend()
             except Exception as e:
@@ -776,7 +807,7 @@ class DiagramAE(GeneralToolClass):
         # self.RminWidget = SpinBox('Rmin', 'Minimum radius [AU]', self.Rmin, 0, None)
         # self.WindowPlot.WidgetParam.Layout.addWidget(self.RminWidget)
 
-        self.Rmax = round(max(self.a_m[0]))
+        self.Rmax = round(np.max(self.a_m[0]))
         # self.RmaxWidget = SpinBox('Rmax', 'Maximum radius [AU]', self.Rmax, 0, None)
         # self.RminWidget.Layout.addWidget(self.RmaxWidget) 
 
@@ -948,34 +979,34 @@ class DiagramTY(GeneralToolClass):
         self.InitParams()
 
         # Plot initialisation
-        events_to_reset_history = [self.ParamOrbitWidget.ComboParam.currentIndexChanged]
+        events_to_reset_history = [self.ParamOrbitWidget.ComboParam.currentIndexChanged, self.nOrbitWidget.ComboParam.currentIndexChanged]
         self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, events_to_reset_history)
 
     def InitParams(self):
         # self.CheckTitle.setEnabled(False)
 
-        # Orbit number
-        self.nOrbit = 1
-        self.nOrbitWidget = SpinBox("Bodie's number",'Number of the body counting outwards', ParamMin=1, ParamMax=self.NbBodies_f-1)
-        self.WindowPlot.WidgetParam.Layout.addWidget(self.nOrbitWidget)
-
         # Orbit parameters
         self.ParamOrbitWidget = ComboBox('Orbital parameter', 'Orbit Parameter', ['a','e','i','W','w','M'])
         self.WindowPlot.WidgetParam.Layout.addWidget(self.ParamOrbitWidget)
+
+        # Orbit number
+        self.ListBody = [str(k + 1) for k in range(self.NbBodies_f-1)]
+        self.nOrbitWidget = ComboBox(None,'Number of the orbit counting outwards', self.ListBody)
+        self.ParamOrbitWidget.Layout.addWidget(self.nOrbitWidget)
 
         # Time limits
         self.Tmin = 0
         self.TminWidget = SpinBox('Tmin', 'Time minimum [yr]', self.Tmin)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.TminWidget)
 
-        self.Tmax = round(max(self.t_f))
+        self.Tmax = round(np.max(self.t_f))
         self.TmaxWidget = SpinBox('Tmax', 'Time maximum [yr]', self.Tmax)
         self.TminWidget.Layout.addWidget(self.TmaxWidget) 
 
     def UpdateParams(self):
         # self.SizeLabels = self.SizeLabelsWidget.SpinParam.value()
-        self.nOrbit = self.nOrbitWidget.SpinParam.value()
         self.ParamOrbit = self.ParamOrbitWidget.ComboParam.currentText()
+        self.nOrbit = int(self.nOrbitWidget.ComboParam.currentText())
         self.Tmin = self.TminWidget.SpinParam.value()
         self.Tmax = self.TmaxWidget.SpinParam.value()
 
@@ -988,8 +1019,8 @@ class DiagramTY(GeneralToolClass):
         # Update parameters
         try:
             self.UpdateParams()
-        except:
-            print('Wrong Parameters')
+        except Exception as e:
+            print(f'Error in parameters: {e}')
             self.WidgetPlot.Canvas.draw()
             return
         
@@ -1022,9 +1053,9 @@ class DiagramXY(GeneralToolClass):
 
         # General data
         self.NbBodies_f = NbBodies_f
-        self.t_f = t_f
-        self.a_f = a_f
-        self.e_f = e_f
+        self.t = t_f
+        self.a = a_f
+        self.e = e_f
         self.i = i
         self.W = W
         self.w = w
@@ -1042,7 +1073,7 @@ class DiagramXY(GeneralToolClass):
 
         # Ordinate quantity formula
         self.YFormula = ''
-        self.YFormulaWidget = LineEdit('Y formula','Ordinate quantity by combining t, a, e, i, w, W, [n] where n is the number of the body counting outwards, and math fonctions', self.YFormula)
+        self.YFormulaWidget = LineEdit('Y formula','Ordinate quantity by combining t, a, e, i, w, W, with [n] for orbit number counting outwards, and usual mathematical functions', self.YFormula)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.YFormulaWidget)
         self.YFormulaWidget.setMinimumWidth(300)
 
@@ -1050,29 +1081,17 @@ class DiagramXY(GeneralToolClass):
         self.YLabel = ''
         self.YLabelWidget = LineEdit('Y label', 'Ordinate label', self.YLabel)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.YLabelWidget)
-        # self.YLabelWidget.setEnabled(self.CheckYLabel.CheckParam.isChecked())
 
         # Abscissa quantity formula
         self.XFormula = '' 
-        self.XFormulaWidget = LineEdit('X formula','Abscissa quantity by combining t, a, e, i, w, W, [n] where n is the number of the body counting outwards, and math fonctions', self.XFormula)
+        self.XFormulaWidget = LineEdit('X formula','Abscissa quantity by combining t, a, e, i, w, W, with [n] for orbit number counting outwards, and usual mathematical functions', self.XFormula)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.XFormulaWidget)
-        # self.XFormulaWidget.EditParam.textEdited.connect(self.Validator)
         self.XFormulaWidget.setMinimumWidth(300)
 
         # Abscissa quantity label
         self.XLabel = ''
         self.XLabelWidget = LineEdit('X label', 'Abscissa label', self.XLabel)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.XLabelWidget)
-        # self.XLabelWidget.setEnabled(self.CheckXLabel.CheckParam.isChecked())
-
-        # Connections
-        # self.CheckXLabel.CheckParam.stateChanged.connect(lambda: self.XLabelWidget.setEnabled(self.CheckXLabel.CheckParam.isChecked()))
-        # self.CheckYLabel.CheckParam.stateChanged.connect(lambda: self.YLabelWidget.setEnabled(self.CheckYLabel.CheckParam.isChecked()))
-
-    # def Validator(self, text):
-    #     for pos in range(1, len(text)): 
-    #         if text[pos-1]=='[' and not 1<=text[pos]<=self.NbBodies_f-1:
-    #             self.XFormulaWidget.EditParam.setText(self.TextOld)
 
 
     def UpdateParameters(self):
@@ -1080,32 +1099,6 @@ class DiagramXY(GeneralToolClass):
         self.YFormula = self.YFormulaWidget.EditParam.text()
         self.XFormula = self.XFormulaWidget.EditParam.text()
         self.XLabel = self.XLabelWidget.EditParam.text()
-
-        # # Mofification of orbit count on X-formula
-        # orbit_num = []
-        # orbit_num_pos = []
-        # for pos in range(1, len(self.XFormula)): 
-        #     if self.XFormula[pos-1]=='[':
-        #         orbit_num.append(int(self.XFormula[pos]))
-        #         orbit_num_pos.append(pos)
-        # orbit_num = self.NbBodies_f-1-array(orbit_num)
-        # for j in range(len(orbit_num)): 
-        #     self.XFormula = list(self.XFormula)
-        #     self.XFormula[orbit_num_pos[j]] = str(orbit_num[j])
-        #     self.XFormula = ''.join(self.XFormula)
-
-        # # Mofification of orbit count on Y-formula
-        # orbit_num = []
-        # orbit_num_pos = []
-        # for pos in range(1, len(self.YFormula)): 
-        #     if self.YFormula[pos-1]=='[':
-        #         orbit_num.append(int(self.YFormula[pos]))
-        #         orbit_num_pos.append(pos)
-        # orbit_num = self.NbBodies_f-1-array(orbit_num)
-        # for j in range(len(orbit_num)): 
-        #     self.YFormula = list(self.YFormula)
-        #     self.YFormula[orbit_num_pos[j]] = str(orbit_num[j])
-        #     self.YFormula = ''.join(self.YFormula)
 
         # Modification of labels
         if len(self.YLabelWidget.EditParam.text()) != 0: self.YLabel = self.YLabelWidget.EditParam.text()
@@ -1128,25 +1121,26 @@ class DiagramXY(GeneralToolClass):
             self.WidgetPlot.Canvas.draw()
             return
 
-        # Specific variables
-        t = self.t_f
-        a = self.a_f
-        e = self.e_f
-        i = self.i
-        W = self.W
-        w = self.w
-        M = self.M
+        # # Specific variables
+        # t = self.t_f
+        # a = self.a_f
+        # e = self.e_f
+        # i = self.i
+        # W = self.W
+        # w = self.w
+        # M = self.M
 
         # Plot with current parameters
         if self.XFormula != '' and self.YFormula != '':
             try:
-                self.Y = eval(self.YFormula)
-                self.X = eval(self.XFormula)
-                self.Subplot.plot(self.X, self.Y, linewidth=0.5)
-            except:
-                print('Wrong formula ! Use t, a, e, i, w, W, [n] where n is the number of orbit, and math fonctions')
+                self.Y = self.evaluate_formula(self.YFormula, 'self.')
+                self.X = self.evaluate_formula(self.XFormula, 'self.')
+                self.Subplot.plot(self.X, self.Y, linewidth=0.5, label='Y=f(X)')
+            except Exception as e:
+                print(f'Error in formula: {e}')
+                print('Only use t, a, e, i, w, W, with [n] for orbit number counting outwards, and usual mathematical functions')
         else:
-            print('Wrong formula ! Use t, a, e, i, w, W, [n] where n is the number of orbit, and math fonctions')
+            print('No formula provided for X or Y axis')
 
         # Plot features
         self.Subplot.set_xlabel(self.XLabel)
