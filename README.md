@@ -119,19 +119,17 @@ HJS, on the other hand, is based on Jacobi coordinates for each body in the syst
 
 ## Generation of sub-simulations
 
-To optimize computing time, this code divides the workload into multiple sub-simulations. The primary computational bottleneck is not the integration of planetary dynamics, but rather the simulation of test particles (debris), which are typically much more numerous. To address this, the code separates the calculation of particle dynamics, distributing them across several independent sub-simulations. This approach enables efficient parallelization: each sub-simulation can be executed independently and concurrently, significantly reducing the overall computation time.
+To optimize computing time, this code divides the workload into multiple sub-simulations. The primary computational bottleneck is not the integration of planetary dynamics, but rather the simulation of test particles, which are typically much more numerous. To address this, the code separates the calculation of particle dynamics, distributing them across several independent sub-simulations. This approach enables efficient parallelization: each sub-simulation can be executed independently and concurrently, significantly reducing the overall computation time.
 
-Once the integrator has been selected, you need to refer to the sub-simulations generation file, available in the `<environment_path>/Astroide/Generators` folder.
+After selecting the integrator, you should use the appropriate script to generate the sub-simulations. Two example scripts are available in the `<environment_path>/Astroide/Generators` directory, each corresponding to one of the supported integrators:
+- `gen_multi_rmvs3.sh` for the RMVS3 integrator
+- `gen_multi_hjs.sh` for the HJS integrator
 
-Two scripts are available to generate sub-simulations, depending on the integrator chosen: 
-- `gen_multi_rmvs3.sh` for RMVS3.
-- `gen_multi_hjs.sh` for HJS.
+Copy the appropriate script into the directory where you want to generate the sub-simulations. You can then edit its parameters to match your simulation requirements and execute it.
 
-Both scripts require input parameters specific to the simulation context. The special feature of HJS is its use of Jacobi coordinates, which means that the hierarchy of orbits must be specified: for each body, you must indicate whether the others are located within its orbit, or whether they are indifferent to its dynamics. 
+Each script requires you to specify input parameters relevant to your simulation. In particular, the HJS integrator operates using Jacobi coordinates, which means you must define the orbital hierarchy: for each body, indicate whether other bodies are located inside its orbit or are dynamically independent.
 
-Copy the appropriate script into the directory where you wish to generate the sub-simulations. You can then modify its parameters as needed and execute it.
-
-This process generates all the files required to run each sub-simulation (indexed by `i`). Each sub-simulation is now fully configured and ready for computation.
+Running the script will generate all the necessary files for each sub-simulation (indexed by `i`). At this point, each sub-simulation is fully configured and ready to be executed.
 
 <div id='launch'>  
 
