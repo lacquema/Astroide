@@ -16,7 +16,6 @@
     - [Extraction](#extraction)
 
 - [Analyse](#analyse)
-    - [Snap selector](#snap_selector)
     - [Space view](#space_view)
     - [Radial profile](#radial_profile)
     - [Diagram a=f(e)](#diagram_ae)
@@ -176,15 +175,11 @@ You have access to a graphical interface for analyzing the results of your simul
 
 After clicking the `Analyse` button, use the file browser on the left side of the interface to navigate and select the directory containing your simulation output files. You can double-click to choose the appropriate folder. If you have renamed your output files, you can enter their new names in the provided fields within the interface. Once everything is set, click `Analyse the simulation` to start the analysis process.
 
-![interface](interface.png)
+![interface](./Interface/Interface.png)
+
+At the top of the window, a snapshot selector lets you choose the specific simulation time you wish to analyze. You can use this to navigate between different saved states of your simulation. The central refresh button updates the currently displayed plots to reflect your latest selection or any changes made to the analysis parameters.
 
 The interface offers a comprehensive set of tools for exploring and visualizing your simulation results, each designed to support different aspects of your analysis. For every feature, you can access various options to customize and refine your study according to your specific needs. Descriptions and helpful tooltips appear when you hover over different elements of the interface, making it easier to understand and utilize each function effectively.
-
-<div id='snap_selector'>  
-
-## Snap selector
-
-The selector allows you to choose the specific snapshot (corresponding to a simulation time) that you want to analyze. Additionally, the central button refreshes the active plots.
 
 <div id='space_view'>  
 

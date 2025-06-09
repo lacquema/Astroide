@@ -52,7 +52,7 @@ class WindowMainClass(QMainWindow):
         Layout.addWidget(SnapSelectorWidget)
 
         # Add a visual delimiter for separation
-        Layout.addWidget(Delimiter(Title='Plots :'))
+        Layout.addWidget(Delimiter(Title=None))
 
         # Grid layout
         GridLayout = QGridLayout()
