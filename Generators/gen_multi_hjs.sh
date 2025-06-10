@@ -23,8 +23,8 @@ $WORKPATH
 0								# Planetary radius type
 3								# Number of bodies
 0.47							# Mass of the body 1
-0,000190918						# Mass of the body 2
-0,000286377						# Mass of the body 3
+0.000190918						# Mass of the body 2
+0.000286377						# Mass of the body 3
 -1 1 0							# Orbital hierarchy of the body 2
 19. 0. 0. 0. 0. 0.	    		# Initial orbit parameters of the body 2
 -1 -1 1							# Orbital hierarchy of the body 3
