@@ -1,40 +1,42 @@
-### This script generates the input files for the RMVS3 integrator ###
+# Example script to generate sub-simulations for the RMVS3 integrator.
+# This script sets up a system with one star, two planets, and two disk regions.
+# Adjust parameters below as needed for your specific simulation setup.
 
 # Path to the executables
-BINPATH='/Users/lacquema/Astroide.env/Astroide/Code/bin'
+BINPATH='<environment_path>/Astroide/Code/bin'
 
 # Path to the working directory
-WORKPATH='/Users/lacquema/Simulations/twa7/twa7_cb_a_dyn/twa7_cb_a_dyn_46'
+WORKPATH='...'
 
 # Generate the input files
 $BINPATH/gen_multi_rmvs3 <<!
 $BINPATH
-rmvs3							# Method (rmvs3 / rmvs3_par)
-0 10000000 0.05					# Initial, final, step time [yr]
-10000 100000					# Output, dump frequencies [yr]
-F T F F T F						# Options: int*2, real*4, nrj, debris jacobi coord, removing limits, J2 and J4 terms (T / F)
-0.005 200. 10. -1. F			# Options: rmin, rmax, rmaxu, qmin, lclose (-1=not checked)
+rmvs3_par						# Integration method
+0 10000000 0.05					# Simulation times
+10000 100000					# Output frequencies
+F T F F T F						# Computational options
+0.005 200. 10. -1. F			# Removal limits
 $WORKPATH
-8								# Number of cpu cores per sub-simulation
-1								# Units (0=[Msun,AU] / 1=[AU,yr])
-1								# Coordinate (0=ecliptic / 1=invariant plane)
-0								# Planet radius (0=None / 1=Physical / 2=Hill)
-0.47							# Mass of central body 0 [Msun]
-2								# Number of other bodies
-0.34							# Mass of the orbiting body 1 [Mjup]
-52.0 0.0 0.0 0.0 0.0 0.0	 	# Initial orbit parameters of 1: a[AU], e, i[deg], w[deg], W[deg], M[deg]
-0.7								# Mass of the orbiting body 2 [Mjup]
-17.0 0.0 0.0 0.0 0.0 0.0		# Initial orbit parameters of 2: a[AU], e, i[deg], w[deg], W[deg], M[deg]
+8								# Number of CPU cores per sub-simulation
+1								# Units
+1								# Coordinate system
+0								# Planetary radius type
+0.47							# Central body mass
+2								# Number of orbiting bodies
+0.2								# Mass of the body 2
+19. 0. 0. 0. 0. 0.	        	# Initial orbit parameters of the body 2
+0.3     						# Mass of the body 3
+52. 0. 0. 0. 0. 0.              # Initial orbit parameters of the body 3
 654876543						# Random seed
-200000							# Number of debris in the disk
+50000							# Number of debris in the disk 1
 25000							# Number of debris per sub-simulation
-0. 0.01							# Acceptable range of eccentricity
-2.								# Maximun of inclination
-10. 40.							# Acceptable range of semi-major axis
-200000							# Number of debris in the disk
+0. 0.01							# Eccentricity range in the disk 1
+2.								# Maximun inclination in the disk 1
+5. 52.							# Semi-major axis range in the disk 1
+150000							# Number of debris in the disk 2
 25000							# Number of debris per sub-simulation
-0. 0.01							# Acceptable range of eccentricity
-2.								# Maximun of inclination
-10. 40.							# Acceptable range of semi-major axis
+0. 0.01							# Eccentricity range in the disk 2
+2.								# Maximun inclination in the disk 2
+52. 130.						# Semi-major axis range in the disk 2
 0								# End of the inputs
 !

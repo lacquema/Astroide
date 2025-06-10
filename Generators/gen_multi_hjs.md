@@ -1,13 +1,13 @@
-# Documentation to adapt the `gen_multi_rmvs3.sh` script
+# Documentation to adapt the `gen_multi_hjs.sh` script
 
-This script generates sub-simulations input files for the `RMVS3` integrator, which is designed to simulate the dynamics of planetary systems containing debris disks, with a dominant central body whose mass is much greater than that of the other bodies. The generated files specify all necessary simulation parameters in the required order. Below is a description of each parameter, listed in the order they appear in the input file:
+This script generates sub-simulations input files for the `HJS` integrator, which is designed to simulate the dynamics of planetary systems containing debris disks and bodies of comparable mass. The generated files specify all necessary simulation parameters in the required order. Below is a description of each parameter, listed in the order they appear in the input file:
 
 **Path to executables**
    - *Format*: `str`
    - *Description*: Absolute path indicates where to find the required executables.
 
 **Integration method**
-   - *Value*: `rmvs3` or `rmvs3_par`
+   - *Value*: `hjs` or `hjs_par`
    - *Description*: Choice of integration method (serial or parallel).
 
 **Simulation times**
@@ -74,32 +74,40 @@ This script generates sub-simulations input files for the `RMVS3` integrator, wh
       - `2`: Use the Hill radius of the planet.
    - *Description*: Specifies how the radius of each planet is defined for removal criteria and close encounter calculations.
 
-**Central body mass**
-   - *Type*: `float`
-   - *Description*: Mass of the central body in Mjup.
-
-**Number of orbiting bodies**
+**Number of bodies**
    - *Type*: `int`
    - *Description*: Number of planets or massive objects orbiting the central body.
+
+**Bodies mass**
+
+For each body, repeat the next line:
+
+1. **Mass of the body** 
+   - *Type*: `float`
+   - *Description*: Mass of the body in Msun. The first will be the central mass. 
 
 **Orbiting bodies definitions**
 
 For each orbiting body, repeat the next 2 lines:
 
-1. **Mass of the orbiting body**: 
-   - *Type*: `float`
-   - *Description*: Mass of the body in Mjup.
+1. **Orbital hierarchy of the orbiting body**
+    - *Format*: `B1` ... `Bn` (where `n` is the number of bodies)
+    - *Values*: For each body, specify:
+        - `1`: The body is the reference of the hierarchy.
+        - `-1`: The body is inside the orbit of the reference body.
+        - `0`: The body is outside the orbit of the reference body.
+    - *Description*: Defines the hierarchical structure of the system by specifying, for each body, its relationship to the others. 
 
-2. **Initial orbital parameters of the orbiting body**:
+2. **Initial orbital parameters of the orbiting body**
     - *Format*: `a` `e` `i` `w` `W` `M`
     - *Type*: `float` `float` `float` `float` `float` `float`
     - *Description*:
-      - `a`: Semi-major axis in AU
-      - `e`: Eccentricity
-      - `i`: Inclination in deg
-      - `w`: Argument of perihelion in deg
-      - `W`: Longitude of ascending node in deg
-      - `M`: Mean anomaly in deg
+      - `a`: Semi-major axis in AU.
+      - `e`: Eccentricity.
+      - `i`: Inclination in deg.
+      - `w`: Argument of perihelion in deg.
+      - `W`: Longitude of ascending node in deg.
+      - `M`: Mean anomaly in deg.
 
 **Random seed**
    - *Type*: `int`
@@ -107,7 +115,7 @@ For each orbiting body, repeat the next 2 lines:
 
 **Debris disk definitions**
 
-For each debris disk, repeat the next 5 lines:
+For each debris disk, repeat the next 7 lines:
 
 1. **Number of debris in the disk**
    - *Type*: `int`
@@ -117,18 +125,33 @@ For each debris disk, repeat the next 5 lines:
    - *Type*: `int`
    - *Description*: Number of test particles assigned to each sub-simulation. This parameter controls the parallelization: the total debris disk will be split into multiple sub-simulations, each containing this number of particles.
 
-3. **Eccentricity range in the disk**
-    - *Format*: `e_min` `e_max`
-    - *Type*: `float` `float`
-    - *Description*: 
-        - `e_min`: Minimum eccentricity for particles in the disk.
-        - `e_max`: Maximum eccentricity for particles in the disk.
+3. **Orbital hierarchy of the disk**
+   - *Format*: `B1` ... `Bn` (where `n` is the number of bodies)
+   - *Values*: For each body, specify:
+      - `-1`: The body is inside the disk.
+      - `0`: The body is outside the disk.
+   - *Description*: Defines the hierarchical structure of the system by specifying, for each disk, its relationship to the bodies. 
 
-4. **Maximum inclination in the disk**
+4. **Reference frame of the disk**
+    - *Values*: 
+        - `-1`: Aligned with the orbital plane of the reference body.
+        - `0`: Aligned with the ecliptic plane.
+        - `1`: Aligned with the system's center of mass.
+        - `2`: Aligned with the invariant plane.
+    - *Description*: Specifies the coordinate system in which the disk is initialized.
+
+5. **Eccentricity range in the disk**
+   - *Format*: `e_min` `e_max`
+   - *Type*: `float` `float`
+   - *Description*: 
+      - `e_min`: Minimum eccentricity for particles in the disk.
+      - `e_max`: Maximum eccentricity for particles in the disk.
+
+6. **Maximum inclination in the disk**
    - *Type*: `float`
    - *Description*: Maximum inclination for particules in the disk in deg.
 
-5. **Semi-major axis range in the disk**
+7. **Semi-major axis range in the disk**
     - *Format*: `a_min` `a_max`
     - *Type*: `float` `float`
     - *Description*: 
@@ -138,3 +161,5 @@ For each debris disk, repeat the next 5 lines:
 **End of input**
    - *Value*: `0`
    - *Description*: Indicates the end of the input parameters.
+
+
