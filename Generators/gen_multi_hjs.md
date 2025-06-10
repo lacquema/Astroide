@@ -14,27 +14,27 @@ This script generates sub-simulations input files for the `HJS` integrator, whic
    - *Format*: `t_0` `t_f` `dt`
    - *Type*: `float` `float` `float`
    - *Description*: 
-        - `t_0`: Start time of the simulation (in years);
-        - `t_f`: End time of the simulation (in years);
+        - `t_0`: Start time of the simulation (in years).
+        - `t_f`: End time of the simulation (in years).
         - `dt`: Integration time step (in years). Choose it carefully to balance accuracy and performance; for example, `0.05` means the step is 5% of the shortest orbital period in the system.
 
 **Output frequencies**
    - *Format*: `output_freq` `dump_freq`
    - *Type*: `float` `float`
    - *Description*: 
-      - `output_freq`: Output frequencie (in years);
+      - `output_freq`: Output frequencie (in years).
       - `dump_freq`: Dump frequencie (in years).
 
 **Computational options**
    - *Format*: `F1` `F2` `F3` `F4` `F5` `F6`
    - *Type*: `Bool` `Bool` `Bool` `Bool` `Bool` `Bool`
    - *Description*: If `True`,
-       - `F1`: Use 2-byte integers (saves memory, may limit range)
-       - `F2`: Use 4-byte floating-point numbers (reduces memory usage, may affect precision)
-       - `F3`: Compute and output system energy
-       - `F4`: Use Jacobi coordinates for debris particles
-       - `F5`: Enable removal limits (activates the removal criteria section below)
-       - `F6`: Include J2 and J4 gravitational moments (for oblate central bodies)
+       - `F1`: Use 2-byte integers (saves memory, may limit range),
+       - `F2`: Use 4-byte floating-point numbers (reduces memory usage, may affect precision).
+       - `F3`: Compute and output system energy.
+       - `F4`: Use Jacobi coordinates for debris particles.
+       - `F5`: Enable removal limits (activates the removal criteria section below).
+       - `F6`: Include J2 and J4 gravitational moments (for oblate central bodies).
 
 **Removal limits** (if removal limits are enabled)
 

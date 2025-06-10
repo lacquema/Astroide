@@ -8,7 +8,7 @@ BINPATH='<environment_path>/Astroide/Code/bin'
 # Path to the working directory
 WORKPATH='...'
 
-# Generate the input files
+# Generate the sub-simulations input files
 $BINPATH/gen_multi_rmvs3 <<!
 $BINPATH
 rmvs3_par						# Integration method
