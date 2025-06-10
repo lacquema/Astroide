@@ -65,7 +65,7 @@ Now that the container is ready, you can download the gihub directory inside:
 
 All the necessary python packages are listed in the `<environment_path>/Astroide/requirements.txt` file. You can install them all:
 
-`python3 -m <environment_path>/bin/pip install -r <environment_path>/Astroide/requirements.txt`
+`pip3 install -r <environment_path>/Astroide/requirements.txt`
 
 
 ## Compile fortran code
