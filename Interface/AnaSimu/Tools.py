@@ -15,7 +15,6 @@ import re
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QCheckBox
 
 # My packages
-from WindowParam import WindowParamClass
 from WindowPlot import WindowPlot
 from Parameters import *
 from TransferData import TransferDataClass
@@ -99,6 +98,8 @@ class GeneralToolClass(QWidget):
         Determine the axis limits for a subplot 2d based on the widget's history.
         """
         if not widget_plot.history:  # If history is empty
+            if xlim_init is None: xlim_init = (None, None)
+            if ylim_init is None: ylim_init = (None, None)
             return xlim_init, ylim_init
         else:
             # Retrieve limits from history
@@ -113,6 +114,9 @@ class GeneralToolClass(QWidget):
         Determine the axis limits for a subplot 3d based on the widget's history.
         """
         if not widget_plot.history:  # If history is empty
+            if xlim_init is None: xlim_init = (None, None)
+            if ylim_init is None: ylim_init = (None, None)
+            if zlim_init is None: zlim_init = (None, None)
             return xlim_init, ylim_init, zlim_init
         else:
             # Retrieve limits from history
@@ -121,9 +125,6 @@ class GeneralToolClass(QWidget):
             ylim = widget_plot.history[index].get('ylim', ylim_init)
             zlim = widget_plot.history[index].get('zlim', zlim_init)
             return xlim, ylim, zlim
-
-    def InitParams(self):
-        return
 
     def Plot(self):
         return
@@ -182,14 +183,11 @@ class SpaceView(GeneralToolClass):
 
         # Parameters initialisation
         self.InitParams()
-        self.InitWidgetPlots()
-
-    def InitWidgetPlots(self):
         self.WidgetPlotXY = self.WindowPlot.add_WidgetPlot(self.PlotXY)
         self.WidgetPlotXZ = self.WindowPlot.add_WidgetPlot(self.PlotXZ)
         self.WidgetPlotXYZ = self.WindowPlot.add_WidgetPlot(self.PlotXYZ)
         self.indexViewChanged(self.indexView)
-        
+
     def InitParams(self):
         self.WindowPlot.WidgetParam.Layout.addWidget(Delimiter(Title='View :'))
 
@@ -301,34 +299,6 @@ class SpaceView(GeneralToolClass):
             self.WidgetPlotXYZ.setVisible(True)
         
         self.Refresh_active_plots()
-
-
-        # if self.indexView == 0:
-        #     self.XminWidget.setEnabled(True)
-        #     self.XmaxWidget.setEnabled(True)
-        #     self.YminWidget.setEnabled(True)
-        #     self.YmaxWidget.setEnabled(True)
-        #     self.ZminWidget.setEnabled(False)
-        #     self.ZmaxWidget.setEnabled(False)
-        #     self.RepresWidget.setEnabled(True)
-
-        # elif self.indexView == 1:
-        #     self.XminWidget.setEnabled(True)
-        #     self.XmaxWidget.setEnabled(True)
-        #     self.YminWidget.setEnabled(False)
-        #     self.YmaxWidget.setEnabled(False)
-        #     self.ZminWidget.setEnabled(True)
-        #     self.ZmaxWidget.setEnabled(True)
-        #     self.RepresWidget.setEnabled(True)
-
-        # elif self.indexView == 2:
-        #     self.XminWidget.setEnabled(True)
-        #     self.XmaxWidget.setEnabled(True)
-        #     self.YminWidget.setEnabled(True)
-        #     self.YmaxWidget.setEnabled(True)
-        #     self.ZminWidget.setEnabled(True)
-        #     self.ZmaxWidget.setEnabled(True)
-        #     self.RepresWidget.setEnabled(False)
 
     def indexRepresChanged(self, value):
         self.indexRepres = value

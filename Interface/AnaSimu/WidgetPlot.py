@@ -86,7 +86,7 @@ class WidgetPlot(QWidget):
 
     def reset_history(self):
         """Reset the history and clear the current state."""
-        self.history = []
+        self.history = self.history[0]
         self.history_index = 0
         self.update_toolbar_buttons()
         # print("History reset")
@@ -115,8 +115,9 @@ class WidgetPlot(QWidget):
 
     def on_draw_event(self, event):
         """Handle draw_event."""
-        self.save_plot_labels()
+        print('draw_event', self.history_index, len(self.history))
         self.draw_event_triggered = True
+        self.save_plot_labels()
         self.check_and_save_state()
         # self.save_plot_state()
 
