@@ -18,6 +18,9 @@ class ResClass(QWidget):
     def __init__(self, NbBodies):
         super().__init__()
 
+        # Parameters
+        self.NbBodies = NbBodies  # Number of bodies in the system
+
         # Identity
         self.Id = 0
         
@@ -25,7 +28,8 @@ class ResClass(QWidget):
         self.Layout = QHBoxLayout()
 
         # Reference number of the resonance
-        self.nRefWidget = SpinBox(None, 'Number of the bodie which is the reference of the resonance (counting from the center of the system outwards, including stars in first)', 1, 1, NbBodies-1)
+        self.ListBody = [str(k) for k in range(self.NbBodies)][1:]
+        self.nRefWidget = ComboBox(None, 'Number of the orbit which is the reference of the resonance counted in the order of the input file', self.ListBody)
         self.Layout.addWidget(self.nRefWidget)
 
         # Period ratio between the two resonating bodies

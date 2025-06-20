@@ -2,7 +2,7 @@
 import sys
 
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QApplication, QSplitter, QMainWindow, QStatusBar, QSizePolicy
+from PyQt6.QtWidgets import QApplication, QSplitter, QMainWindow, QStatusBar
 
 from WidgetParam import WidgetParam
 from WidgetPlot import WidgetPlot
@@ -34,23 +34,29 @@ class WindowPlot(QMainWindow):
         self.setCentralWidget(self.Splitter)
 
 
-    def add_WidgetPlot(self, plot, layout=None, xlim=False, ylim=False, zlim=False, azim=False, elev=False, xlabel=True, ylabel=True, zlabel=True, title=True, legend=True):
+    def add_WidgetPlot(self, plot, events_to_reset_history=None):
         """
         Creates a new WidgetPlot connected to the WidgetParam.
-
-        The parameters will be save if True.
-        Initial values provided during plot creation are overwritten if modified.
         """
-        # print(title, 'on add_WidgetPlot')
-        widget_plot = WidgetPlot(plot, xlim, ylim, zlim, azim, elev, xlabel, ylabel, zlabel, title, legend)
+        widget_plot = WidgetPlot(plot)
+        self.connect_events_to_reset_history(widget_plot, events_to_reset_history)
         self.WidgetPlots.append(widget_plot)
-        if layout is None:
-            self.Splitter.addWidget(widget_plot)
-        else:
-            layout.addWidget(widget_plot)
+        self.Splitter.addWidget(widget_plot)
         return widget_plot
     
+    def connect_events_to_reset_history(self, widget_plot, events_to_reset_history=None):
+        """
+        Connects the events to reset the history of the widget_plot.
+        """
+        if events_to_reset_history is None:
+            return
+        else:
+            for x in events_to_reset_history:
+                x.connect(widget_plot.reset_history)
     
+    
+
+
     # Emission of the CloseEvent signal when the parameter window is closed
     def closeEvent(self, e):
         self.SignalCloseWindowPlot.emit()

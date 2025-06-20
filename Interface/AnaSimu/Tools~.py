@@ -55,34 +55,27 @@ class GeneralToolClass(QWidget):
 
         # Connections between parameters and plot
         self.WindowPlot.WidgetParam.BtnReset.clicked.connect(self.ResetParams)
-        self.WindowPlot.WidgetParam.BtnRefresh.clicked.connect(self.refresh_plots)
+        self.WindowPlot.WidgetParam.BtnRefresh.clicked.connect(self.Refresh_active_plots)
 
         # Widget container
         self.setLayout(self.Layout) # GeneralToolClass is directly the widget container
 
     # Open the plot window when the Plot button is clicked
     def Toggle_WindowPlot(self):
-        """Open the plot window when the Plot button is clicked."""
         self.WindowPlot.show()
         self.BtnPlot.setEnabled(False)
-        self.refresh_plots()
+        self.Refresh_active_plots()
 
-    def refresh_plots(self):
-        """Refresh all active plots when the refresh button is clicked."""
+    # Refresh all active plot when the refresh button is clicked
+    def Refresh_active_plots(self):
         for WidgetPlot in self.WindowPlot.WidgetPlots:
             if WidgetPlot.isVisible():
                 WidgetPlot.refresh_plot()
-
-    def reset_plots(self):
-        """Reset all active plots when the reset button is clicked."""
-        for WidgetPlot in self.WindowPlot.WidgetPlots:
-            WidgetPlot.reset_plot()
-        self.refresh_plots()
     
     # Change the index of the snapshot
     def Change_IndexSnap(self, value):
         self.IndexSnap = value
-        self.refresh_plots()
+        self.Refresh_active_plots()
 
     # Close programme when the main window are closed
     def closeEvent(self, e):
@@ -90,24 +83,55 @@ class GeneralToolClass(QWidget):
 
     # Reset all widgets of the parameters window
     def ResetParams(self):
-        """Reset all widgets of the parameters window."""
         for i in reversed(range(2, self.WindowPlot.WidgetParam.Layout.count())): 
             WidgetToRemove = self.WindowPlot.WidgetParam.Layout.itemAt(i).widget()
             self.WindowPlot.WidgetParam.Layout.removeWidget(WidgetToRemove)
             WidgetToRemove.setParent(None)
         self.InitParams()
-        self.reset_plots()
+        for WidgetPlot in self.WindowPlot.WidgetPlots:
+            WidgetPlot.reset_history()
+        self.Refresh_active_plots()
+
+    # Compute of the limits of subplot 2d
+    def subplot_lim_2d(self, widget_plot, xlim_init=None, ylim_init=None):
+        """
+        Determine the axis limits for a subplot 2d based on the widget's history.
+        """
+        if not widget_plot.history:  # If history is empty
+            if xlim_init is None: xlim_init = (None, None)
+            if ylim_init is None: ylim_init = (None, None)
+            return xlim_init, ylim_init
+        else:
+            # Retrieve limits from history
+            index = widget_plot.history_index
+            xlim = widget_plot.history[index].get('xlim', xlim_init)
+            ylim = widget_plot.history[index].get('ylim', ylim_init)
+            return xlim, ylim
+        
+    # Compute of the limits of subplot 2d
+    def subplot_lim_3d(self, widget_plot, xlim_init=None, ylim_init=None, zlim_init=None):
+        """
+        Determine the axis limits for a subplot 3d based on the widget's history.
+        """
+        if not widget_plot.history:  # If history is empty
+            if xlim_init is None: xlim_init = (None, None)
+            if ylim_init is None: ylim_init = (None, None)
+            if zlim_init is None: zlim_init = (None, None)
+            return xlim_init, ylim_init, zlim_init
+        else:
+            # Retrieve limits from history
+            index = widget_plot.history_index
+            xlim = widget_plot.history[index].get('xlim', xlim_init)
+            ylim = widget_plot.history[index].get('ylim', ylim_init)
+            zlim = widget_plot.history[index].get('zlim', zlim_init)
+            return xlim, ylim, zlim
 
     def Plot(self):
         return
     
-    def InitParams(self):
-        """Initialize parameters. This method should be overridden by subclasses."""
-        return
-    
     def replace_params_in_formula(self, formula, prefixe):
         """Replace parameters and functions in the formula with their corresponding values."""
-        # print(formula)
+        print(formula)
         # for num in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
         #     formula = formula.replace(f'[{num}]', f'[{str(int(num)-1)}]') # Replace [n] by [n-1]
         for param in ['t', 'a', 'e', 'i', 'w', 'W']:
@@ -120,34 +144,21 @@ class GeneralToolClass(QWidget):
         # Convert the result to degrees if it is an angle in radians
         if any(f'np.{angle_func}' in formula for angle_func in ['arcsin', 'arccos', 'arctan', 'arctan2']):
             formula = f'np.degrees({formula})'
-        # print('Formula is: '+formula)
+        print('Formula is: '+formula)
         return formula
     
     def evaluate_formula(self, formula, prefix):
         """Evaluate a formula."""
-        # print(formula)
+        print(formula)
         if not formula:
             return None
         formula = self.replace_params_in_formula(formula, prefix)
-        # print(formula)
+        print(formula)
         try:
             return eval(formula)
         except Exception as e:
             print(f'Error evaluating formula: {e}')
             return None
-        
-    def UpdateParams(self):
-        """Update parameters based on the current widget values."""
-        # This method should be overridden by subclasses to update specific parameters
-        pass
-
-    def try_UpdateParams(self, WidgetPlot):
-        """Try to update parameters and handle exceptions."""
-        try:
-            self.UpdateParams()
-        except Exception as e:
-            print('Wrong Parameters: ', e)
-            WidgetPlot.Canvas.fig.draw()
     
 
 
@@ -170,13 +181,12 @@ class SpaceView(GeneralToolClass):
         self.Y = Y
         self.Z = Z
 
-        # Window plots initialisation
-        self.WidgetPlotXY = self.WindowPlot.add_WidgetPlot(self.PlotXY, xlim=True, ylim=True)
-        self.WidgetPlotXZ = self.WindowPlot.add_WidgetPlot(self.PlotXZ, xlim=True, ylim=True)
-        self.WidgetPlotXYZ = self.WindowPlot.add_WidgetPlot(self.PlotXYZ, xlim=True, ylim=True, zlim=True, azim=True, elev=True)
-
         # Parameters initialisation
         self.InitParams()
+        self.WidgetPlotXY = self.WindowPlot.add_WidgetPlot(self.PlotXY)
+        self.WidgetPlotXZ = self.WindowPlot.add_WidgetPlot(self.PlotXZ)
+        self.WidgetPlotXYZ = self.WindowPlot.add_WidgetPlot(self.PlotXYZ)
+        self.indexViewChanged(self.indexView)
 
     def InitParams(self):
         self.WindowPlot.WidgetParam.Layout.addWidget(Delimiter(Title='View :'))
@@ -186,6 +196,37 @@ class SpaceView(GeneralToolClass):
         self.WindowPlot.WidgetParam.Layout.addWidget(self.ViewWidget)
         self.indexView = self.ViewWidget.ComboParam.currentIndex()
         self.ViewWidget.ComboParam.currentIndexChanged.connect(self.indexViewChanged)
+
+        # X limits
+        self.LimDefault = int(round(np.max(self.a_m[0])*(1+np.max(self.e_m[0]))))
+
+        # self.Xmin = -LimDefault
+        # self.XminWidget = SpinBox('Xmin', 'X minimum [AU]', self.Xmin)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.XminWidget)
+
+        # self.Xmax = +LimDefault
+        # self.XmaxWidget = SpinBox('Xmax', 'X maximum [AU]', self.Xmax)
+        # self.XminWidget.Layout.addWidget(self.XmaxWidget) 
+
+        # Y limits
+        # self.Ymin = -LimDefault
+        # self.YminWidget = SpinBox('Ymin', 'Y minimum [AU]', self.Ymin)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.YminWidget)
+
+        # self.Ymax = +LimDefault
+        # self.YmaxWidget = SpinBox('Ymax', 'Y maximum [AU]', self.Ymax)
+        # self.YminWidget.Layout.addWidget(self.YmaxWidget)
+
+        # Z limits
+        # self.Zmin = -LimDefault
+        # self.ZminWidget = SpinBox('Zmin', 'Z minimum [AU]', self.Zmin)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.ZminWidget)
+        # self.ZminWidget.setEnabled(False)
+
+        # self.Zmax = +LimDefault
+        # self.ZmaxWidget = SpinBox('Zmax', 'Z maximum [AU]', self.Zmax)
+        # self.ZminWidget.Layout.addWidget(self.ZmaxWidget)
+        # self.ZmaxWidget.setEnabled(False)
 
         # Bodies' positions
         self.SizeBodies = 15
@@ -227,8 +268,6 @@ class SpaceView(GeneralToolClass):
         self.NbBinsXWidget.Layout.addWidget(self.NbBinsYWidget)
         self.NbBinsYWidget.setEnabled(False)
 
-        self.indexViewChanged(self.indexView)
-
     def indexViewChanged(self, value):
         self.indexView = value
 
@@ -239,50 +278,56 @@ class SpaceView(GeneralToolClass):
 
         if self.indexView == 0:
             self.RepresWidget.setEnabled(True)
+
             self.WidgetPlotXY.setVisible(True)
             self.WidgetPlotXZ.setVisible(False)
             self.WidgetPlotXYZ.setVisible(False)
+
         elif self.indexView == 1:
             self.RepresWidget.setEnabled(True)
+
             self.WidgetPlotXY.setVisible(False)
             self.WidgetPlotXZ.setVisible(True)
             self.WidgetPlotXYZ.setVisible(False)
+
         elif self.indexView == 2:
             self.RepresWidget.ComboParam.setCurrentIndex(0)
             self.RepresWidget.setEnabled(False)
+
             self.WidgetPlotXY.setVisible(False)
             self.WidgetPlotXZ.setVisible(False)
             self.WidgetPlotXYZ.setVisible(True)
-        self.refresh_plots()
+        
+        self.Refresh_active_plots()
 
     def indexRepresChanged(self, value):
         self.indexRepres = value
+
         if self.indexRepres == 0:
             self.NbBinsXWidget.setEnabled(False)
             self.NbBinsYWidget.setEnabled(False)
             self.SizePartWidget.setEnabled(True)
+
         elif self.indexRepres == 1:
             self.NbBinsXWidget.setEnabled(True)
             self.NbBinsYWidget.setEnabled(True)
             self.SizePartWidget.setEnabled(False)
-        self.refresh_plots()
 
     def UpdateParams(self):
+        # self.SizeLabels = self.SizeLabelsWidget.SpinParam.value()
+        # self.Xmin = self.XminWidget.SpinParam.value()
+        # self.Xmax = self.XmaxWidget.SpinParam.value()
+        # self.Ymin = self.YminWidget.SpinParam.value()
+        # self.Ymax = self.YmaxWidget.SpinParam.value()
+        # self.Zmin = self.ZminWidget.SpinParam.value()
+        # self.Zmax = self.ZmaxWidget.SpinParam.value()
         # self.SizeBodies = self.SizeBodiesWidget.SpinParam.value()
         self.SizePart = self.SizePartWidget.SpinParam.value()
         self.NbBinsX = self.NbBinsXWidget.SpinParam.value()
         self.NbBinsY = self.NbBinsYWidget.SpinParam.value()
 
-    def Ellipse2(self, a, e, Ex, Ey, Ez, Epx, Epy, Epz):
-
-        E = np.linspace(-pi, pi, 100)
-        x = Ex*a*(np.cos(E)-e) + Epx*a*sqrt(1-e**2)*np.sin(E)
-        y = Ey*a*(np.cos(E)-e) + Epy*a*sqrt(1-e**2)*np.sin(E)
-        z = Ez*a*(np.cos(E)-e) + Epz*a*sqrt(1-e**2)*np.sin(E)
-
-        return x, y, z
-
     def general_plot(self):
+
         # Bodies positions
         self.Xbf, self.Ybf, self.Zbf = [], [], []
         self.Xbm, self.Ybm, self.Zbm = [], [], []
@@ -295,18 +340,20 @@ class SpaceView(GeneralToolClass):
             self.Xbm.append(xbm)
             self.Ybm.append(ybm)
             self.Zbm.append(zbm)
+
+        # Update of parameters
+        try:
+            self.UpdateParams()
+        except:
+            print('Wrong Parameters')
+            self.WindowPlot.WidgetPlots[0].Canvas.draw()
+            return
         
         # Specific variables
         self.NbBodies = self.NbBodies_m[self.IndexSnap]
         self.t = self.t_m[self.IndexSnap]/10**6
 
-        # X limits
-        self.LimDefault = int(round(np.max(self.a_m[0])*(1+np.max(self.e_m[0]))))
-
     def PlotXY(self):
-
-        # Update of parameters
-        self.try_UpdateParams(self.WidgetPlotXY)
 
         # General plot
         self.general_plot()
@@ -314,11 +361,8 @@ class SpaceView(GeneralToolClass):
         # add subplot
         self.SubplotXY = self.WidgetPlotXY.Canvas.fig.add_subplot(111, aspect='equal', label='Main plot')
 
-        # X, Y current limits
-        xlim_init = (-self.LimDefault, self.LimDefault)
-        ylim_init = (-self.LimDefault, self.LimDefault)
-        (Xmin, Xmax) = self.WidgetPlotXY.history[self.WidgetPlotXY.history_index]['xlim'] if len(self.WidgetPlotXY.history)!=0 else xlim_init
-        (Ymin, Ymax) = self.WidgetPlotXY.history[self.WidgetPlotXY.history_index]['ylim'] if len(self.WidgetPlotXY.history)!=0 else ylim_init
+        # X, Y limits
+        (Xmin, Xmax), (Ymin, Ymax) = self.subplot_lim_2d(self.WidgetPlotXY, xlim_init=[-self.LimDefault, self.LimDefault], ylim_init=[-self.LimDefault, self.LimDefault])
 
         # Bodies' positions and orbits
         for k in range(self.NbBodies):
@@ -357,15 +401,12 @@ class SpaceView(GeneralToolClass):
         # Plot features
         # self.SubplotXY.set_title('t='+str(round(self.t, 1))+' Myr')
         self.SubplotXY.set_xlabel('X [AU]')
+        self.SubplotXY.set_xlim(Xmin, Xmax)
         self.SubplotXY.set_ylabel('Y [AU]')
-        self.SubplotXY.set_xlim(xlim_init)
-        self.SubplotXY.set_ylim(ylim_init)
+        self.SubplotXY.set_ylim(Ymin, Ymax)
 
 
     def PlotXZ(self):
-
-        # Update of parameters
-        self.try_UpdateParams(self.WidgetPlotXZ)
 
         # General plot
         self.general_plot()
@@ -373,11 +414,8 @@ class SpaceView(GeneralToolClass):
         # add subplot
         self.SubplotXZ = self.WidgetPlotXZ.Canvas.fig.add_subplot(111, aspect='equal', label='Main plot')
 
-        # X, Y current limits
-        xlim_init = (-self.LimDefault, self.LimDefault)
-        zlim_init = (-self.LimDefault, self.LimDefault)
-        (Xmin, Xmax) = self.WidgetPlotXY.history[self.WidgetPlotXY.history_index]['xlim'] if len(self.WidgetPlotXY.history)!=0 else xlim_init
-        (Zmin, Zmax) = self.WidgetPlotXY.history[self.WidgetPlotXY.history_index]['ylim'] if len(self.WidgetPlotXY.history)!=0 else zlim_init
+        # X, Z limits
+        (Xmin, Xmax), (Zmin, Zmax) = self.subplot_lim_2d(self.WidgetPlotXZ, xlim_init=[-self.LimDefault, self.LimDefault], ylim_init=[-self.LimDefault, self.LimDefault])
 
         # Plot
         for k in range(self.NbBodies):
@@ -414,15 +452,12 @@ class SpaceView(GeneralToolClass):
 
         # Plot features
         self.SubplotXZ.set_xlabel('X [AU]')
+        self.SubplotXZ.set_xlim(Xmin, Xmax)
         self.SubplotXZ.set_ylabel('Z [AU]')
-        self.SubplotXZ.set_xlim(xlim_init)
-        self.SubplotXZ.set_ylim(zlim_init)
+        self.SubplotXZ.set_ylim(Zmin, Zmax)
         
 
     def PlotXYZ(self):
-
-        # Update of parameters
-        self.try_UpdateParams(self.WidgetPlotXYZ)
 
         # General plot
         self.general_plot()
@@ -431,9 +466,7 @@ class SpaceView(GeneralToolClass):
         self.SubplotXYZ = self.WidgetPlotXYZ.Canvas.fig.add_subplot(111, aspect='equal', projection='3d', label='Main plot')
 
         # X, Y, Z limits
-        xlim_init = [-self.LimDefault, self.LimDefault]
-        ylim_init = [-self.LimDefault, self.LimDefault]
-        zlim_init = [-self.LimDefault, self.LimDefault]
+        (Xmin, Xmax), (Ymin, Ymax), (Zmin, Zmax) = self.subplot_lim_3d(self.WidgetPlotXYZ, xlim_init=[-self.LimDefault, self.LimDefault], ylim_init=[-self.LimDefault, self.LimDefault], zlim_init=[-self.LimDefault, self.LimDefault])
 
         # Plot
         for k in range(self.NbBodies):
@@ -447,21 +480,34 @@ class SpaceView(GeneralToolClass):
                                 self.Y[self.IndexSnap][self.NbBodies-1:], 
                                 self.Z[self.IndexSnap][self.NbBodies-1:], 
                                 s=self.SizePart, c='black', linewidth=0, label='Particles')
-        
-        # Time
-        self.SubplotXYZ.text2D(1.01, 1.01, 't='+str(round(self.t, 1))+' Myr', 
-                               horizontalalignment='right', verticalalignment='top', 
-                               transform=self.SubplotXYZ.transAxes, label='Time')
 
         # Ensure axis limits are finite
-        self.SubplotXYZ.set_xlim(xlim_init)
-        self.SubplotXYZ.set_ylim(ylim_init)
-        self.SubplotXYZ.set_zlim(zlim_init)
+        self.SubplotXYZ.set_xlim(Xmin, Xmax)
+        self.SubplotXYZ.set_ylim(Ymin, Ymax)
+        self.SubplotXYZ.set_zlim(Zmin, Zmax)
+
+        # # Set aspect ratio to 'auto' to avoid divide-by-zero errors
+        # self.SubplotXYZ.set_box_aspect([1, 1, 1])  # Equal aspect ratio for all axes
 
         # Plot features
         self.SubplotXYZ.set_xlabel('X [AU]')
         self.SubplotXYZ.set_ylabel('Y [AU]')
         self.SubplotXYZ.set_zlabel('Z [AU]')
+
+        # Time
+        self.SubplotXYZ.text2D(1.01, 1.01, 't='+str(round(self.t, 1))+' Myr', 
+                               horizontalalignment='right', verticalalignment='top', 
+                               transform=self.SubplotXYZ.transAxes, label='Time')
+
+        # Add legend
+    def Ellipse2(self, a, e, Ex, Ey, Ez, Epx, Epy, Epz):
+
+        E = np.linspace(-pi, pi, 100)
+        x = Ex*a*(np.cos(E)-e) + Epx*a*sqrt(1-e**2)*np.sin(E)
+        y = Ey*a*(np.cos(E)-e) + Epy*a*sqrt(1-e**2)*np.sin(E)
+        z = Ez*a*(np.cos(E)-e) + Epz*a*sqrt(1-e**2)*np.sin(E)
+
+        return x, y, z
 
 
 class RadProfile(GeneralToolClass):
@@ -482,26 +528,35 @@ class RadProfile(GeneralToolClass):
         # self.profileNE = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_NE.dat', dtype = float))
         # self.profileSW = transpose(loadtxt(self.DirPath+'/OtherCurves/bpic_Dent_profile_SW.dat', dtype = float))
 
-        # Window plot initialisation
-        self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, xlim=True, ylabel=False)
 
         # Parameters initialisation
         self.InitParams()
 
+        # Plot initialisation
+        events_to_reset_history = [self.Norm.ComboParam.currentIndexChanged, self.Ordinate.ComboParam.currentIndexChanged]
+        self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, events_to_reset_history)
+
     def InitParams(self):
+
+        # # R limits
+        self.Rmin = 0
+        # self.RminWidget = SpinBox('Rmin', 'Radii minimum [AU]', self.Rmin)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.RminWidget)
+
+        # # print(self.R)
+        self.Rmax = round(np.max(self.R[0]))
+        # self.RmaxWidget = SpinBox('Rmax', 'Radii maximum [AU]', self.Rmax)
+        # self.RminWidget.Layout.addWidget(self.RmaxWidget) 
+
+        # self.WindowPlot.WidgetParam.Layout.addWidget(Delimiter())
 
         # Histogram
         self.Ordinate = ComboBox('Ordinate', 'Choice of ordinate', ['Number of particules', 'Surface density'])
         self.WindowPlot.WidgetParam.Layout.addWidget(self.Ordinate)
-        # self.Ordinate.ComboParam.currentIndexChanged.connect(self.WidgetPlot.reset_plots)
-        self.Ordinate.ComboParam.currentIndexChanged.connect(self.WidgetPlot.refresh_plot)
 
         self.Norm = ComboBox('Normalisation', 'Choice of the normalisation', ['None', 'max=1', 'sum=1'])
         self.Norm.ComboParam.setCurrentIndex(0)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.Norm)
-        # self.Norm.ComboParam.currentIndexChanged.connect(self.WidgetPlot.reset_plots)
-        self.Norm.ComboParam.currentIndexChanged.connect(self.WidgetPlot.refresh_plot)
-
 
         self.NbBins = 100
         self.NbBinsWidget = SpinBox('Bining', 'Number of bins', self.NbBins, 1)
@@ -510,6 +565,9 @@ class RadProfile(GeneralToolClass):
         # Checkbox pour l'interpolation
         self.CheckInterpolation = CheckBox('Interpolation')
         self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckInterpolation)
+
+
+        # self.WindowPlot.WidgetParam.Layout.addWidget(Delimiter())
 
         # Bodies' positions
         self.CheckBodies = CheckBox('Bodies position')
@@ -580,6 +638,9 @@ class RadProfile(GeneralToolClass):
             self.CurveWidgets[i].setEnabled(CurveState)
     
     def UpdateParams(self):
+        # self.SizeLabels = self.SizeLabelsWidget.SpinParam.value()
+        # self.Rmin = self.RminWidget.SpinParam.value()
+        # self.Rmax = self.RmaxWidget.SpinParam.value()
         self.NbBins = self.NbBinsWidget.SpinParam.value()
         # self.SizeBodies = self.SizeBodiesWidget.SpinParam.value()
         if self.CheckCurves.isChecked():
@@ -601,16 +662,19 @@ class RadProfile(GeneralToolClass):
     # Plot
     def Plot(self):
 
-        # Update parameters
-        self.try_UpdateParams(self.WidgetPlot)
-
         # Plot initialisation
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
 
         # X, Z limits
-        xlim_init = (0, round(np.max(self.R[0])))
-        xlim = self.WidgetPlot.history[self.WidgetPlot.history_index]['xlim'] if self.WidgetPlot.history else xlim_init
-        Rmin, Rmax = xlim[0], xlim[1]
+        (Rmin, Rmax), _ = self.subplot_lim_2d(self.WidgetPlot, xlim_init=[-self.Rmin, self.Rmax])
+
+        # Update of parameters
+        try:
+            self.UpdateParams()
+        except:
+            print('Wrong Parameters')
+            self.WidgetPlot.Canvas.draw()
+            return
         
         # Specific variables
         self.t = self.t_m[self.IndexSnap]/10**6
@@ -664,7 +728,7 @@ class RadProfile(GeneralToolClass):
                 for i in range(len(self.CurveWidgets)):
                     # Automatic delimiter detection
                     delimiter = find_delimiter(self.CurvePaths[i])
-                    # print(delimiter)
+                    print(delimiter)
                     self.Curve = np.transpose(np.genfromtxt(self.CurvePaths[i], delimiter=delimiter, dtype=float))
                     self.Subplot.plot(self.Curve[0], self.Curve[1], linestyle='dashed', linewidth=1, label=self.CurveLabels[i])
                     self.Subplot.legend()
@@ -678,11 +742,14 @@ class RadProfile(GeneralToolClass):
         # Plot features
         # if self.CheckCurves.isChecked() and len(self.CurvePaths)>0 : self.Subplot.legend()
         self.Subplot.set_xlabel('Radius [AU]')
+        self.Subplot.set_xlim(Rmin, Rmax)
         if self.Ordinate.ComboParam.currentIndex()==0: self.Subplot.set_ylabel('Number of particules')
         elif self.Ordinate.ComboParam.currentIndex()==1: self.Subplot.set_ylabel('Surface density [arbitrary unit]')
-
-
-
+        self.Subplot.set_ylim(0, None)
+        # self.Subplot.set_ylim(0, 1)
+        
+        # Update canvas
+        # self.WindowPlot.WidgetPlots.Canvas.draw()
 
 
 class DiagramAE(GeneralToolClass):
@@ -695,17 +762,37 @@ class DiagramAE(GeneralToolClass):
         self.a_m = a_m
         self.e_m = e_m
 
-        # Plot initialisation
-        self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, xlim=True, ylim=True)
-
         # Parameters initialisation
         self.InitParams()
 
+        # Plot initialisation
+        events_to_reset_history = []
+        self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, events_to_reset_history)
+
     def InitParams(self):
+
+        # Limits
+        self.Rmin = 0
+        # self.RminWidget = SpinBox('Rmin', 'Minimum radius [AU]', self.Rmin, 0, None)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.RminWidget)
+
+        self.Rmax = round(np.max(self.a_m[0]))
+        # self.RmaxWidget = SpinBox('Rmax', 'Maximum radius [AU]', self.Rmax, 0, None)
+        # self.RminWidget.Layout.addWidget(self.RmaxWidget) 
+
+        self.Emin = 0
+        # self.EminWidget = DoubleSpinBox('Emin', 'Minimum eccentricity', self.Emin, 0, None)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.EminWidget)
+
+        self.Emax = 1
+        # self.EmaxWidget = DoubleSpinBox('Emax', 'Maximum eccentricity', self.Emax, 0, None)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.EmaxWidget) 
+
+        # self.WindowPlot.WidgetParam.Layout.addWidget(Delimiter())
+
         # Bodies' positions
         self.CheckBodies = CheckBox("Bodies position")
         self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckBodies)
-        self.CheckBodies.CheckParam.checkStateChanged.connect(self.WidgetPlot.refresh_plot)
 
         self.SizeBodies = 15
         # self.SizeBodiesWidget = SpinBox('Size of bodies', 'Plot size of bodies', self.SizeBodies)
@@ -771,6 +858,11 @@ class DiagramAE(GeneralToolClass):
 
     # Update of parameters
     def UpdateParams(self):
+        # self.SizeLabels = self.SizeLabelsWidget.SpinParam.value()
+        # self.Rmin = self.RminWidget.SpinParam.value()
+        # self.Rmax = self.RmaxWidget.SpinParam.value()
+        # self.Emin = self.EminWidget.SpinParam.value()
+        # self.Emax = self.EmaxWidget.SpinParam.value()
         self.SizePart = self.SizePartWidget.SpinParam.value()
         # self.SizeBodies = self.SizeBodiesWidget.SpinParam.value()
         if self.CheckRes.isChecked():
@@ -778,18 +870,26 @@ class DiagramAE(GeneralToolClass):
             self.PResValues = []
             self.PRefValues = []
             for i in range(len(self.ResWidgets)):
-                self.nRefValues.append(int(self.ResWidgets[i].nRefWidget.ComboParam.currentText()))
+                self.nRefValues.append(int(self.ResWidgets[i].nRefWidget.SpinParam.value()))
                 self.PResValues.append(int(self.ResWidgets[i].PResWidget.SpinParam.value()))
                 self.PRefValues.append(int(self.ResWidgets[i].PRefWidget.SpinParam.value()))
         
     # Plot
     def Plot(self):
-
-        # Update parameters
-        self.try_UpdateParams(self.WidgetPlot)
         
         # Plot initialisation
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
+
+        # X, Y limits
+        (Xmin, Xmax), (Ymin, Ymax) = self.subplot_lim_2d(self.WidgetPlot, xlim_init=[self.Rmin, self.Rmax], ylim_init=[self.Emin, self.Emax])
+
+        # Update of parameters
+        try:
+            self.UpdateParams()
+        except:
+            print('Wrong Parameters')
+            self.WidgetPlot.Canvas.draw()
+            return
     
         # Specific variables
         self.a = self.a_m[self.IndexSnap][:]
@@ -801,11 +901,6 @@ class DiagramAE(GeneralToolClass):
             for i in range(len(self.ResWidgets)):
                 self.aRefValues.append(self.a[self.nRefValues[i]])
                 self.aResValues.append((self.PResValues[i]/self.PRefValues[i])**(2/3)*self.aRefValues[i])
-
-        # X, Y limits
-        xlim_init = (0, np.max(self.a)+0.1*np.max(self.a))
-        ylim_init = (0, 1)
-        (Ymin, Ymax) = self.WidgetPlot.history[self.WidgetPlot.history_index]['ylim'] if self.WidgetPlot.history else ylim_init
         
         # Plot with current parameters
         if self.CheckBodies.CheckParam.isChecked():
@@ -826,11 +921,12 @@ class DiagramAE(GeneralToolClass):
         # Plot features
         # self.Subplot.set_title('t='+str(round(self.t, 1))+' Myr')
         self.Subplot.set_xlabel('Semi-major axis [AU]')
-        self.Subplot.set_xlim(xlim_init)
+        self.Subplot.set_xlim(self.Rmin, self.Rmax)
         self.Subplot.set_ylabel('Eccentricity')
-        self.Subplot.set_ylim(ylim_init)
+        self.Subplot.set_ylim(self.Emin, self.Emax)
             
-
+        # Update canvas
+        # self.WindowPlot.WidgetPlots.Canvas.draw()
 
 
 class DiagramTY(GeneralToolClass):
@@ -847,12 +943,12 @@ class DiagramTY(GeneralToolClass):
         self.w = w
         self.M = M
 
-        # Plot initialisation
-        self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, xlim=True, ylabel=False)
-
         # Parameters initialisation
         self.InitParams()
 
+        # Plot initialisation
+        events_to_reset_history = [self.ParamOrbitWidget.ComboParam.currentIndexChanged, self.nOrbitWidget.ComboParam.currentIndexChanged]
+        self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, events_to_reset_history)
 
     def InitParams(self):
         # self.CheckTitle.setEnabled(False)
@@ -860,38 +956,41 @@ class DiagramTY(GeneralToolClass):
         # Orbit parameters
         self.ParamOrbitWidget = ComboBox('Orbital parameter', 'Orbit Parameter', ['a','e','i','W','w','M'])
         self.WindowPlot.WidgetParam.Layout.addWidget(self.ParamOrbitWidget)
-        # self.ParamOrbitWidget.ComboParam.currentIndexChanged.connect(self.WidgetPlot.reset_plots)
 
         # Orbit number
         self.ListBody = [str(k + 1) for k in range(self.NbBodies_f-1)]
-        self.nOrbitWidget = ComboBox(None,'Number of the orbit counting outward', self.ListBody)
+        self.nOrbitWidget = ComboBox(None,'Number of the orbit counting outwards', self.ListBody)
         self.ParamOrbitWidget.Layout.addWidget(self.nOrbitWidget)
-        # self.nOrbitWidget.ComboParam.currentIndexChanged.connect(self.WidgetPlot.reset_plots)
 
-        # # Time limits
-        # self.Tmin = 0
-        # self.TminWidget = SpinBox('Tmin', 'Time minimum [yr]', self.Tmin)
-        # self.WindowPlot.WidgetParam.Layout.addWidget(self.TminWidget)
+        # Time limits
+        self.Tmin = 0
+        self.TminWidget = SpinBox('Tmin', 'Time minimum [yr]', self.Tmin)
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.TminWidget)
 
-        # self.Tmax = round(np.max(self.t_f))
-        # self.TmaxWidget = SpinBox('Tmax', 'Time maximum [yr]', self.Tmax)
-        # self.TminWidget.Layout.addWidget(self.TmaxWidget) 
+        self.Tmax = round(np.max(self.t_f))
+        self.TmaxWidget = SpinBox('Tmax', 'Time maximum [yr]', self.Tmax)
+        self.TminWidget.Layout.addWidget(self.TmaxWidget) 
 
     def UpdateParams(self):
         # self.SizeLabels = self.SizeLabelsWidget.SpinParam.value()
         self.ParamOrbit = self.ParamOrbitWidget.ComboParam.currentText()
         self.nOrbit = int(self.nOrbitWidget.ComboParam.currentText())
-        # self.Tmin = self.TminWidget.SpinParam.value()
-        # self.Tmax = self.TmaxWidget.SpinParam.value()
+        self.Tmin = self.TminWidget.SpinParam.value()
+        self.Tmax = self.TmaxWidget.SpinParam.value()
 
     # Plot
     def Plot(self):
-
-        # Update parameters
-        self.try_UpdateParams(self.WidgetPlot)
         
         # Plot initialisation
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
+
+        # Update parameters
+        try:
+            self.UpdateParams()
+        except Exception as e:
+            print(f'Error in parameters: {e}')
+            self.WidgetPlot.Canvas.draw()
+            return
         
         # Specific data
         t = [self.t_f[self.nOrbit],'Time [yr]']
@@ -908,12 +1007,11 @@ class DiagramTY(GeneralToolClass):
 
         # Plot features
         self.Subplot.set_xlabel('Time [yr]')
-        # self.Subplot.set_xlim(self.Tmin, self.Tmax)
+        self.Subplot.set_xlim(self.Tmin, self.Tmax)
         self.Subplot.set_ylabel(self.EvalParamOrbit[1])
         
         # # Update canvas
         # self.WindowPlot.WidgetPlots.Canvas.draw()
-
 
 
 class DiagramXY(GeneralToolClass):
@@ -930,56 +1028,93 @@ class DiagramXY(GeneralToolClass):
         self.w = w
         self.M = M
 
-        # Plot initialisation
-        self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, xlim=True, ylim=True)
-
         # Parameters initialisation
         self.InitParams()
 
+        # Plot initialisation
+        events_to_reset_history = []
+        self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, events_to_reset_history)
 
     def InitParams(self):
+        # self.CheckTitle.setEnabled(False)
+
         # Ordinate quantity formula
         self.YFormula = ''
         self.YFormulaWidget = LineEdit('Y formula','Ordinate quantity by combining t, a, e, i, w, W, with [n] for orbit number counting outwards, and usual mathematical functions', self.YFormula)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.YFormulaWidget)
         self.YFormulaWidget.setMinimumWidth(300)
-        self.YFormulaWidget.EditParam.textChanged.connect(self.reset_plots)
+
+        # Ordinate quantity label
+        self.YLabel = ''
+        self.YLabelWidget = LineEdit('Y label', 'Ordinate label', self.YLabel)
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.YLabelWidget)
 
         # Abscissa quantity formula
         self.XFormula = '' 
         self.XFormulaWidget = LineEdit('X formula','Abscissa quantity by combining t, a, e, i, w, W, with [n] for orbit number counting outwards, and usual mathematical functions', self.XFormula)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.XFormulaWidget)
         self.XFormulaWidget.setMinimumWidth(300)
-        self.XFormulaWidget.EditParam.textChanged.connect(self.reset_plots)
+
+        # Abscissa quantity label
+        self.XLabel = ''
+        self.XLabelWidget = LineEdit('X label', 'Abscissa label', self.XLabel)
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.XLabelWidget)
 
 
-
-    def UpdateParams(self):
+    def UpdateParameters(self):
         # self.SizeLabels = self.SizeLabelsWidget.SpinParam.value()
         self.YFormula = self.YFormulaWidget.EditParam.text()
         self.XFormula = self.XFormulaWidget.EditParam.text()
-        self.Y = self.evaluate_formula(self.YFormula, 'self.')
-        self.X = self.evaluate_formula(self.XFormula, 'self.')
+        self.XLabel = self.XLabelWidget.EditParam.text()
+
+        # Modification of labels
+        if len(self.YLabelWidget.EditParam.text()) != 0: self.YLabel = self.YLabelWidget.EditParam.text()
+        else: self.YLabel = self.YFormula
+        if len(self.XLabelWidget.EditParam.text()) != 0: self.XLabel = self.XLabelWidget.EditParam.text()
+        else: self.XLabel = self.XFormula
                 
+
     # Plot
     def Plot(self):
-
-        # Update of parameters
-        self.try_UpdateParams(self.WidgetPlot)
 
         # Plot initialisation
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
 
-        if self.X is None or self.Y is None or np.shape(self.X) != np.shape(self.Y):
-            print('No data to plot or data shapes do not match.')
-            self.Subplot.figure.canvas.draw()
+        # Update of parameters
+        try:
+            self.UpdateParameters()
+        except:
+            print('Wrong Parameters')
+            self.WidgetPlot.Canvas.draw()
             return
 
-        self.Subplot.plot(self.X, self.Y, linewidth=0.5, label='Y=f(X)')
+        # # Specific variables
+        # t = self.t_f
+        # a = self.a_f
+        # e = self.e_f
+        # i = self.i
+        # W = self.W
+        # w = self.w
+        # M = self.M
+
+        # Plot with current parameters
+        if self.XFormula != '' and self.YFormula != '':
+            try:
+                self.Y = self.evaluate_formula(self.YFormula, 'self.')
+                self.X = self.evaluate_formula(self.XFormula, 'self.')
+                self.Subplot.plot(self.X, self.Y, linewidth=0.5, label='Y=f(X)')
+            except Exception as e:
+                print(f'Error in formula: {e}')
+                print('Only use t, a, e, i, w, W, with [n] for orbit number counting outwards, and usual mathematical functions')
+        else:
+            print('No formula provided for X or Y axis')
 
         # Plot features
-        self.Subplot.set_xlabel(self.XFormula)
-        self.Subplot.set_ylabel(self.YFormula)
+        self.Subplot.set_xlabel(self.XLabel)
+        self.Subplot.set_ylabel(self.YLabel)
+        
+        # # Update canvas
+        # self.WidgetPlot.Canvas.draw()
 
 
 
