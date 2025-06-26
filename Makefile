@@ -144,9 +144,9 @@ compile:
 	make swift_rmvs3
 	make swift_hjs
 
-	# make library PARALLEL=YES
-	# make swift_rmvs3_par PARALLEL=YES
-	# make swift_hjs_par PARALLEL=YES
+	make library PARALLEL=YES
+	make swift_rmvs3_par PARALLEL=YES
+	make swift_hjs_par PARALLEL=YES
 
 	make gen_multi_rmvs3
 	make mbodies_multi_rmvs3
