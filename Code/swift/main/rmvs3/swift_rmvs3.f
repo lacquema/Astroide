@@ -57,6 +57,8 @@ c Get data for the run and the test particles
      &         iflgchk,rmin,rmax,rmaxu,qmin,lclose,diro,dirs,
      &         gname,outfile,fopenstat)
 
+        write(*,*) 'iflgchk=',iflgchk
+
 c Prompt and read name of planet data file
 	write(*,*) ' '
 	write(*,*) 'Enter name of planet data file : '
@@ -87,6 +89,7 @@ c
           call system(dataname)
         end if
 
+
 c Initialize initial time and times for first output and first dump
 	t = t0
 c	tout = t0 + dtout
@@ -103,29 +106,36 @@ c
         iud = 40
         iue = 60
 
+
 c...    Do the initial io write
         if(btest(iflgchk,0))  then ! bit 0 is set
+           write(*,*) 'bit 1 is set'
            call io_write_frame(t0,nbod,ntp,mass,xh,yh,zh,vxh,vyh,vzh,
      &         xht,yht,zht,vxht,vyht,vzht,istat,
      &         trim(diro)//'/'//outfile,iub,fopenstat)
         endif
+        
         if(btest(iflgchk,1))  then ! bit 1 is set
+           write(*,*) 'bit 2 is set'
            call io_write_frame_r(t0,nbod,ntp,mass,xh,yh,zh,vxh,vyh,vzh,
      &         xht,yht,zht,vxht,vyht,vzht,istat,
      &         trim(diro)//'/'//outfile,iub,fopenstat)
         endif
         if(btest(iflgchk,2))  then    ! bit 2 is set
+           write(*,*) 'bit 3 is set'
            eoff = 0.0d0
            call anal_energy_write(t0,nbod,mass,j2rp2,j4rp4,xh,yh,zh,vxh,
      &          vyh,vzh,iue,fopenstat,eoff)
         endif
         if(btest(iflgchk,3))  then    ! bit 3 is set
+           write(*,*) 'bit 4 is set'
            call anal_jacobi_write(t0,nbod,ntp,mass,xh,yh,zh,vxh,
      &        vyh,vzh,xht,yht,zht,vxht,vyht,vzht,istat,2,iuj,fopenstat)
         endif
 
 c...    must initize discard io routine
         if(btest(iflgchk,4))  then ! bit 4 is set
+           write(*,*) 'bit 5 is set'
            call io_discard_write(0,t,nbod,ntp,xh,yh,zh,vxh,vyh,
      &          vzh,xht,yht,zht,vxht,vyht,vzht,istat,rstat,iud,
      &           trim(diro)//'/'//'discard.out',fopenstat,nleft)

@@ -72,6 +72,7 @@ c...  Executable code
         endif               ! <===== NOTE
 
 
+
 c Read in the x's and v's and istat(*,*)
 	  write(*,*) ' '
 	  do  i=1,ntp
@@ -82,7 +83,7 @@ c Read in the x's and v's and istat(*,*)
 	    read(7,*) (rstat(i,j),j=1,NSTATR)
 	  enddo
 
- 	close(unit = 7)
+	close(unit = 7)
         write(*,*) ' '
 
 	return

@@ -101,6 +101,7 @@ C
         CHARACTER*256 LINE, TRIMMED_LINE
         INTEGER POS_COM, pos_slash
         CHARACTER*100 dirs_temp, diro_temp, gname_temp
+        CHARACTER*1 BOOLS(6)
 
 0009    FORMAT('  rm -rf ./run_',I2.2) ! added by antoine
 
@@ -163,7 +164,9 @@ c
         WRITE(*,*)' (hjs,hjs_parp) '
         READ(*,'(a)')INTEG
 
+        WRITE(*,*)INTEG
         ! Ne garder que ce qui est avant le '#' dans INTEG:     ! added by antoine
+
         pos_com = INDEX(INTEG, '#')
 
         IF (pos_com > 0) THEN 
@@ -179,7 +182,7 @@ c
         END DO
 
         ! Ecrire le fichier options.in  ! added by antoine
-        DO I = 1, 5
+        DO I = 1, 3 ! 3 premieres lignes d'options
           READ(*, '(A)') LINE
           POS_COM = INDEX(LINE, '#')
           IF (POS_COM > 0) THEN
@@ -187,28 +190,51 @@ c
           ELSE
             TRIMMED_LINE = TRIM(LINE)
           END IF
-          IF (I .NE. 5) THEN
-            WRITE(55, '(A)') TRIM(TRIMMED_LINE)
-          END IF
-          IF (I .EQ. 5) THEN
-            diro_temp = TRIM(TRIMMED_LINE)
-            WRITE(*,*) 'diro_temp : ', diro_temp
-            pos_slash = INDEX(diro_temp, '/', .TRUE.)  ! .TRUE. pour chercher depuis la fin
-            write(*,*) 'pos_slash : ', pos_slash
-            if (pos_slash > 0) then
-              dirs_temp = TRIM(diro_temp(1:pos_slash-1))  ! Extraire la partie avant le dernier '/'
-              gname_temp = TRIM(diro_temp(pos_slash+1:))  ! Extraire la partie après le dernier '/'
-            else
-              write(*,*) 'Erreur : "/" non trouvé dans diro'
-              dirs_temp = ''
-              gname_temp = ''
-            endif
-            WRITE(55, '(A)') dirs_temp
-            WRITE(55, '(A)') gname_temp
+          WRITE(55, '(A)') TRIM(TRIMMED_LINE)
+          WRITE(*, '(A)') TRIM(TRIMMED_LINE)
+          IF (I .EQ. 3) THEN ! si dans la 3e
+            READ(TRIMMED_LINE, *) (BOOLS(J), J=1,6)
+            IF (BOOLS(5).EQ.'T') THEN ! si le bool associe au removal des limites, alors ecrire la ligne suivante
+              WRITE(*, '(A)') 'Removing limits activated'
+              READ(*, '(A)') LINE
+              POS_COM = INDEX(LINE, '#')
+              IF (POS_COM > 0) THEN
+                TRIMMED_LINE = TRIM(LINE(1:POS_COM-1))
+              ELSE
+                TRIMMED_LINE = TRIM(LINE)
+              END IF
+              WRITE(55, '(A)') TRIM(TRIMMED_LINE)
+              WRITE(*, '(A)') TRIM(TRIMMED_LINE)
+            END IF
           END IF
         END DO
+          
+        READ(*, '(A)') LINE ! directory and sub-directory
+        POS_COM = INDEX(LINE, '#')
+        IF (POS_COM > 0) THEN
+          TRIMMED_LINE = TRIM(LINE(1:POS_COM-1))
+        ELSE
+          TRIMMED_LINE = TRIM(LINE)
+        END IF
+        diro_temp = TRIM(TRIMMED_LINE)
+        WRITE(*,*) 'diro_temp : ', diro_temp
+        pos_slash = INDEX(diro_temp, '/', .TRUE.)  ! .TRUE. pour chercher depuis la fin
+        if (pos_slash > 0) then
+          dirs_temp = TRIM(diro_temp(1:pos_slash-1))  ! Extraire la partie avant le dernier '/'
+          gname_temp = TRIM(diro_temp(pos_slash+1:))  ! Extraire la partie après le dernier '/'
+        else
+          write(*,*) 'Erreur : "/" non trouvé dans diro'
+          dirs_temp = ''
+          gname_temp = ''
+        endif
+        WRITE(55, '(A)') dirs_temp
+        WRITE(*, '(A)') dirs_temp
+        WRITE(55, '(A)') gname_temp
+        WRITE(*, '(A)') gname_temp
+    
         outfile = 'simulation'
         WRITE(55, '(A)') outfile
+
         WRITE(55, '(A)') 'new'
         CLOSE(55)
         CALL SYSTEM('chmod ogu+x '//TRIM(OPTIONFILE))  ! added by antoine
@@ -725,6 +751,7 @@ c
                 WRITE(32,'(a)')'export STACKSIZE=1000000'
                 ! WRITE(32,'(a)')' ' ! commented by antoine
                 ! WRITE(32, 0008)TRIM(DIRS),TRIM(GNAME)      ! added by antoine
+                ! WRITE(*,*)'BINDIR : ',TRIM(BINDIR) ! added by antoine
                 WRITE(GOCMD,2204)TRIM(BINDIR),TRIM(INTEG),CNTFILE
                 WRITE(32,'(a)')TRIM(GOCMD)
                 CLOSE(32)           
@@ -804,7 +831,7 @@ c
         WRITE(54,'(a)')'  rm -f ./'//TRIM(CORRFILE)
         WRITE(54,'(a)')'  rm -f ./'//TRIM(CLEARFILE)
         WRITE(54,'(a)')'  rm -f ./'//TRIM(STATESFILE)
-
+        WRITE(54,'(a)')'  rm -f ./jacobi.out'
         WRITE(54,'(a)')'fi'
         CLOSE(54)  ! added by antoine
 
@@ -812,6 +839,7 @@ c
         CALL SYSTEM('chmod ogu+x '//TRIM(CONTFILE))
         CALL SYSTEM('chmod ogu+x '//TRIM(STARTFILE))  ! added by antoine 
         CALL SYSTEM('chmod ogu+x '//TRIM(CLEARFILE))  ! added by antoine  
+
         
 
         ! Création du fichier 'states.sh' pour afficher l'état des sous-simulations

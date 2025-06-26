@@ -71,6 +71,8 @@ c Get data for the run and the test particles
 	call io_init_tp(intpfile,ntp,xht,yht,zht,vxht,vyht,
      &               vzht,istat,rstat)
 
+         write(*,*) 'totu'
+
 c       Save input file for further continuation (H Beust Feb 14, 2023)
         call io_write_mvsfile(diro,genfile)
 c
@@ -98,7 +100,7 @@ c New HBeust 28 mar. 2011
         noutloop = nint(dtout/dt,8)
         ndumploop = nint(dtdump/dt,8)
 c
-
+        write(*,*) 'tata'
         iub = 20
         iuj = 30
         iud = 40
@@ -125,12 +127,16 @@ c...    Do the initial io write
      &        vyh,vzh,xht,yht,zht,vxht,vyht,vzht,istat,2,iuj,fopenstat)
         endif
 
+        write(*,*) 'toto'
+
 c...    must initize discard io routine
         if(btest(iflgchk,4))  then ! bit 4 is set
            call io_discard_write(0,t,nbod,ntp,xh,yh,zh,vxh,vyh,
      &          vzh,xht,yht,zht,vxht,vyht,vzht,istat,rstat,iud,
      &           trim(diro)//'/'//'discard.out',fopenstat,nleft)
         endif
+
+        write(*,*) 'tuto'
 
         nleft = ntp
 	i1st = 0

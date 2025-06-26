@@ -288,6 +288,7 @@ class SpaceView(GeneralToolClass):
         self.Xbm, self.Ybm, self.Zbm = [], [], []
         for k in range(self.NbBodies_m[self.IndexSnap]):
             # xbf, ybf, zbf = self.Ellipse(af[k][isave], ef[k][isave], i[k][isave]*pi/180, W[k][isave]*pi/180, w[k][isave]*pi/180)
+            # print(self.a_m[self.IndexSnap][k], self.e_m[self.IndexSnap][k])
             xbm, ybm, zbm = self.Ellipse2(self.a_m[self.IndexSnap][k], self.e_m[self.IndexSnap][k], self.Ex[self.IndexSnap][k], self.Ey[self.IndexSnap][k], self.Ez[self.IndexSnap][k], self.Epx[self.IndexSnap][k], self.Epy[self.IndexSnap][k], self.Epz[self.IndexSnap][k])
             # self.Xbf.append(xbf)
             # self.Ybf.append(ybf)
@@ -301,7 +302,7 @@ class SpaceView(GeneralToolClass):
         self.t = self.t_m[self.IndexSnap]/10**6
 
         # X limits
-        self.LimDefault = int(round(np.max(self.a_m[0])*(1+np.max(self.e_m[0]))))
+        self.LimDefault = 1.1*np.max(self.a_m[0])*(1+np.max(self.e_m[0]))
 
     def PlotXY(self):
 

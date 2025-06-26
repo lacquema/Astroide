@@ -3,10 +3,10 @@
 # Adjust parameters below as needed for your specific simulation setup.
 
 # Path to the executables
-BINPATH='<environment_path>/Astroide/Code/bin'
+BINPATH="<environment_path>/Astroide/Code/bin"
 
 # Path to the working directory
-WORKPATH='...'
+WORKPATH="..."
 
 # Generate the sub-simulations input files
 $BINPATH/gen_multi_hjs <<!

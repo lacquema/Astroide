@@ -78,7 +78,7 @@ c...  write out planets
       do i=2,nbod
          gm = mass(1)+mass(i)
          id = -1*i
- 	 call orbel_xv2el(xh(i),yh(i),zh(i),vxh(i),vyh(i),vzh(i),gm,
+ 	   call orbel_xv2el(xh(i),yh(i),zh(i),vxh(i),vyh(i),vzh(i),gm,
      &          ialpha,a,e,inc,capom,omega,capm)
          call io_write_line(iu,id,a,e,inc,capom,omega,capm)
       enddo

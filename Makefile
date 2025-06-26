@@ -8,7 +8,7 @@ PYTHON3 = python3
 
 # Others parameters
 PARALLEL = NO
-ADD_FLAGS =
+ADD_FLAGS = 
 LIB_FLAGS = -O3 -c
 GEN_FLAGS = -O3
 ALG_FLAGS = -O3
@@ -60,11 +60,11 @@ HELIOQ_DIR = $(SUB_DIR)/helioq
 
 # Parallelization option 
 ifeq ($(PARALLEL),NO)
-LIB = $(LIB_DIR)/libswift.a
+LIB = swift
 else
 LIB_FLAGS += -fopenmp
 ALG_FLAGS += -fopenmp
-LIB = $(LIB_DIR)/libswift_par.a
+LIB = swift_par
 endif
 
 # Python3 packages
@@ -73,7 +73,7 @@ packages:
 
 # Utilities
 library:
-	test ! -f $(LIB) || rm $(LIB)
+	test ! -f $(LIB_DIR)/lib$(LIB).a || rm $(LIB_DIR)/lib$(LIB).a
 	$(COMPILF) $(LIB_FLAGS) $(ADD_FLAGS) $(ANAL_DIR)/*.f 
 	$(COMPILF) $(LIB_FLAGS) $(ADD_FLAGS) $(BS_DIR)/*.f 
 	$(COMPILF) $(LIB_FLAGS) $(ADD_FLAGS) $(COORD_DIR)/*.f   
@@ -101,52 +101,52 @@ library:
 	$(COMPILF) $(LIB_FLAGS) $(ADD_FLAGS) $(SYMBATR_DIR)/*.f  
 	$(COMPILF) $(LIB_FLAGS) $(ADD_FLAGS) $(HELIOQ_DIR)/*.f  
 	$(COMPILF) $(LIB_FLAGS) $(ADD_FLAGS) $(HELIO_DIR)/*.f  
-	ar -rv $(LIB) *.o
+	ar -rcsv $(LIB_DIR)/lib$(LIB).a *.o
 	rm *.o
 
 # Generators
 gen_multi_rmvs3:
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
 
 gen_multi_hjs:
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
 
 # Extractors
 mbodies_multi_rmvs3:
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
 
 mbodies_multi_hjs:
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(GEN_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
 
 # Swift executables
 swift_rmvs3:
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
 
 swift_rmvs3_par:
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(RMVS3_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
 
 swift_hjs:
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
 
 swift_hjs_par:
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f $(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
 
 compile: 
 	make library
 	make swift_rmvs3
 	make swift_hjs
 
-	make library PARALLEL=YES
-	make swift_rmvs3_par PARALLEL=YES
-	make swift_hjs_par PARALLEL=YES
+	# make library PARALLEL=YES
+	# make swift_rmvs3_par PARALLEL=YES
+	# make swift_hjs_par PARALLEL=YES
 
 	make gen_multi_rmvs3
 	make mbodies_multi_rmvs3

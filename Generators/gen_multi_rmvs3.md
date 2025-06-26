@@ -26,17 +26,17 @@ This script generates sub-simulations input files for the `RMVS3` integrator, wh
       - `dump_freq`: Dump frequencie (in years).
 
 **Computational options**
-   - *Format*: `F1` `F2` `F3` `F4` `F5` `F6`
+   - *Format*: `B1` `B2` `B3` `B4` `B5` `B6`
    - *Type*: `Bool` `Bool` `Bool` `Bool` `Bool` `Bool`
    - *Description*: If `True`,
-       - `F1`: Use 2-byte integers (saves memory, may limit range).
-       - `F2`: Use 4-byte floating-point numbers (reduces memory usage, may affect precision).
-       - `F3`: Compute and output system energy.
-       - `F4`: Use Jacobi coordinates for debris particles.
-       - `F5`: Enable removal limits (activates the removal criteria section below).
-       - `F6`: Include J2 and J4 gravitational moments (for oblate central bodies).
+       - `B1`: Include J2 and J4 gravitational moments (for oblate central bodies).
+       - `B2`: Enable removal limits (activates the removal criteria section below).
+       - `B3`: Use Jacobi coordinates for debris particles.
+       - `B4`: Compute and output system energy.
+       - `B5`: Use 4-byte floating-point numbers (reduces memory usage, may affect precision).
+       - `B6`: Use 2-byte integers (saves memory, may limit range).
 
-**Removal limits** (if removal limits are enabled)
+**Removal limits** (if removal limits `B2` are enabled)
 
 - *Format*: `rmin` `rmax` `rmaxu` `qmin` `lclose`
 - *Type*: `float` `float` `float` `float` `bool`
@@ -76,7 +76,7 @@ This script generates sub-simulations input files for the `RMVS3` integrator, wh
 
 **Central body mass**
    - *Type*: `float`
-   - *Description*: Mass of the central body in Mjup.
+   - *Description*: Mass of the central body in Msun.
 
 **Number of orbiting bodies**
    - *Type*: `int`

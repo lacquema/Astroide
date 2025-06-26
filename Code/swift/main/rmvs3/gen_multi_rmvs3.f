@@ -39,7 +39,7 @@ C
         INTEGER IT(10*NTPMAX),MT(10*NTPMAX),IFILE
         INTEGER NTP,NTPFIRST,I,J,K,ISEED,LLM,IND,NTPT,CNTFILE,NTPFILE
         LOGICAL OK,WIMPS,OKC
-        CHARACTER*(CHLEN) INTPFILE,TPFILE,INPARFILE,PARFILE,OUTFILE
+        CHARACTER*(CHLEN) INTPFILE,TPFILE,INPARFILE,PARFILE, OUTFILE
         CHARACTER*(CHLEN) DIRO,DIRS,GNAME,gname_old,FOPENSTAT,GOFILE
         CHARACTER*(CHLEN) MVSFILE
         CHARACTER*(CHLEN) BINDIR,MEXTRFILE,CONTFILE,STARTFILE, str
@@ -86,6 +86,8 @@ C
         CHARACTER*256 LINE, TRIMMED_LINE
         INTEGER POS_COM, pos_slash
         CHARACTER*100 dirs_temp, diro_temp, gname_temp
+        CHARACTER*1 BOOLS(6)
+
 
 0009    FORMAT('    rm -rf ./run_',I2.2) ! added by antoine
 
@@ -122,7 +124,7 @@ C
 c     ........entree des parametres
 
         READ(*,'(a)')BINDIR  ! added by antoine
-        ! write(*,*)TRIM(BINDIR)
+        
 
         MEXTRFILE='mextract_multi.sh'
         CONTFILE='continues.sh'
@@ -131,7 +133,7 @@ c     ........entree des parametres
         CORRFILE='corr_multi.dat'
         OPTIONFILE='options.in'
         STATESFILE='states.sh'
-        
+
         WRITE(*,*)'Remove old files' ! added by antoine
         CALL SYSTEM('[ -f ./'//CLEARFILE//' ] && ./'//CLEARFILE) ! added by antoine
 
@@ -172,7 +174,7 @@ c     ........entree des parametres
         END DO
 
         ! Ecrire le fichier options.in  ! added by antoine
-        DO I = 1, 5
+        DO I = 1, 3 ! 3 premieres lignes d'options
           READ(*, '(A)') LINE
           POS_COM = INDEX(LINE, '#')
           IF (POS_COM > 0) THEN
@@ -180,31 +182,53 @@ c     ........entree des parametres
           ELSE
             TRIMMED_LINE = TRIM(LINE)
           END IF
-          IF (I .NE. 5) THEN
-            WRITE(55, '(A)') TRIM(TRIMMED_LINE)
-          END IF
-          IF (I .EQ. 5) THEN
-            diro_temp = TRIM(TRIMMED_LINE)
-            WRITE(*,*) 'diro_temp : ', diro_temp
-            pos_slash = INDEX(diro_temp, '/', .TRUE.)  ! .TRUE. pour chercher depuis la fin
-            write(*,*) 'pos_slash : ', pos_slash
-            if (pos_slash > 0) then
-              dirs_temp = TRIM(diro_temp(1:pos_slash-1))  ! Extraire la partie avant le dernier '/'
-              gname_temp = TRIM(diro_temp(pos_slash+1:))  ! Extraire la partie après le dernier '/'
-            else
-              write(*,*) 'Erreur : "/" non trouvé dans diro'
-              dirs_temp = ''
-              gname_temp = ''
-            endif
-            WRITE(55, '(A)') dirs_temp
-            WRITE(55, '(A)') gname_temp
+          WRITE(55, '(A)') TRIM(TRIMMED_LINE)
+          WRITE(*, '(A)') TRIM(TRIMMED_LINE)
+          IF (I .EQ. 3) THEN ! si dans la 3e
+            READ(TRIMMED_LINE, *) (BOOLS(J), J=1,6)
+            IF (BOOLS(2).EQ.'T') THEN ! si le bool associe au removal des limites, alors ecrire la ligne suivante
+              WRITE(*, '(A)') 'Removing limits activated'
+              READ(*, '(A)') LINE
+              POS_COM = INDEX(LINE, '#')
+              IF (POS_COM > 0) THEN
+                TRIMMED_LINE = TRIM(LINE(1:POS_COM-1))
+              ELSE
+                TRIMMED_LINE = TRIM(LINE)
+              END IF
+              WRITE(55, '(A)') TRIM(TRIMMED_LINE)
+              WRITE(*, '(A)') TRIM(TRIMMED_LINE)
+            END IF
           END IF
         END DO
+        READ(*, '(A)') LINE ! directory and sub-directory
+        POS_COM = INDEX(LINE, '#')
+        IF (POS_COM > 0) THEN
+          TRIMMED_LINE = TRIM(LINE(1:POS_COM-1))
+        ELSE
+          TRIMMED_LINE = TRIM(LINE)
+        END IF
+        diro_temp = TRIM(TRIMMED_LINE)
+        WRITE(*,*) 'diro_temp : ', diro_temp
+        pos_slash = INDEX(diro_temp, '/', .TRUE.)  ! .TRUE. pour chercher depuis la fin
+        if (pos_slash > 0) then
+          dirs_temp = TRIM(diro_temp(1:pos_slash-1))  ! Extraire la partie avant le dernier '/'
+          gname_temp = TRIM(diro_temp(pos_slash+1:))  ! Extraire la partie après le dernier '/'
+        else
+          write(*,*) 'Erreur : "/" non trouvé dans diro'
+          dirs_temp = ''
+          gname_temp = ''
+        endif
+        WRITE(55, '(A)') dirs_temp
+        WRITE(*, '(A)') dirs_temp
+        WRITE(55, '(A)') gname_temp
+        WRITE(*, '(A)') gname_temp
         outfile = 'simulation'
         WRITE(55, '(A)') outfile
         WRITE(55, '(A)') 'new'
         CLOSE(55)
         CALL SYSTEM('chmod ogu+x '//TRIM(OPTIONFILE))  ! added by antoine
+
+        
 
         WRITE(*,*)' Number of cores'
         READ(*,*)NCOR
@@ -253,6 +277,8 @@ c     ........entree des parametres
         IF(IUFLG.EQ.1) MASS(1) = MASS(1)*SMASSYR
 
         WRITE(*,*) ' Mass of the Sun is : ',MASS(1)
+
+        
   
         XH(1) = 0.0
         YH(1) = 0.0
@@ -318,6 +344,8 @@ c         en lien avec le choix du réf de coord (écliptique ou invariant)
 	      CALL IO_DUMP_PL(INPLFILE,NBOD,MASS,XH,YH,ZH,  
      &       VXH,VYH,VZH,LCLOSE,IFLGCHK,RPLSQ,J2RP2,J4RP4)
 
+        
+
         WIMPMFP=0.0d0
 
 
@@ -333,14 +361,17 @@ c         en lien avec le choix du réf de coord (écliptique ou invariant)
         IPOINT = INDEX(INTPFILE,'.')
         WRITE(*,*) 'Enter name of parameter file : '
         ! READ(*,'(a)')INPARFILE
-        INPARFILE = OPTIONFILE   ! added by antoine   
-        call io_init_param_hb(inparfile,t0,tstop,dtmin,dtout,dtdump,
-     &         iflgchk,rmin,rmax,rmaxu,qmin,lclose,diro,dirs,
+        INPARFILE = OPTIONFILE   ! added by antoine  
+         
+        call io_init_param_hb(inparfile,t0,tstop,dtmin,dtout,
+     &         dtdump,iflgchk,rmin,rmax,rmaxu,qmin,lclose,diro,dirs,
      &         gname,outfile,fopenstat)
 
         ! WRITE(*,*)TRIM(DIRO)
         ! WRITE(*,*)TRIM(DIRS)
         ! WRITE(*,*)TRIM(gname)
+
+        
 
         DO I=2,NBOD
           DTBOD(I) = DTMIN*2.d0*PI*SQRT(ABOD(I)**3/(MASS(I)+MASS(1)))
@@ -364,6 +395,7 @@ c         en lien avec le choix du réf de coord (écliptique ou invariant)
         WRITE(51, '(a)')TRIM(PARFILE) ! added by antoine
 
         ! WRITE(51,0008)TRIM(DIRO)  ! added by antoine
+        
         WRITE(51,0001)TRIM(BINDIR)
 
         IPAR = INDEX(INPARFILE,'.')
@@ -495,6 +527,7 @@ c
                 WRITE(32,'(a)')'export STACKSIZE=1000000'
                 ! WRITE(32,'(a)')' '
                 ! WRITE(32, 0008)TRIM(DIRO)      ! added by antoine
+                
                 WRITE(GOCMD,2204)TRIM(BINDIR),TRIM(INTEG),CNTFILE
                 WRITE(32,'(a)')TRIM(GOCMD)
                 ! WRITE(GOCMD,0003)TRIM(BINDIR),TRIM(INTEG) ! added by antoine
@@ -576,6 +609,7 @@ c
         WRITE(54,'(a)')'  rm -f ./'//TRIM(CORRFILE)
         WRITE(54,'(a)')'  rm -f ./'//TRIM(CLEARFILE)
         WRITE(54,'(a)')'  rm -f ./'//TRIM(STATESFILE)
+        WRITE(54,'(a)')'  rm -f ./jacobi.out'
         WRITE(54,'(a)')'fi'
         CLOSE(54)  ! added by antoine
 
