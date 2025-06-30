@@ -63,7 +63,7 @@ class WindowMenuClass(QMainWindow):
         Adds a status bar with credits to the main window.
         """
         StatusBar = QStatusBar(self)
-        StatusBar.addWidget(QLabel(' Version 1.0, 2024, IPAG, Hervé Beust, Antoine Lacquement'))
+        StatusBar.addWidget(QLabel(' Version 1.0, 2025, IPAG, Hervé Beust, Antoine Lacquement'))
         self.setStatusBar(StatusBar)
 
 if __name__ == "__main__":

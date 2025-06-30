@@ -207,3 +207,10 @@ This feature allows you to plot the evolution of any orbital parameter (such as 
 This feature allows you to plot any mathematical expression involving the orbital parameters of different bodies as a function of another expression. To specify parameters, use *[k]*, where *k* is the orbit number of the body, counted from the center outward. You can also use standard mathematical functions within your expressions. This flexibility enables you to create custom plots tailored to your specific analysis needs.
 
 
+<br><br>
+
+**...Documentation in progress...**
+
+We are actively working to expand and improve this documentation. More detailed guides, examples, and reference materials will be added soon. If you have questions or need assistance in the meantime, please refer to the [GitHub repository](https://github.com/lacquema/Astroide) and open an issue for support, or send an email to antoine.lacquement@univ-grenoble-alpes.fr.
+
+Thank you for your patience and interest in Astroide!
