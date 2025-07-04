@@ -735,7 +735,7 @@ c
                 WRITE(GOCFILE,6001)CNTFILE
                 OPEN(31,FILE=GOFILE,STATUS='UNKNOWN')
                 WRITE(31,'(a)')'#! /bin/bash' ! modified by antoine
-                ! WRITE(31,'(a)')'unlimit' ! commented by antoine
+                WRITE(31,'(a)')'ulimit -s unlimited' ! modified by antoine
                 WRITE(GOCMD,2206)NCOR
                 WRITE(31,'(a)')TRIM(GOCMD)
                 WRITE(31,'(a)')'export STACKSIZE=1000000' ! modified by antoine
@@ -745,7 +745,7 @@ c
                 CLOSE(31)       
                 OPEN(32,FILE=GOCFILE,STATUS='UNKNOWN')
                 WRITE(32,'(a)')'#! /bin/bash' ! modified by antoine
-                ! WRITE(32,'(a)')'unlimit'
+                WRITE(32,'(a)')'ulimit -s unlimited' ! modified by antoine
                 WRITE(GOCMD,2206)NCOR
                 WRITE(32,'(a)')TRIM(GOCMD)
                 WRITE(32,'(a)')'export STACKSIZE=1000000'
