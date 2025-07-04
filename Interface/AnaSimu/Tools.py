@@ -110,10 +110,10 @@ class GeneralToolClass(QWidget):
         # print(formula)
         # for num in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
         #     formula = formula.replace(f'[{num}]', f'[{str(int(num)-1)}]') # Replace [n] by [n-1]
-        for param in ['t', 'a', 'e', 'i', 'w', 'W']:
+        for param in ['t', 'a', 'e']:
             formula = re.sub(r'\b' + param + r'\b', f'{prefixe}{param}', formula) # Replace the parameter by its value
         for param in ['i', 'w', 'W']:
-            formula = re.sub(r'\b' + param + r'\b(?!\[)', f'np.radians({param})', formula) # Convert to radians
+            # formula = re.sub(r'\b' + param + r'\b(?!\[)', f'np.radians({param})', formula) # Convert to radians
             formula = re.sub(r'\b' + param + r'\b', f'np.radians({prefixe}{param})', formula) # Convert to radians and replace the parameter by its value
         for fonction in ['sin', 'cos', 'tan', 'arcsin', 'arccos', 'arctan', 'arctan2', 'hypot', 'sinh', 'cosh', 'tanh', 'arcsinh', 'arccosh', 'arctanh', 'exp', 'expm1', 'exp2', 'log', 'log10', 'log2', 'log1p', 'sqrt', 'square', 'cbrt', 'power', 'erf', 'erfc', 'gamma', 'lgamma', 'digamma', 'beta']:
             formula = re.sub(r'\b' + fonction + r'\b', f'np.{fonction}', formula) # Replace the function by its numpy equivalent
@@ -125,11 +125,11 @@ class GeneralToolClass(QWidget):
     
     def evaluate_formula(self, formula, prefix):
         """Evaluate a formula."""
-        # print(formula)
+        print(formula)
         if not formula:
             return None
         formula = self.replace_params_in_formula(formula, prefix)
-        # print(formula)
+        print(formula)
         try:
             return eval(formula)
         except Exception as e:
@@ -961,6 +961,7 @@ class DiagramXY(GeneralToolClass):
         self.XFormula = self.XFormulaWidget.EditParam.text()
         self.Y = self.evaluate_formula(self.YFormula, 'self.')
         self.X = self.evaluate_formula(self.XFormula, 'self.')
+        print(f'X: {self.X}, Y: {self.Y}')  # Debugging output
                 
     # Plot
     def Plot(self):
