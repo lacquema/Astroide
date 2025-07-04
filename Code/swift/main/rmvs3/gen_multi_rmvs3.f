@@ -521,7 +521,7 @@ c
                 CLOSE(31)           
                 OPEN(32,FILE=GOCFILE,STATUS='UNKNOWN')  ! continuation file
                 WRITE(32,'(a)')'#! /bin/bash' ! modified by antoine
-                WRITE(31,'(a)')'ulimit -s unlimited' ! modified by antoine
+                WRITE(32,'(a)')'ulimit -s unlimited' ! modified by antoine
                 WRITE(GOCMD,2206)NCOR
                 WRITE(32,'(a)')TRIM(GOCMD)
                 WRITE(32,'(a)')'export STACKSIZE=1000000'
