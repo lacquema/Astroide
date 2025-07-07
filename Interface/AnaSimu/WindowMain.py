@@ -124,7 +124,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)  # Create the application instance
     # LoadWin = LoadWindowClass()  # Uncomment to show a loading window
     # app.processEvents()  # Process events to continue the program
-    PathFollowbodies = '/Users/lacquema/Simulations/twa7/twa7_cb_a_dyn/twa7_cb_a_dyn_12/followbodies.dat'
-    PathMextract = '/Users/lacquema/Simulations/twa7/twa7_cb_a_dyn/twa7_cb_a_dyn_12/mextract.dat'
+    PathFollowbodies = '/Users/lacquema/Simulations/twa7/twa7_cb_a_dyn/twa7_cb_a_dyn_5/followbodies.dat'
+    PathMextract = '/Users/lacquema/Simulations/twa7/twa7_cb_a_dyn/twa7_cb_a_dyn_5/mextract.dat'
     WindowMain = WindowMainClass(PathFollowbodies, PathMextract)  # Create and show the main window
     sys.exit(app.exec())  # Execute the application

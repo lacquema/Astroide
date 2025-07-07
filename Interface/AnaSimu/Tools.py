@@ -105,15 +105,16 @@ class GeneralToolClass(QWidget):
         """Initialize parameters. This method should be overridden by subclasses."""
         return
     
-    def replace_params_in_formula(self, formula, prefixe):
+    def replace_params_in_formula(self, formula, prefixe, nOrbitDefault):
         """Replace parameters and functions in the formula with their corresponding values."""
         # print(formula)
         # for num in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
         #     formula = formula.replace(f'[{num}]', f'[{str(int(num)-1)}]') # Replace [n] by [n-1]
         for param in ['t', 'a', 'e']:
+            formula = re.sub(r'\b' + param + r'\b(?!\[)', f'{param}[{nOrbitDefault}]', formula) # Add [nOrbitDefault] to the parameter
             formula = re.sub(r'\b' + param + r'\b', f'{prefixe}{param}', formula) # Replace the parameter by its value
         for param in ['i', 'w', 'W']:
-            # formula = re.sub(r'\b' + param + r'\b(?!\[)', f'np.radians({param})', formula) # Convert to radians
+            formula = re.sub(r'\b' + param + r'\b(?!\[)', f'{param}[{nOrbitDefault}]', formula) # Add [nOrbitDefault] to the parameter
             formula = re.sub(rf'\b{param}\[(\d+)\]', rf'np.radians({prefixe}{param}[\1])', formula)
         for fonction in ['sin', 'cos', 'tan', 'arcsin', 'arccos', 'arctan', 'arctan2', 'hypot', 'sinh', 'cosh', 'tanh', 'arcsinh', 'arccosh', 'arctanh', 'exp', 'expm1', 'exp2', 'log', 'log10', 'log2', 'log1p', 'sqrt', 'square', 'cbrt', 'power', 'erf', 'erfc', 'gamma', 'lgamma', 'digamma', 'beta']:
             formula = re.sub(r'\b' + fonction + r'\b', f'np.{fonction}', formula) # Replace the function by its numpy equivalent
@@ -123,12 +124,12 @@ class GeneralToolClass(QWidget):
         # print('Formula is: '+formula)
         return formula
     
-    def evaluate_formula(self, formula, prefix):
+    def evaluate_formula(self, formula, prefix, nOrbitDefault=1):
         """Evaluate a formula."""
         print(formula)
         if not formula:
             return None
-        formula = self.replace_params_in_formula(formula, prefix)
+        formula = self.replace_params_in_formula(formula, prefix, nOrbitDefault)
         print(formula)
         try:
             return eval(formula)
@@ -148,6 +149,36 @@ class GeneralToolClass(QWidget):
         except Exception as e:
             print('Wrong Parameters: ', e)
             WidgetPlot.Canvas.fig.draw()
+
+    def LabelOf(self, var=str):
+        """Return the label for a given variable."""
+        labels = {
+            't': 'Time',
+            'P': 'Period',
+            'a': 'Semi-major axis',
+            'e': 'Eccentricity',
+            'i': 'Inclinaison',
+            'w': 'Argument of periastron',
+            'W': 'Longitude of ascending node',
+            'Chi2': 'Chi square',
+            'M': 'Mean longitude'
+        }
+        return labels.get(var, 'Unknown variable')
+    
+    def UnitOf(self, var=str):
+        """Return the unit for a given variable."""
+        units = {
+            't': '[Myr]',
+            'P': '[yr]',
+            'a': '[AU]',
+            'e': '',
+            'i': '[°]',
+            'w': '[°]',
+            'W': '[°]',
+            'Chi2': '',
+            'M': '[°]',
+        }
+        return units.get(var, 'Unknown variable')
     
 
 
@@ -840,9 +871,9 @@ class DiagramTY(GeneralToolClass):
 
         # General data
         self.NbBodies_f = NbBodies_f
-        self.t_f = t_f
-        self.a_f = a_f
-        self.e_f = e_f
+        self.t = t_f
+        self.a = a_f
+        self.e = e_f
         self.i = i
         self.W = W
         self.w = w
@@ -859,15 +890,36 @@ class DiagramTY(GeneralToolClass):
         # self.CheckTitle.setEnabled(False)
 
         # Orbit parameters
-        self.ParamOrbitWidget = ComboBox('Orbital parameter', 'Orbit Parameter', ['a','e','i','W','w','M'])
+        self.ParamOrbitWidget = ComboBox('Orbital parameter', 'Orbit Parameter', ['a','e','i','W','w','M','irel','other'])
         self.WindowPlot.WidgetParam.Layout.addWidget(self.ParamOrbitWidget)
-        # self.ParamOrbitWidget.ComboParam.currentIndexChanged.connect(self.WidgetPlot.reset_plots)
+        self.ParamOrbitWidget.ComboParam.currentIndexChanged.connect(self.reset_plots)
 
         # Orbit number
         self.ListBody = [str(k + 1) for k in range(self.NbBodies_f-1)]
         self.nOrbitWidget = ComboBox(None,'Number of the orbit counting outward', self.ListBody)
         self.ParamOrbitWidget.Layout.addWidget(self.nOrbitWidget)
-        # self.nOrbitWidget.ComboParam.currentIndexChanged.connect(self.WidgetPlot.reset_plots)
+        self.nOrbitWidget.ComboParam.currentIndexChanged.connect(self.reset_plots)
+
+        # i relatif between 2 bodies
+        self.IrelWidget = QWidget()
+        self.IrelLayout = QHBoxLayout()
+        self.nOrbitRelWidget = ComboBox('Relative body', 'Relative body to compare with the reference', self.ListBody)
+        self.IrelLayout.addWidget(self.nOrbitRelWidget)
+        self.nOrbitRelWidget.ComboParam.currentIndexChanged.connect(self.reset_plots)
+        self.IrelWidget.setLayout(self.IrelLayout)
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.IrelWidget)
+        self.IrelWidget.setVisible(False)
+
+        # TextEdit for general formula
+        self.FormulaTextEdit = LineEdit(None, 'Only variables P, a, e, i, w, W, M with [n] for orbit number and usual mathematical functions', None)
+        self.FormulaTextEdit.EditParam.setPlaceholderText("Enter your formula here")
+        self.FormulaTextEdit.setVisible(False)
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.FormulaTextEdit)
+        self.FormulaTextEdit.EditParam.textChanged.connect(self.reset_plots)
+
+        # Connect ComboBox change event
+        self.ParamOrbitWidget.ComboParam.currentIndexChanged.connect(lambda: self.FormulaTextEdit.setVisible(self.ParamOrbitWidget.ComboParam.currentText() == 'other'))
+        self.ParamOrbitWidget.ComboParam.currentIndexChanged.connect(lambda: self.IrelWidget.setVisible(self.ParamOrbitWidget.ComboParam.currentText() == 'irel'))
 
         # # Time limits
         # self.Tmin = 0
@@ -882,35 +934,81 @@ class DiagramTY(GeneralToolClass):
         # self.SizeLabels = self.SizeLabelsWidget.SpinParam.value()
         self.ParamOrbit = self.ParamOrbitWidget.ComboParam.currentText()
         self.nOrbit = int(self.nOrbitWidget.ComboParam.currentText())
+        self.nOrbitRel = int(self.nOrbitRelWidget.ComboParam.currentText())
+        self.EvalParamOrbit = self.evaluate_ParamOrbit('self.')
         # self.Tmin = self.TminWidget.SpinParam.value()
         # self.Tmax = self.TmaxWidget.SpinParam.value()
 
+    # def ToggleFormulaTextEdit(self):
+    #     """Toggle the visibility of the formula text edit based on the ComboBox selection."""
+    #     if self.ParamOrbitWidget.ComboParam.currentIndex() == self.ParamOrbitWidget.ComboParam.count() - 1:
+    #         self.FormulaTextEdit.setVisible(True)
+    #     else:
+    #         self.FormulaTextEdit.setVisible(False)
+            
+    def evaluate_ParamOrbit(self, prefixe):
+        """Evaluate the parameter orbit based on the current widget values."""
+        self.ParamOrbit = self.ParamOrbitWidget.ComboParam.currentText()
+        if self.ParamOrbit == 'irel' or self.ParamOrbit == 'other':
+            if self.ParamOrbitWidget.ComboParam.currentText() == 'irel':
+                if self.nOrbitRel == self.nOrbit:
+                    print('nBodyRel can not be the same as nBody')
+                    return None
+                else:
+                    formula = f'arccos(cos(i[{self.nOrbit}])*cos(i[{self.nOrbitRel}])+cos(W[{self.nOrbit}]-W[{self.nOrbitRel}])*sin(i[{self.nOrbit}])*sin(i[{self.nOrbitRel}]))'
+            elif self.ParamOrbitWidget.ComboParam.currentText() == 'other':
+                formula = self.FormulaTextEdit.EditParam.text()
+            return self.evaluate_formula(formula, prefixe, self.nOrbit)
+        else:
+            # self.ParamOrbit = self.ParamOrbitWidget.ComboParam.currentText()
+            # print('not irel or other')
+            return eval(f'{prefixe}{self.ParamOrbit}')[self.nOrbit]
+
     # Plot
     def Plot(self):
+        
+        # Subplot initialization
+        self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
 
         # Update parameters
         self.try_UpdateParams(self.WidgetPlot)
+
+        # Check if the parameters are valid for plotting
+        if self.EvalParamOrbit is None:
+            print('No data to plot or variance is zero.')
+            self.Subplot.figure.canvas.draw()
+            return
+
+        # try:
+        #     self.UpdateParams()
+        # except Exception as e:
+        #     print('Wrong Parameters: ', e)
+        #     self.Subplot.figure.canvas.draw()
         
-        # Plot initialisation
-        self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
-        
-        # Specific data
-        t = [self.t_f[self.nOrbit],'Time [yr]']
-        a = [self.a_f[self.nOrbit],'Semi-major axis [AU]']
-        e = [self.e_f[self.nOrbit],'Eccentricity']
-        i = [self.i[self.nOrbit],'Inclinaison [deg]']
-        W = [self.W[self.nOrbit],'Longitude of ascending node [deg]']
-        w = [self.w[self.nOrbit],'Argument of periastron [deg]']
-        M = [self.M[self.nOrbit],'Initial mean longitude']
+        # # Specific data
+        # t = [self.t_f[self.nOrbit],'Time [yr]']
+        # a = [self.a_f[self.nOrbit],'Semi-major axis [AU]']
+        # e = [self.e_f[self.nOrbit],'Eccentricity']
+        # i = [self.i[self.nOrbit],'Inclinaison [deg]']
+        # W = [self.W[self.nOrbit],'Longitude of ascending node [deg]']
+        # w = [self.w[self.nOrbit],'Argument of periastron [deg]']
+        # M = [self.M[self.nOrbit],'Initial mean longitude']
         
         # Plot with current parameters
-        self.EvalParamOrbit = eval(self.ParamOrbit)
-        self.Subplot.plot(t[0], self.EvalParamOrbit[0], linewidth=0.5)
+        # self.EvalParamOrbit = eval(self.ParamOrbit)
+        self.Subplot.plot(self.t[self.nOrbit], self.EvalParamOrbit, linewidth=0.5)
 
         # Plot features
         self.Subplot.set_xlabel('Time [yr]')
         # self.Subplot.set_xlim(self.Tmin, self.Tmax)
-        self.Subplot.set_ylabel(self.EvalParamOrbit[1])
+        # self.Subplot.set_ylabel(self.EvalParamOrbit[1])
+        if self.ParamOrbitWidget.ComboParam.currentText() == 'irel':
+            ylabel_init = r'i$_{rel}$ [°]'
+        elif self.ParamOrbitWidget.ComboParam.currentText() == 'other':
+            ylabel_init = self.FormulaTextEdit.EditParam.text()
+        else:
+            ylabel_init = self.LabelOf(self.ParamOrbit)+' '+self.UnitOf(self.ParamOrbit)
+        self.Subplot.set_ylabel(ylabel_init)
         
         # # Update canvas
         # self.WindowPlot.WidgetPlots.Canvas.draw()
