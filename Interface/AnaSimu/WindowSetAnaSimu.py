@@ -30,6 +30,9 @@ class WindowSetAnaSimu(WindowWithFinder):
     def __init__(self):
         super().__init__()
 
+        # File to save the last path used
+        self.last_path_file = os.path.join(os.path.dirname(__file__), '.last_path')
+
         # Window characteristics
         self.setWindowTitle('Settings of the analysis')
         self.setMinimumWidth(1000)
@@ -46,6 +49,13 @@ class WindowSetAnaSimu(WindowWithFinder):
         
         self.InitWidgets()
 
+        # Pré-remplir le champ avec le dernier chemin utilisé si dispo
+        last_path = self.load_last_path()
+        if last_path and os.path.isdir(last_path):
+            print(f'\nLast path used: {last_path}')
+            # self.SimuFilePathW.EditParam.setText(last_path)
+            self.check_change_path(file_path=last_path)
+
         # Widget Container
         self.Container = QWidget()
         self.Container.setLayout(self.Layout)
@@ -54,17 +64,17 @@ class WindowSetAnaSimu(WindowWithFinder):
         self.Splitter.addWidget(self.Container)
 
         # Connect folder to edit path
-        self.Finder.doubleClicked.connect(self.ChangePath)
+        self.Finder.doubleClicked.connect(lambda: self.check_change_path(file_path='finder'))
 
         # Status bar
         self.setStatusBar(QStatusBar(self))
 
 
     def InitWidgets(self):
-        
         self.SimuFilePathW = LineEdit('Path', 'Path to the simulation files to analyse', '')
         self.Layout.addWidget(self.SimuFilePathW)
 
+        # Pré-remplir avec les noms par défaut
         self.FollowbodiesFileName = LineEdit('Followbodies file', 'Name of the followbodies file with extension', '')
         self.Layout.addWidget(self.FollowbodiesFileName, alignment=Qt.AlignmentFlag.AlignLeft)
 
@@ -77,29 +87,48 @@ class WindowSetAnaSimu(WindowWithFinder):
 
         self.Layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-    def ChangePath(self):
-        index = self.Finder.selectedIndexes()[0]
-        info = self.Model.fileInfo(index)
-        file_path = info.absoluteFilePath()
-        if self.is_valid_file(file_path):  # Check if the file is valid
-            self.SimuFilePathW.EditParam.setText(file_path + '/')
-            # Set Followbodies file if exists
-            followbodies_path = os.path.join(file_path, 'followbodies.dat')
-            if os.path.isfile(followbodies_path):
-                self.FollowbodiesFileName.EditParam.setText('followbodies.dat')
-            else:
-                self.FollowbodiesFileName.EditParam.setText('')
-                print('\nFollowbodies file not found, it may has been renamed. Please check the directory.')
-            # Set Mextract file if exists
-            mextract_path = os.path.join(file_path, 'mextract.dat')
-            if os.path.isfile(mextract_path):
-                self.MextractFileName.EditParam.setText('mextract.dat')
-            else:
-                self.MextractFileName.EditParam.setText('')
-                print('\nMextract file not found, it may has been renamed. Please check the directory.')
+    def check_change_path(self, file_path='finder'):
+        if file_path == 'finder':
+            index = self.Finder.selectedIndexes()[0]
+            info = self.Model.fileInfo(index)
+            file_path = info.absoluteFilePath()
+        # if self.is_valid_file(file_path):  # Check if the file is valid
+        self.SimuFilePathW.EditParam.setText(file_path + '/')
+        # Set Followbodies file if exists
+        followbodies_path = os.path.join(file_path, 'followbodies.dat')
+        if os.path.isfile(followbodies_path):
+            self.FollowbodiesFileName.EditParam.setText('followbodies.dat')
         else:
-            print('\nSelected directory is not valid')
-            self.ClearEdits()
+            self.FollowbodiesFileName.EditParam.setText('')
+            print('\nFollowbodies file not found, it may has been renamed. Please check the directory.')
+        # Set Mextract file if exists
+        mextract_path = os.path.join(file_path, 'mextract.dat')
+        if os.path.isfile(mextract_path):
+            self.MextractFileName.EditParam.setText('mextract.dat')
+        else:
+            self.MextractFileName.EditParam.setText('')
+            print('\nMextract file not found, it may has been renamed. Please check the directory.')
+            # Sauvegarder le dernier chemin utilisé
+            # self.save_last_path(file_path + '/')
+        # else:
+        #     print('\nSelected directory is not valid')
+        #     self.ClearEdits()
+
+    def save_last_path(self, path):
+        try:
+            with open(self.last_path_file, "w", encoding="utf-8") as f:
+                f.write(path)
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde du chemin : {e}")
+
+    def load_last_path(self):
+        try:
+            if os.path.exists(self.last_path_file):
+                with open(self.last_path_file, "r", encoding="utf-8") as f:
+                    return f.read().strip()
+        except Exception as e:
+            print(f"Erreur lors du chargement du chemin : {e}")
+        return ""
 
     def is_valid_file(self, file_path):
         # Check if the given path is a directory
@@ -127,6 +156,7 @@ class WindowSetAnaSimu(WindowWithFinder):
         else:
             try:
                 self.OpenWinMain()
+                self.save_last_path(self.SimuFilePathW.EditParam.text()[:-1])
             except Exception as e:
                 print(f'\nThere is a problem with inputs: {e}')
 
@@ -145,11 +175,6 @@ class WindowSetAnaSimu(WindowWithFinder):
                 self.SignalCloseWindowSetAnaSimu.emit() 
         except:
             self.SignalCloseWindowSetAnaSimu.emit() 
-        
-
-
-
-
         
 
 
