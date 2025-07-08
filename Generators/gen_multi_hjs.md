@@ -99,14 +99,14 @@ For each orbiting body, repeat the next 2 lines:
     - *Description*: Defines the hierarchical structure of the system by specifying, for each body, its relationship to the others. 
 
 2. **Initial orbital parameters of the orbiting body**
-    - *Format*: `a` `e` `i` `w` `W` `M`
+    - *Format*: `a` `e` `i` `W` `w` `M`
     - *Type*: `float` `float` `float` `float` `float` `float`
     - *Description*:
       - `a`: Semi-major axis in AU.
       - `e`: Eccentricity.
       - `i`: Inclination in deg.
-      - `w`: Argument of perihelion in deg.
       - `W`: Longitude of ascending node in deg.
+      - `w`: Argument of perihelion in deg.
       - `M`: Mean anomaly in deg.
 
 **Random seed**
