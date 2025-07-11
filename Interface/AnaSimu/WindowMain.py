@@ -62,7 +62,6 @@ class WindowMainClass(QMainWindow):
         GridLayout.addWidget(SpaceViewWidget, 0, 0, 1, 3)
 
         # Connect SnapSelector signals to SpaceView methods for interactivity
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(SpaceViewWidget.refresh_plots)  # Refresh plots on button click
         SnapSelectorWidget.EditIndexSnap.valueChanged.connect(SpaceViewWidget.Change_IndexSnap)  # Update plots on index change
 
         # Add the Radial Profile widget for radial distribution visualization
@@ -70,7 +69,6 @@ class WindowMainClass(QMainWindow):
         GridLayout.addWidget(RadProfileWidget, 0, 3, 1, 3)
 
         # Connect SnapSelector signals to RadProfile methods for interactivity
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(RadProfileWidget.refresh_plots)
         SnapSelectorWidget.EditIndexSnap.valueChanged.connect(RadProfileWidget.Change_IndexSnap)
 
         # Add the Diagram A=F(E) widget for energy vs semi-major axis visualization
@@ -78,22 +76,15 @@ class WindowMainClass(QMainWindow):
         GridLayout.addWidget(DiagramAEWidget, 2, 0, 1, 2)
 
         # Connect SnapSelector signals to DiagramAE methods for interactivity
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(DiagramAEWidget.refresh_plots)
         SnapSelectorWidget.EditIndexSnap.valueChanged.connect(DiagramAEWidget.Change_IndexSnap)
 
         # Add the Orbit Evolution widget for orbital parameter evolution visualization
         DiagramTYWidget = DiagramTY(NbBodies_f, t_f, a_f, e_f, i, W, w, M)
         GridLayout.addWidget(DiagramTYWidget, 2, 2, 1, 2)
 
-        # Connect SnapSelector signals to DiagramTY methods for interactivity
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(DiagramTYWidget.refresh_plots)
-
         # Add the Diagram Y=F(X) widget for position-based visualization
         DiagramXYWidget = DiagramXY(NbBodies_f, t_f, a_f, e_f, i, W, w, M)
         GridLayout.addWidget(DiagramXYWidget, 2, 4, 1, 2)
-
-        # Connect SnapSelector signals to DiagramXY methods for interactivity
-        SnapSelectorWidget.BtnRefreshSnap.clicked.connect(DiagramXYWidget.refresh_plots)
 
         # Add grid layout to layout
         Layout.addLayout(GridLayout)
