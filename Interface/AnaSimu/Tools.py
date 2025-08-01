@@ -10,6 +10,8 @@ import numpy as np
 from math import pi, sqrt
 from random import random
 import re
+from scipy.stats import binned_statistic, binned_statistic_2d
+from scipy.ndimage import gaussian_filter
 
 # PyQt packages
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QCheckBox
@@ -180,10 +182,63 @@ class GeneralToolClass(QWidget):
         }
         return units.get(var, 'Unknown variable')
     
+    def convolve_positions(self, x, y, fwhm_au, extent):
+        """
+        Convolution 2D d'un nuage de particules en utilisant une PSF gaussienne spécifiée par sa FWHM.
+        Le grid_size, extent et fwhm_per_pixel sont calculés automatiquement.
+
+        Paramètres :
+            x, y : array-like
+                Coordonnées des particules (en AU)
+            fwhm_au : float
+                Largeur à mi-hauteur (FWHM) de la PSF (en AU)
+
+        Retour :
+            x_conv, y_conv : ndarray
+                Coordonnées convoluées selon la PSF
+        """
+        # r = np.sqrt(x**2 + y**2)
+        # r_max = np.max(r)
+        # extent = np.ceil(r_max * (1 + 0.1))
+
+        # Détermination automatique de fwhm_per_pixel
+        if fwhm_au < 0.5:
+            fwhm_per_pixel = 5
+        elif fwhm_au < 3:
+            fwhm_per_pixel = 4
+        else:
+            fwhm_per_pixel = 3
+
+        grid_size = fwhm_au / fwhm_per_pixel
+        sigma_pix = fwhm_au / (2.355 * grid_size)
+
+        nbins = int(2 * extent / grid_size)
+        x_edges = np.linspace(-extent, extent, nbins + 1)
+        y_edges = np.linspace(-extent, extent, nbins + 1)
+
+        density, _, _, _ = binned_statistic_2d(x, y, None, statistic='count', bins=[x_edges, y_edges])
+        density = density.T
+
+        smoothed_density = gaussian_filter(density, sigma=sigma_pix)
+
+        x_centers = (x_edges[:-1] + x_edges[1:]) / 2
+        y_centers = (y_edges[:-1] + y_edges[1:]) / 2
+        flat_density = smoothed_density.ravel()
+        flat_density /= flat_density.sum()
+
+        N = len(x)
+        idx = np.random.choice(len(flat_density), size=N, p=flat_density)
+        x_idx = idx % smoothed_density.shape[1]
+        y_idx = idx // smoothed_density.shape[1]
+        x_conv = x_centers[x_idx] + np.random.uniform(-grid_size/2, grid_size/2, N)
+        y_conv = y_centers[y_idx] + np.random.uniform(-grid_size/2, grid_size/2, N)
+
+        return x_conv, y_conv
+        
 
 
 class SpaceView(GeneralToolClass):
-    def __init__(self, t_m, NbBodies_m, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R):
+    def __init__(self, t_m, NbBodies_m, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z):
         super().__init__('Space view', 'Space view of the system')
 
         # Data
@@ -258,6 +313,19 @@ class SpaceView(GeneralToolClass):
         self.NbBinsXWidget.Layout.addWidget(self.NbBinsYWidget)
         self.NbBinsYWidget.setEnabled(False)
 
+        # Checkbox pour la convolution
+        self.CheckConvolution = CheckBox('Simulate PSF',  'Convolve with a Gaussian kernel to simulate an instrumental PSF')
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckConvolution)
+        self.CheckConvolution.Layout.addSpacing(20)
+        self.FWHMConv = 1
+        self.FWHMConvWidget = DoubleSpinBox('Resolution', 'FWHM of the instrument [AU]', self.FWHMConv, 0, None, 1, 1)
+        # self.SigmaConvWidget.Layout.insertSpacing(0, 60)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.SigmaConvWidget)
+        self.CheckConvolution.Layout.addWidget(self.FWHMConvWidget)
+        self.FWHMConvWidget.setEnabled(self.CheckConvolution.CheckParam.isChecked())
+        self.CheckConvolution.CheckParam.stateChanged.connect(lambda: self.FWHMConvWidget.setEnabled(self.CheckConvolution.CheckParam.isChecked()))
+        self.CheckConvolution.setEnabled(False)
+
         self.indexViewChanged(self.indexView)
 
     def indexViewChanged(self, value):
@@ -291,10 +359,12 @@ class SpaceView(GeneralToolClass):
         if self.indexRepres == 0:
             self.NbBinsXWidget.setEnabled(False)
             self.NbBinsYWidget.setEnabled(False)
+            self.CheckConvolution.setEnabled(False)
             self.SizePartWidget.setEnabled(True)
         elif self.indexRepres == 1:
             self.NbBinsXWidget.setEnabled(True)
             self.NbBinsYWidget.setEnabled(True)
+            self.CheckConvolution.setEnabled(True)
             self.SizePartWidget.setEnabled(False)
         self.refresh_plots()
 
@@ -303,6 +373,7 @@ class SpaceView(GeneralToolClass):
         self.SizePart = self.SizePartWidget.SpinParam.value()
         self.NbBinsX = self.NbBinsXWidget.SpinParam.value()
         self.NbBinsY = self.NbBinsYWidget.SpinParam.value()
+        self.FWHMConv = self.FWHMConvWidget.SpinParam.value()
 
     def Ellipse2(self, a, e, Ex, Ey, Ez, Epx, Epy, Epz):
 
@@ -364,9 +435,20 @@ class SpaceView(GeneralToolClass):
             self.SubplotXY.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Y[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0, label='Particles')
         
         elif self.indexRepres == 1:
+            if self.CheckConvolution.CheckParam.isChecked():
+                # Convolve positions
+                x, y = self.convolve_positions(
+                    x=self.X[self.IndexSnap][self.NbBodies-1:], 
+                    y=self.Y[self.IndexSnap][self.NbBodies-1:], 
+                    fwhm_au=self.FWHMConv,
+                    extent=self.LimDefault)
+            else:
+                x = self.X[self.IndexSnap][self.NbBodies-1:]
+                y = self.Y[self.IndexSnap][self.NbBodies-1:]
+                
             hist, xedges, yedges = np.histogram2d(
-                self.X[self.IndexSnap][self.NbBodies-1:], 
-                self.Y[self.IndexSnap][self.NbBodies-1:], 
+                x, 
+                y, 
                 range=[[Xmin, Xmax], [Ymin, Ymax]], 
                 bins=[self.NbBinsX, self.NbBinsY])
             norm_hist = hist
@@ -422,9 +504,20 @@ class SpaceView(GeneralToolClass):
             self.SubplotXZ.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Z[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0, label='Particles')
         
         elif self.indexRepres == 1:
+            if self.CheckConvolution.CheckParam.isChecked():
+                # Convolve positions
+                x, z = self.convolve_positions(
+                    x=self.X[self.IndexSnap][self.NbBodies-1:], 
+                    y=self.Z[self.IndexSnap][self.NbBodies-1:], 
+                    fwhm_au=self.FWHMConv,
+                    extent=self.LimDefault)
+            else:
+                x = self.X[self.IndexSnap][self.NbBodies-1:]
+                z = self.Z[self.IndexSnap][self.NbBodies-1:]
+            
             hist, xedges, yedges = np.histogram2d(
-                self.X[self.IndexSnap][self.NbBodies-1:], 
-                self.Z[self.IndexSnap][self.NbBodies-1:], 
+                x, 
+                z, 
                 range=[[Xmin, Xmax], [Zmin, Zmax]], 
                 bins=[self.NbBinsX, self.NbBinsY])
             norm_hist = hist
@@ -497,14 +590,14 @@ class SpaceView(GeneralToolClass):
 
 
 class RadProfile(GeneralToolClass):
-    def __init__(self, t_m, NbBodies_m, a_m, X, Y, Z, R):
+    def __init__(self, t_m, NbBodies_m, a_m, e_m, X, Y, Z):
         super().__init__('Radial profile', "Particules' integrated radial profile")
 
         # Data
         self.t_m = t_m
         self.NbBodies_m = NbBodies_m
         self.a_m = a_m
-        self.R = R
+        self.e_m = e_m
         self.X = X
         self.Y = Y
         self.Z = Z 
@@ -534,14 +627,29 @@ class RadProfile(GeneralToolClass):
         # self.Norm.ComboParam.currentIndexChanged.connect(self.WidgetPlot.reset_plots)
         self.Norm.ComboParam.currentIndexChanged.connect(self.WidgetPlot.refresh_plot)
 
-
         self.NbBins = 100
         self.NbBinsWidget = SpinBox('Bining', 'Number of bins', self.NbBins, 1)
         self.WindowPlot.WidgetParam.Layout.addWidget(self.NbBinsWidget)
+        # self.NbBinsWidget.Layout.addSpacing(20)
+        # self.BinSize = 0.1
+        # self.BinSizeWidget = DoubleSpinBox('Bin size', 'Size of the bins [AU]', self.BinSize, 0.01, None, 0.01, 0.01)
+        # self.NbBinsWidget.Layout.addWidget(self.BinSizeWidget)
 
         # Checkbox pour l'interpolation
-        self.CheckInterpolation = CheckBox('Interpolation')
+        self.CheckInterpolation = CheckBox('Interpolate', 'Interpolate the radial profile')
         self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckInterpolation)
+
+        # Checkbox pour la convolution
+        self.CheckConvolution = CheckBox('Simulate PSF',  'Convolve with a gaussian kernel to simulate an instrumental PSF')
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckConvolution)
+        self.CheckConvolution.Layout.addSpacing(20)
+        self.FWHMConv = 1
+        self.FWHMConvWidget = DoubleSpinBox('Resolution', 'FWHM of the instrument [AU]', self.FWHMConv, 0, None, 1, 1)
+        # self.SigmaConvWidget.Layout.insertSpacing(0, 60)
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.SigmaConvWidget)
+        self.CheckConvolution.Layout.addWidget(self.FWHMConvWidget)
+        self.FWHMConvWidget.setEnabled(self.CheckConvolution.CheckParam.isChecked())
+        self.CheckConvolution.CheckParam.stateChanged.connect(lambda: self.FWHMConvWidget.setEnabled(self.CheckConvolution.CheckParam.isChecked()))
 
         # Bodies' positions
         self.CheckBodies = CheckBox('Bodies position')
@@ -579,6 +687,8 @@ class RadProfile(GeneralToolClass):
         self.NbWidgets0 = self.WindowPlot.WidgetParam.Layout.count()
         self.c = 0 # counter
 
+        self.LimDefault = 1.1*np.max(self.a_m[0])*(1+np.max(self.e_m[0]))
+
     def AddCurveWidget(self):
         self.CurveWidget = CurveClass()
         self.CurveWidgets.append(self.CurveWidget)
@@ -613,6 +723,7 @@ class RadProfile(GeneralToolClass):
     
     def UpdateParams(self):
         self.NbBins = self.NbBinsWidget.SpinParam.value()
+        self.FWHMConv = self.FWHMConvWidget.SpinParam.value()
         # self.SizeBodies = self.SizeBodiesWidget.SpinParam.value()
         if self.CheckCurves.isChecked():
             self.CurvePaths = []
@@ -639,8 +750,22 @@ class RadProfile(GeneralToolClass):
         # Plot initialisation
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
 
+        # Radius computation
+        if self.CheckConvolution.CheckParam.isChecked():
+            # Convolve positions
+            x_conv, y_conv = self.convolve_positions(
+                x=self.X[self.IndexSnap], 
+                y=self.Y[self.IndexSnap], 
+                fwhm_au=self.FWHMConv,
+                extent=self.LimDefault)
+            self.R = np.sqrt(x_conv**2 + y_conv**2)
+
+        else:
+            self.R = np.sqrt(self.X[self.IndexSnap]**2+self.Y[self.IndexSnap]**2)
+
         # X, Z limits
-        xlim_init = (0, round(np.max(self.R[0])))
+        xlim_init = (0, self.LimDefault)
+        # xlim_init = (0, self.LimDefault)
         xlim = self.WidgetPlot.history[self.WidgetPlot.history_index]['xlim'] if self.WidgetPlot.history else xlim_init
         Rmin, Rmax = xlim[0], xlim[1]
         
@@ -651,17 +776,18 @@ class RadProfile(GeneralToolClass):
         if self.CheckBodies.CheckParam.isChecked():
             for k in range(self.NbBodies_m[self.IndexSnap]):
                 self.Subplot.plot(self.a_m[self.IndexSnap][k], 0, color=self.colorList[k], marker='.', markersize=self.SizeBodies, label="Marker of "+str(k+1))
+    
+        histCount, histX = np.histogram([x for x in self.R if Rmin < x < Rmax], bins=self.NbBins)
 
-        # Histogram
-        # X_smoothed = gaussian_filter(self.X[self.IndexSnap], sigma=1)
-        # Y_smoothed = gaussian_filter(self.Y[self.IndexSnap], sigma=1)
-        # Z_smoothed = gaussian_filter(self.Z[self.IndexSnap], sigma=1)
-        # self.R = np.sqrt(self.X[self.IndexSnap]**2+self.Y[self.IndexSnap]**2+self.Z[self.IndexSnap]**2)
-        histCount, histX = np.histogram([x for x in self.R[self.IndexSnap]  if Rmin<x<Rmax], bins=self.NbBins)
-
-        # Surface density computatiom
-        if self.Ordinate.ComboParam.currentIndex()==1: histCount = histCount/(2*pi*histX[:-1]) # surface density
-
+        # Surface density computation
+        if self.Ordinate.ComboParam.currentIndex() == 1:
+            dr = np.diff(histX)  # bin widths
+            r = histX[:-1]       # left edges of bins
+            area = 2 * pi * r * dr
+            # Avoid division by zero for r=0
+            area[area == 0] = np.nan
+            histCount = histCount / area  # true surface density
+  
         # Normalisation computation
         self.NormDiv = 1
         if self.Norm.ComboParam.currentIndex()==1: self.NormDiv = np.max(histCount) # normalisation of max equal one
@@ -712,9 +838,6 @@ class RadProfile(GeneralToolClass):
         self.Subplot.set_xlabel('Radius [AU]')
         if self.Ordinate.ComboParam.currentIndex()==0: self.Subplot.set_ylabel('Number of particules')
         elif self.Ordinate.ComboParam.currentIndex()==1: self.Subplot.set_ylabel('Surface density [arbitrary unit]')
-
-
-
 
 
 class DiagramAE(GeneralToolClass):
@@ -863,8 +986,6 @@ class DiagramAE(GeneralToolClass):
         self.Subplot.set_ylim(ylim_init)
             
 
-
-
 class DiagramTY(GeneralToolClass):
     def __init__(self, NbBodies_f, t_f, a_f, e_f, i, W, w, M):
         super().__init__('Diagram y=f(t)', "Planets' evolution of an orbital parameter as a function of time")
@@ -1012,7 +1133,6 @@ class DiagramTY(GeneralToolClass):
         
         # # Update canvas
         # self.WindowPlot.WidgetPlots.Canvas.draw()
-
 
 
 class DiagramXY(GeneralToolClass):

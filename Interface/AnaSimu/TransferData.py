@@ -84,8 +84,8 @@ class TransferDataClass():
 
             # R.append(DataMextract[6][indexLine+NbBodies_m[j]+1:indexLine+NbBodies_m[j]+1+NbParticles[j]])
             # print(np.sqrt(X[j][NbBodies_m[j]:]**2+Y[j][NbBodies_m[j]:]**2+Z[j][NbBodies_m[j]:]**2))
-            R.append(np.sqrt(X[j][NbBodies_m[j]:]**2+Y[j][NbBodies_m[j]:]**2+Z[j][NbBodies_m[j]:]**2))
-
+            # R.append(np.sqrt(X[j][NbBodies_m[j]:]**2+Y[j][NbBodies_m[j]:]**2+Z[j][NbBodies_m[j]:]**2))
+            # R.append(np.sqrt(X[j][NbBodies_m[j]:]**2+Y[j][NbBodies_m[j]:]**2))
         # print(t_m)
         # print(NbBodies_m)   
         # print(NbParticles)
@@ -96,7 +96,7 @@ class TransferDataClass():
 
         # print(R)
             
-        return NbSnapshots, t_m, NbBodies_m, NbParticles, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R
+        return NbSnapshots, t_m, NbBodies_m, NbParticles, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z
 
 if __name__=="__main__":
     TransferDataClass.OpenFollowbodies('/Users/lacquema/ByeGildas/Data/followbodies.dat')

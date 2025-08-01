@@ -38,7 +38,7 @@ class WindowMainClass(QMainWindow):
 
         # Load data from the provided file paths
         NbSteps, NbBodies_f, t_f, a_f, e_f, i, W, w, M = TransferDataClass.OpenFollowbodies(PathFollowbodies)
-        NbSnapshots, t_m, NbBodies_m, NbParticles, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R = TransferDataClass.OpenMextract(PathMextract)
+        NbSnapshots, t_m, NbBodies_m, NbParticles, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z = TransferDataClass.OpenMextract(PathMextract)
         tmax = np.max(t_m)  # Maximum time value for the simulation
 
         # Set the window title based on the simulation folder name
@@ -58,14 +58,14 @@ class WindowMainClass(QMainWindow):
         GridLayout = QGridLayout()
 
         # Add the SpaceView widget for 3D space visualization
-        SpaceViewWidget = SpaceView(t_m, NbBodies_m, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z, R)
+        SpaceViewWidget = SpaceView(t_m, NbBodies_m, a_m, e_m, Ex, Ey, Ez, Epx, Epy, Epz, X, Y, Z)
         GridLayout.addWidget(SpaceViewWidget, 0, 0, 1, 3)
 
         # Connect SnapSelector signals to SpaceView methods for interactivity
         SnapSelectorWidget.EditIndexSnap.valueChanged.connect(SpaceViewWidget.Change_IndexSnap)  # Update plots on index change
 
         # Add the Radial Profile widget for radial distribution visualization
-        RadProfileWidget = RadProfile(t_m, NbBodies_m, a_m, X, Y, Z, R)
+        RadProfileWidget = RadProfile(t_m, NbBodies_m, a_m, e_m, X, Y, Z)
         GridLayout.addWidget(RadProfileWidget, 0, 3, 1, 3)
 
         # Connect SnapSelector signals to RadProfile methods for interactivity
