@@ -39,8 +39,7 @@ class WidgetPlot(QWidget):
         """
         super().__init__()
 
-        # Installer un event filter pour détecter l'ouverture de fenêtres
-        QApplication.instance().installEventFilter(self)
+        QApplication.instance().installEventFilter(self) # interception of events
 
         # Layout
         self.Layout = QVBoxLayout()
