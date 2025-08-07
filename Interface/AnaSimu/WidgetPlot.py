@@ -118,10 +118,10 @@ class WidgetPlot(QWidget):
             and obj.isWindow()
             and obj.windowTitle() == 'Figure options'
         ):
-            if event.type() == QEvent.Type.Show:
-                print('Figure options opened')
-            elif event.type() == QEvent.Type.Close:
-                print('Figure options closed')
+            # if event.type() == QEvent.Type.Show:
+            #     # print('Figure options opened')
+            if event.type() == QEvent.Type.Close:
+                # print('Figure options closed')
                 self.on_close_figure_options()
         return super().eventFilter(obj, event)
 
