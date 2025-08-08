@@ -884,7 +884,7 @@ class RadProfile(GeneralToolClass):
                 # self.EdgeSigmaWidget.setText(str(round(edge_sigma, 2)))
 
             except Exception as e:
-                print(f"Edge detection failed: {e}\ttry to reduce the window size")
+                print(f"Edge detection failed: {e}\ntry to reduce the window size")
 
         # Other curves
         # if self.CheckAugWidget.isChecked(): self.Subplot.plot(self.profileAug[0], self.profileAug[1], color='blue', linestyle='dashed', linewidth=0.5, label='Aug+2001')
