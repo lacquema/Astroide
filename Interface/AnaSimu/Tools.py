@@ -11,7 +11,9 @@ from math import pi, sqrt
 from random import random
 import re
 from scipy.stats import binned_statistic, binned_statistic_2d
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, gaussian_filter1d
+from scipy.optimize import curve_fit
+from scipy.signal import savgol_filter
 
 # PyQt packages
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QCheckBox
@@ -611,6 +613,7 @@ class RadProfile(GeneralToolClass):
         self.WidgetPlot = self.WindowPlot.add_WidgetPlot(self.Plot, xlim=True, ylabel=False)
 
         # Parameters initialisation
+        self.LimDefault = 1.1*np.max(self.a_m[0])*(1+np.max(self.e_m[0]))
         self.InitParams()
 
     def InitParams(self):
@@ -651,6 +654,24 @@ class RadProfile(GeneralToolClass):
         self.FWHMConvWidget.setEnabled(self.CheckConvolution.CheckParam.isChecked())
         self.CheckConvolution.CheckParam.stateChanged.connect(lambda: self.FWHMConvWidget.setEnabled(self.CheckConvolution.CheckParam.isChecked()))
 
+        # Checkbox pour la detection de bord
+        self.CheckEdge = CheckBox('Edge detection', 'Detect edge in the radial profile')
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckEdge)
+        self.CheckEdge.Layout.addSpacing(20)
+        self.Edge = 0.00
+        self.EdgeWidget = DoubleSpinBox('Prior', 'Prior edge [AU]', self.Edge, 0, self.LimDefault, 1, 2)
+        self.CheckEdge.Layout.addWidget(self.EdgeWidget)
+        self.EdgeWidget.setEnabled(self.CheckEdge.CheckParam.isChecked())
+        self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.EdgeWidget.setEnabled(self.CheckEdge.CheckParam.isChecked()))
+        # self.CheckEdge.Layout.addSpacing(20)
+        # self.CheckEdge.Layout.addWidget(QLabel('+/-'))
+        # self.CheckEdge.Layout.addSpacing(20)
+        # self.EdgeSigma = 1.00
+        # self.EdgeSigmaWidget = QLabel(f'{self.EdgeSigma}')
+        # self.CheckEdge.Layout.addWidget(self.EdgeSigmaWidget)
+        # self.EdgeSigmaWidget.setEnabled(self.CheckEdge.CheckParam.isChecked())
+        # self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.EdgeSigmaWidget.setEnabled(self.CheckEdge.CheckParam.isChecked()))
+
         # Bodies' positions
         self.CheckBodies = CheckBox('Bodies position')
         self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckBodies)
@@ -687,8 +708,6 @@ class RadProfile(GeneralToolClass):
         self.NbWidgets0 = self.WindowPlot.WidgetParam.Layout.count()
         self.c = 0 # counter
 
-        self.LimDefault = 1.1*np.max(self.a_m[0])*(1+np.max(self.e_m[0]))
-
     def AddCurveWidget(self):
         self.CurveWidget = CurveClass()
         self.CurveWidgets.append(self.CurveWidget)
@@ -724,6 +743,8 @@ class RadProfile(GeneralToolClass):
     def UpdateParams(self):
         self.NbBins = self.NbBinsWidget.SpinParam.value()
         self.FWHMConv = self.FWHMConvWidget.SpinParam.value()
+        self.Edge = self.EdgeWidget.SpinParam.value()
+        # self.EdgeSigma = float(self.EdgeSigmaWidget.text().split(' ')[-1])
         # self.SizeBodies = self.SizeBodiesWidget.SpinParam.value()
         if self.CheckCurves.isChecked():
             self.CurvePaths = []
@@ -759,7 +780,6 @@ class RadProfile(GeneralToolClass):
                 fwhm_au=self.FWHMConv,
                 extent=self.LimDefault)
             self.R = np.sqrt(x_conv**2 + y_conv**2)
-
         else:
             self.R = np.sqrt(self.X[self.IndexSnap]**2+self.Y[self.IndexSnap]**2)
 
@@ -794,6 +814,9 @@ class RadProfile(GeneralToolClass):
         elif self.Norm.ComboParam.currentIndex()==2: self.NormDiv = np.sum(histCount) # normalisation of sum equal one
         histCount = histCount/self.NormDiv
 
+        # Stairs
+        self.Subplot.stairs(histCount, histX, label='Simulation', linewidth=1, color='black')
+
         # Interpolation si la checkbox est cochée
         if self.CheckInterpolation.CheckParam.isChecked():
             try:
@@ -810,8 +833,66 @@ class RadProfile(GeneralToolClass):
             except Exception as e:
                 print(f"Interpolation failed: {e}")
 
-        # Stairs
-        self.Subplot.stairs(histCount, histX, label='Simulation', linewidth=1, color='black')
+        # Edge detection si la checkbox est cochée
+        if self.CheckEdge.CheckParam.isChecked():
+            try:
+                # Fenêtre autour du bord prior pour le fit
+                lower_bound = self.Subplot.get_xlim()[0]
+                upper_bound = self.Subplot.get_xlim()[1]
+
+                # Calcul de la dérivée (gradient)
+                smooth_hist = gaussian_filter1d(histCount, sigma=2)  # Lissage avant dérivation
+                gradient = np.gradient(smooth_hist, histX[:-1])
+
+                # Détection du bord prior
+                if self.Edge !=0 and self.Subplot.get_xlim()[0] < self.Edge < self.Subplot.get_xlim()[1]:
+                    # print(f"Using user-defined edge: {self.Edge}")
+                    edge_prior_index = np.argmin(np.abs(histX[:-1] - self.Edge))  # Trouver l'index le plus proche de l'Edge
+                    edge_prior = self.Edge  # Utilisation de la valeur de bord définie par l'utilisateur
+                else:
+                    # print("No user-defined edge, finding edge from gradient")
+                    edge_prior_index = np.argmax(np.abs(gradient))
+                    edge_prior = histX[:-1][edge_prior_index]
+
+                gradient_sign = np.sign(gradient[edge_prior_index])
+
+                # Fenêtre autour du bord prior pour le fit
+                fit_mask = (lower_bound < histX[:-1]) & (histX[:-1] < upper_bound)
+                x_fit = histX[:-1][fit_mask]
+                y_fit = gradient[fit_mask]
+
+                # Fit d'une gaussienne
+                if gradient_sign > 0:
+                    p0 = [np.max(y_fit), edge_prior, 5]  # amplitude, centre, largeur initiale
+                    bounds = ([0, lower_bound, 0], [np.inf, upper_bound, np.inf])  # Ajuster les bornes si nécessaire
+                else:
+                    p0 = [np.min(y_fit), edge_prior, 5]
+                    bounds = ([-np.inf, lower_bound, 0], [0, upper_bound, np.inf])  # Ajuster les bornes si nécessaire
+                popt, _ = curve_fit(self.gaussian, x_fit, y_fit, p0=p0, bounds=bounds)
+
+                # Calcul de la position du bord et de l'écart-type
+                edge_position = popt[1]
+                edge_sigma = popt[2]
+                # print(f"Edge detected at {edge_position} with sigma {edge_sigma}")
+                lower_sigma = edge_position - edge_sigma
+                upper_sigma = edge_position + edge_sigma
+
+                # Tracé du point de bord
+                self.Subplot.axvline(edge_position, color='red', label='Edge detected', linewidth=1)
+                self.Subplot.text(edge_position, 0.83 * self.Subplot.get_ylim()[1], s='{}'.format(np.around(edge_position, 2)), color='red', bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='red'), fontsize=9, horizontalalignment='center', verticalalignment='bottom')
+
+                self.Subplot.axvline(edge_position + edge_sigma, color='red', linestyle='--')
+                self.Subplot.text(lower_sigma, 0.8 * self.Subplot.get_ylim()[1], s='-{}'.format(np.around(edge_sigma, 2)), color='r', bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='red'), fontsize=8, horizontalalignment='right', verticalalignment='top')
+
+                self.Subplot.axvline(edge_position - edge_sigma, color='red', linestyle='--')
+                self.Subplot.text(upper_sigma, 0.8 * self.Subplot.get_ylim()[1], s='+{}'.format(np.around(edge_sigma, 2)), color='r', bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='red'), fontsize=8, horizontalalignment='left', verticalalignment='top')
+
+                # Mise a jour de l'affichage de la position du bord
+                self.EdgeWidget.SpinParam.setValue(edge_position)
+                # self.EdgeSigmaWidget.setText(str(round(edge_sigma, 2)))
+
+            except Exception as e:
+                print(f"Edge detection failed: {e}")
         
         # Other curves 
         # if self.CheckAugWidget.isChecked(): self.Subplot.plot(self.profileAug[0], self.profileAug[1], color='blue', linestyle='dashed', linewidth=0.5, label='Aug+2001')
@@ -838,6 +919,9 @@ class RadProfile(GeneralToolClass):
         self.Subplot.set_xlabel('Radius [AU]')
         if self.Ordinate.ComboParam.currentIndex()==0: self.Subplot.set_ylabel('Number of particules')
         elif self.Ordinate.ComboParam.currentIndex()==1: self.Subplot.set_ylabel('Surface density [arbitrary unit]')
+
+    def gaussian(self, x, a, mu, sigma):
+        return a * np.exp(-(x - mu)**2 / (2 * sigma**2))
 
 
 class DiagramAE(GeneralToolClass):
