@@ -663,14 +663,6 @@ class RadProfile(GeneralToolClass):
         self.CheckEdge.Layout.addWidget(self.EdgeWidget)
         self.EdgeWidget.setEnabled(self.CheckEdge.CheckParam.isChecked())
         self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.EdgeWidget.setEnabled(self.CheckEdge.CheckParam.isChecked()))
-        # self.CheckEdge.Layout.addSpacing(20)
-        # self.CheckEdge.Layout.addWidget(QLabel('+/-'))
-        # self.CheckEdge.Layout.addSpacing(20)
-        # self.EdgeSigma = 1.00
-        # self.EdgeSigmaWidget = QLabel(f'{self.EdgeSigma}')
-        # self.CheckEdge.Layout.addWidget(self.EdgeSigmaWidget)
-        # self.EdgeSigmaWidget.setEnabled(self.CheckEdge.CheckParam.isChecked())
-        # self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.EdgeSigmaWidget.setEnabled(self.CheckEdge.CheckParam.isChecked()))
 
         # Bodies' positions
         self.CheckBodies = CheckBox('Bodies position')
@@ -892,9 +884,9 @@ class RadProfile(GeneralToolClass):
                 # self.EdgeSigmaWidget.setText(str(round(edge_sigma, 2)))
 
             except Exception as e:
-                print(f"Edge detection failed: {e}")
-        
-        # Other curves 
+                print(f"Edge detection failed: {e}\ttry to reduce the window size")
+
+        # Other curves
         # if self.CheckAugWidget.isChecked(): self.Subplot.plot(self.profileAug[0], self.profileAug[1], color='blue', linestyle='dashed', linewidth=0.5, label='Aug+2001')
         # if self.CheckDentWidget.isChecked(): self.Subplot.plot((self.profileNE[0]+self.profileSW[0])/2, (self.profileNE[1]+self.profileSW[1])/2, color='red', linestyle='dashed', linewidth=0.5, label='Dent+2014')
         

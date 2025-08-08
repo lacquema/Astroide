@@ -201,7 +201,6 @@ class WidgetPlot(QWidget):
         Handle the closing of the 'Figure options' window.
         This method is connected to the destroyed signal of the 'Figure options' window.
         """
-        print('Figure options closed')
         if self.detect_plot_labels_change():
             self.save_plot_labels()
         if self.detect_plot_state_change():
