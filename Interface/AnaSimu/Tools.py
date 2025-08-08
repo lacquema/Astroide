@@ -846,9 +846,11 @@ class RadProfile(GeneralToolClass):
                 print(f"Interpolation failed: {e}")
 
         # Fenêtre autour du bord prior pour le fit
-        if self.LowerBound < self.Subplot.get_xlim()[0] or self.LowerBound > self.UpperBound:
+        if self.LowerBound > self.UpperBound:
+            self.LowerBound, self.UpperBound = self.UpperBound, self.LowerBound
+        if self.LowerBound < self.Subplot.get_xlim()[0]:
             self.LowerBound = self.Subplot.get_xlim()[0]
-        if self.UpperBound > self.Subplot.get_xlim()[1] or self.LowerBound > self.UpperBound:
+        if self.UpperBound > self.Subplot.get_xlim()[1]:
             self.UpperBound = self.Subplot.get_xlim()[1]
 
         self.LowerBoundWidget.SpinParam.setValue(self.LowerBound)
