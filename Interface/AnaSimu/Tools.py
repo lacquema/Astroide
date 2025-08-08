@@ -647,7 +647,7 @@ class RadProfile(GeneralToolClass):
         self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckConvolution)
         self.CheckConvolution.Layout.addSpacing(20)
         self.FWHMConv = 1
-        self.FWHMConvWidget = DoubleSpinBox('Resolution', 'FWHM of the instrument [AU]', self.FWHMConv, 0, None, 1, 1)
+        self.FWHMConvWidget = DoubleSpinBox('Resolution', 'FWHM of the instrument [AU]', self.FWHMConv, 0, 100, 1, 1)
         # self.SigmaConvWidget.Layout.insertSpacing(0, 60)
         # self.WindowPlot.WidgetParam.Layout.addWidget(self.SigmaConvWidget)
         self.CheckConvolution.Layout.addWidget(self.FWHMConvWidget)
@@ -658,11 +658,29 @@ class RadProfile(GeneralToolClass):
         self.CheckEdge = CheckBox('Edge detection', 'Detect edge in the radial profile')
         self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckEdge)
         self.CheckEdge.Layout.addSpacing(20)
-        self.Edge = 0.00
-        self.EdgeWidget = DoubleSpinBox('Prior', 'Prior edge [AU]', self.Edge, 0, self.LimDefault, 1, 2)
-        self.CheckEdge.Layout.addWidget(self.EdgeWidget)
-        self.EdgeWidget.setEnabled(self.CheckEdge.CheckParam.isChecked())
-        self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.EdgeWidget.setEnabled(self.CheckEdge.CheckParam.isChecked()))
+        self.LowerBound = 0
+        self.LowerBoundWidget = DoubleSpinBox('Prior', 'Lower bound of the edge [AU]', self.LowerBound, 0, self.LimDefault, 1, 1)
+        self.CheckEdge.Layout.addWidget(self.LowerBoundWidget)
+        self.LowerBoundWidget.setEnabled(self.CheckEdge.CheckParam.isChecked())
+        self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.LowerBoundWidget.setEnabled(self.CheckEdge.CheckParam.isChecked()))
+        # self.LabelInf = QLabel('<')
+        # self.CheckEdge.Layout.addWidget(self.LabelInf)
+        # self.LabelInf.setEnabled(self.CheckEdge.CheckParam.isChecked())
+        # self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.LabelInf.setEnabled(self.CheckEdge.CheckParam.isChecked()))
+        # self.Edge = 0.00
+        # self.EdgeWidget = DoubleSpinBox(None, 'Prior edge [AU]', self.Edge, 0, self.LimDefault, 1, 2)
+        # self.CheckEdge.Layout.addWidget(self.EdgeWidget)
+        # self.EdgeWidget.setEnabled(self.CheckEdge.CheckParam.isChecked())
+        # self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.EdgeWidget.setEnabled(self.CheckEdge.CheckParam.isChecked()))
+        self.LabelInterval = QLabel('<->')
+        self.CheckEdge.Layout.addWidget(self.LabelInterval)
+        self.LabelInterval.setEnabled(self.CheckEdge.CheckParam.isChecked())
+        self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.LabelInterval.setEnabled(self.CheckEdge.CheckParam.isChecked()))
+        self.UpperBound = self.LimDefault
+        self.UpperBoundWidget = DoubleSpinBox(None, 'Upper bound of the edge [AU]', self.UpperBound, 0, self.LimDefault, 1, 1)
+        self.CheckEdge.Layout.addWidget(self.UpperBoundWidget)
+        self.UpperBoundWidget.setEnabled(self.CheckEdge.CheckParam.isChecked())
+        self.CheckEdge.CheckParam.stateChanged.connect(lambda: self.UpperBoundWidget.setEnabled(self.CheckEdge.CheckParam.isChecked()))
 
         # Bodies' positions
         self.CheckBodies = CheckBox('Bodies position')
@@ -735,7 +753,9 @@ class RadProfile(GeneralToolClass):
     def UpdateParams(self):
         self.NbBins = self.NbBinsWidget.SpinParam.value()
         self.FWHMConv = self.FWHMConvWidget.SpinParam.value()
-        self.Edge = self.EdgeWidget.SpinParam.value()
+        self.LowerBound = self.LowerBoundWidget.SpinParam.value()
+        # self.Edge = self.EdgeWidget.SpinParam.value()
+        self.UpperBound = self.UpperBoundWidget.SpinParam.value()
         # self.EdgeSigma = float(self.EdgeSigmaWidget.text().split(' ')[-1])
         # self.SizeBodies = self.SizeBodiesWidget.SpinParam.value()
         if self.CheckCurves.isChecked():
@@ -825,42 +845,51 @@ class RadProfile(GeneralToolClass):
             except Exception as e:
                 print(f"Interpolation failed: {e}")
 
+        # Fenêtre autour du bord prior pour le fit
+        if self.LowerBound < self.Subplot.get_xlim()[0] or self.LowerBound > self.UpperBound:
+            self.LowerBound = self.Subplot.get_xlim()[0]
+        if self.UpperBound > self.Subplot.get_xlim()[1] or self.LowerBound > self.UpperBound:
+            self.UpperBound = self.Subplot.get_xlim()[1]
+
+        self.LowerBoundWidget.SpinParam.setValue(self.LowerBound)
+        self.UpperBoundWidget.SpinParam.setValue(self.UpperBound)
+
         # Edge detection si la checkbox est cochée
         if self.CheckEdge.CheckParam.isChecked():
             try:
-                # Fenêtre autour du bord prior pour le fit
-                lower_bound = self.Subplot.get_xlim()[0]
-                upper_bound = self.Subplot.get_xlim()[1]
-
                 # Calcul de la dérivée (gradient)
                 smooth_hist = gaussian_filter1d(histCount, sigma=2)  # Lissage avant dérivation
                 gradient = np.gradient(smooth_hist, histX[:-1])
 
+                mask = (self.LowerBound < histX[:-1]) & (histX[:-1] < self.UpperBound)
+                histX_mask = histX[:-1][mask]
+                gradient_mask = gradient[mask]
+
                 # Détection du bord prior
-                if self.Edge !=0 and self.Subplot.get_xlim()[0] < self.Edge < self.Subplot.get_xlim()[1]:
-                    # print(f"Using user-defined edge: {self.Edge}")
-                    edge_prior_index = np.argmin(np.abs(histX[:-1] - self.Edge))  # Trouver l'index le plus proche de l'Edge
-                    edge_prior = self.Edge  # Utilisation de la valeur de bord définie par l'utilisateur
-                else:
+                # if self.Edge !=0 and self.LowerBound < self.Edge < self.UpperBound:
+                #     # print(f"Using user-defined edge: {self.Edge}")
+                #     edge_prior_index = np.argmin(np.abs(histX[:-1] - self.Edge))  # Trouver l'index le plus proche de l'Edge
+                #     edge_prior = self.Edge  # Utilisation de la valeur de bord définie par l'utilisateur
+                # else:
                     # print("No user-defined edge, finding edge from gradient")
-                    edge_prior_index = np.argmax(np.abs(gradient))
-                    edge_prior = histX[:-1][edge_prior_index]
+                edge_prior_index = np.argmax(np.abs(gradient_mask))
+                edge_prior = histX_mask[edge_prior_index]
 
-                gradient_sign = np.sign(gradient[edge_prior_index])
+                gradient_sign = np.sign(gradient_mask[edge_prior_index])
 
-                # Fenêtre autour du bord prior pour le fit
-                fit_mask = (lower_bound < histX[:-1]) & (histX[:-1] < upper_bound)
-                x_fit = histX[:-1][fit_mask]
-                y_fit = gradient[fit_mask]
+                # # Fenêtre autour du bord prior pour le fit
+                # fit_mask = (self.LowerBound < histX[:-1]) & (histX[:-1] < self.UpperBound)
+                # x_fit = histX[:-1][fit_mask]
+                # y_fit = gradient[fit_mask]
 
                 # Fit d'une gaussienne
                 if gradient_sign > 0:
-                    p0 = [np.max(y_fit), edge_prior, 5]  # amplitude, centre, largeur initiale
-                    bounds = ([0, lower_bound, 0], [np.inf, upper_bound, np.inf])  # Ajuster les bornes si nécessaire
+                    p0 = [np.max(gradient_mask), edge_prior, 5]  # amplitude, centre, largeur initiale
+                    bounds = ([0, self.LowerBound, 0], [np.inf, self.UpperBound, np.inf])  # Ajuster les bornes si nécessaire
                 else:
-                    p0 = [np.min(y_fit), edge_prior, 5]
-                    bounds = ([-np.inf, lower_bound, 0], [0, upper_bound, np.inf])  # Ajuster les bornes si nécessaire
-                popt, _ = curve_fit(self.gaussian, x_fit, y_fit, p0=p0, bounds=bounds)
+                    p0 = [np.min(gradient_mask), edge_prior, 5]
+                    bounds = ([-np.inf, self.LowerBound, 0], [0, self.UpperBound, np.inf])  # Ajuster les bornes si nécessaire
+                popt, _ = curve_fit(self.gaussian, histX_mask, gradient_mask, p0=p0, bounds=bounds)
 
                 # Calcul de la position du bord et de l'écart-type
                 edge_position = popt[1]
@@ -877,14 +906,10 @@ class RadProfile(GeneralToolClass):
                 self.Subplot.text(lower_sigma, 0.8 * self.Subplot.get_ylim()[1], s='-{}'.format(np.around(edge_sigma, 2)), color='r', bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='red'), fontsize=8, horizontalalignment='right', verticalalignment='top')
 
                 self.Subplot.axvline(edge_position - edge_sigma, color='red', linestyle='--')
-                self.Subplot.text(upper_sigma, 0.8 * self.Subplot.get_ylim()[1], s='+{}'.format(np.around(edge_sigma, 2)), color='r', bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='red'), fontsize=8, horizontalalignment='left', verticalalignment='top')
-
-                # Mise a jour de l'affichage de la position du bord
-                self.EdgeWidget.SpinParam.setValue(edge_position)
-                # self.EdgeSigmaWidget.setText(str(round(edge_sigma, 2)))
+                self.Subplot.text(upper_sigma, 0.8 * self.Subplot.get_ylim()[1], s='+{}'.format(np.around(edge_sigma, 2)), color='r', bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='red'), fontsize=8, horizontalalignment='left', verticalalignment='top')      
 
             except Exception as e:
-                print(f"Edge detection failed: {e}\ntry to reduce the window size")
+                print(f"Edge detection failed: {e}")
 
         # Other curves
         # if self.CheckAugWidget.isChecked(): self.Subplot.plot(self.profileAug[0], self.profileAug[1], color='blue', linestyle='dashed', linewidth=0.5, label='Aug+2001')
