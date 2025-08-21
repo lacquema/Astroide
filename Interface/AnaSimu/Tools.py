@@ -378,13 +378,15 @@ class SpaceView(GeneralToolClass):
         self.FWHMConv = self.FWHMConvWidget.SpinParam.value()
 
     def Ellipse2(self, a, e, Ex, Ey, Ez, Epx, Epy, Epz):
-
         E = np.linspace(-pi, pi, 100)
-        x = Ex*a*(np.cos(E)-e) + Epx*a*sqrt(1-e**2)*np.sin(E)
-        y = Ey*a*(np.cos(E)-e) + Epy*a*sqrt(1-e**2)*np.sin(E)
-        z = Ez*a*(np.cos(E)-e) + Epz*a*sqrt(1-e**2)*np.sin(E)
-
-        return x, y, z
+        try:    
+            x = Ex*a*(np.cos(E)-e) + Epx*a*sqrt(1-e**2)*np.sin(E)
+            y = Ey*a*(np.cos(E)-e) + Epy*a*sqrt(1-e**2)*np.sin(E)
+            z = Ez*a*(np.cos(E)-e) + Epz*a*sqrt(1-e**2)*np.sin(E)
+            return x, y, z
+        except Exception as e:
+            print(f'Error in the ellipse computation: e > 1')
+            return np.array([]), np.array([]), np.array([])
 
     def general_plot(self):
         # Bodies positions
