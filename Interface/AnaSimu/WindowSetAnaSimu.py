@@ -52,7 +52,7 @@ class WindowSetAnaSimu(WindowWithFinder):
         # Pré-remplir le champ avec le dernier chemin utilisé si dispo
         last_path = self.load_last_path()
         if last_path and os.path.isdir(last_path):
-            print(f'\nLast path used: {last_path}')
+            # print(f'\nLast path used: {last_path}')
             # self.SimuFilePathW.EditParam.setText(last_path)
             self.check_change_path(file_path=last_path)
 

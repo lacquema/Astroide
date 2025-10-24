@@ -21,8 +21,8 @@ LIB_DIR = $(CODE_DIR)/lib
 BIN_DIR = $(CODE_DIR)/bin
 SWIFT_DIR = $(CODE_DIR)/swift
 
-SUB_DIR = $(SWIFT_DIR)/sub
 MAIN_DIR = $(SWIFT_DIR)/main
+SUB_DIR = $(SWIFT_DIR)/sub
 
 RMVS3_MAIN_DIR = $(MAIN_DIR)/rmvs3
 HJS_MAIN_DIR = $(MAIN_DIR)/hjs

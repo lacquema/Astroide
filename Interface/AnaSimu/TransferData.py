@@ -62,7 +62,7 @@ class TransferDataClass():
             if j == 0:
                 indexLine = 2*NbBodies0
                 if NbBodies0 == 2:
-                    indexLine += 1 # Account for additional line in case of 2 bodies, idk why
+                    indexLine += 1 # Account for additional line in case of 2 bodies
             else:
                 indexLine += 1 + NbBodies_m[j-1] + NbParticles[j-1]
 

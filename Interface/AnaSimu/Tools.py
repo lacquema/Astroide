@@ -621,10 +621,17 @@ class RadProfile(GeneralToolClass):
     def InitParams(self):
 
         # Histogram
-        self.Ordinate = ComboBox('Ordinate', 'Choice of ordinate', ['Number of particules', 'Surface density'])
+        self.Ordinate = ComboBox('Ordinate', 'Choice of ordinate', ['Number of particules', 'Surface density', 'Other'])
         self.WindowPlot.WidgetParam.Layout.addWidget(self.Ordinate)
         # self.Ordinate.ComboParam.currentIndexChanged.connect(self.WidgetPlot.reset_plots)
         self.Ordinate.ComboParam.currentIndexChanged.connect(self.WidgetPlot.refresh_plot)
+
+        self.FormulaTextEdit = LineEdit(None, 'Custom formula for the ordinate (use "r" and "counts" for radius and number of particles in each bin)', None)
+        self.FormulaTextEdit.EditParam.setPlaceholderText("Enter your formula here")
+        self.FormulaTextEdit.setVisible(False)
+        self.Ordinate.ComboParam.currentIndexChanged.connect(lambda: self.FormulaTextEdit.setVisible(self.Ordinate.ComboParam.currentText() == 'Other'))
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.FormulaTextEdit)
+        # self.FormulaTextEdit.EditParam.textChanged.connect(self.WidgetPlot.refresh_plot)
 
         self.Norm = ComboBox('Normalisation', 'Choice of the normalisation', ['None', 'max=1', 'sum=1'])
         self.Norm.ComboParam.setCurrentIndex(0)
@@ -719,6 +726,8 @@ class RadProfile(GeneralToolClass):
         self.CurveWidgetsId = []
         self.NbWidgets0 = self.WindowPlot.WidgetParam.Layout.count()
         self.c = 0 # counter
+
+
 
     def AddCurveWidget(self):
         self.CurveWidget = CurveClass()
@@ -821,6 +830,15 @@ class RadProfile(GeneralToolClass):
             # Avoid division by zero for r=0
             area[area == 0] = np.nan
             histCount = histCount / area  # true surface density
+        elif self.Ordinate.ComboParam.currentText() == 'Other':
+            r = (histX[:-1] + histX[1:]) / 2  # midpoints of bins
+            counts = histCount
+            formula = self.FormulaTextEdit.EditParam.text()
+            try:
+                histCount = eval(formula)
+            except Exception as e:
+                print(f"Error in custom formula: {e}")
+                histCount = counts
   
         # Normalisation computation
         self.NormDiv = 1
@@ -940,6 +958,7 @@ class RadProfile(GeneralToolClass):
         self.Subplot.set_xlabel('Radius [AU]')
         if self.Ordinate.ComboParam.currentIndex()==0: self.Subplot.set_ylabel('Number of particules')
         elif self.Ordinate.ComboParam.currentIndex()==1: self.Subplot.set_ylabel('Surface density [arbitrary unit]')
+        elif self.Ordinate.ComboParam.currentText() == 'Other': self.Subplot.set_ylabel('Custom ordinate [arbitrary unit]')
 
     def gaussian(self, x, a, mu, sigma):
         return a * np.exp(-(x - mu)**2 / (2 * sigma**2))
