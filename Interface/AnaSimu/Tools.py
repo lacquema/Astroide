@@ -236,7 +236,6 @@ class GeneralToolClass(QWidget):
         y_conv = y_centers[y_idx] + np.random.uniform(-grid_size/2, grid_size/2, N)
 
         return x_conv, y_conv
-        
 
 
 class SpaceView(GeneralToolClass):
@@ -267,6 +266,10 @@ class SpaceView(GeneralToolClass):
         self.InitParams()
 
     def InitParams(self):
+        # Equal aspect ratio
+        # self.CheckEqualAspect = CheckBox('Equal aspect ratio', 'Force equal aspect ratio for the plot')
+        # self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckEqualAspect)
+
         self.WindowPlot.WidgetParam.Layout.addWidget(Delimiter(Title='View :'))
 
         # Type of view
@@ -420,6 +423,7 @@ class SpaceView(GeneralToolClass):
 
         # add subplot
         self.SubplotXY = self.WidgetPlotXY.Canvas.fig.add_subplot(111, aspect='equal', label='Main plot')
+        # if self.CheckEqualAspect.CheckParam.isChecked(): self.SubplotXY.set_box_aspect(1)
 
         # X, Y current limits
         xlim_init = (-self.LimDefault, self.LimDefault)
@@ -490,6 +494,7 @@ class SpaceView(GeneralToolClass):
 
         # add subplot
         self.SubplotXZ = self.WidgetPlotXZ.Canvas.fig.add_subplot(111, aspect='equal', label='Main plot')
+        # if self.CheckEqualAspect.CheckParam.isChecked(): self.SubplotXZ.set_box_aspect(1)
 
         # X, Y current limits
         xlim_init = (-self.LimDefault, self.LimDefault)
@@ -558,6 +563,7 @@ class SpaceView(GeneralToolClass):
 
         # Add subplot
         self.SubplotXYZ = self.WidgetPlotXYZ.Canvas.fig.add_subplot(111, aspect='equal', projection='3d', label='Main plot')
+        # if self.CheckEqualAspect.CheckParam.isChecked(): self.SubplotXYZ.set_box_aspect(1)
 
         # X, Y, Z limits
         xlim_init = [-self.LimDefault, self.LimDefault]
@@ -619,6 +625,9 @@ class RadProfile(GeneralToolClass):
         self.InitParams()
 
     def InitParams(self):
+        # Equal aspect ratio
+        self.CheckEqualAspect = CheckBox('Equal aspect ratio', 'Force equal aspect ratio for the plot')
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckEqualAspect)
 
         # Histogram
         self.Ordinate = ComboBox('Ordinate', 'Choice of ordinate', ['Number of particules', 'Surface density', 'Other'])
@@ -793,6 +802,7 @@ class RadProfile(GeneralToolClass):
 
         # Plot initialisation
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
+        if self.CheckEqualAspect.CheckParam.isChecked(): self.Subplot.set_box_aspect(1)
 
         # Radius computation
         if self.CheckConvolution.CheckParam.isChecked():
@@ -818,28 +828,28 @@ class RadProfile(GeneralToolClass):
         # Plot with current parameters
         if self.CheckBodies.CheckParam.isChecked():
             for k in range(self.NbBodies_m[self.IndexSnap]):
-                self.Subplot.plot(self.a_m[self.IndexSnap][k], 0, color=self.colorList[k], marker='.', markersize=self.SizeBodies, label="Marker of "+str(k+1))
+                self.Subplot.plot(self.a_m[self.IndexSnap][k], 0, color=self.colorList[k], marker='.', markersize=self.SizeBodies)
     
         histCount, histX = np.histogram([x for x in self.R if Rmin < x < Rmax], bins=self.NbBins)
 
         # Surface density computation
+        r = (histX[:-1] + histX[1:]) / 2  # midpoints of bins
         if self.Ordinate.ComboParam.currentIndex() == 1:
             dr = np.diff(histX)  # bin widths
-            r = histX[:-1]       # left edges of bins
             area = 2 * pi * r * dr
             # Avoid division by zero for r=0
             area[area == 0] = np.nan
             histCount = histCount / area  # true surface density
         elif self.Ordinate.ComboParam.currentText() == 'Other':
-            r = (histX[:-1] + histX[1:]) / 2  # midpoints of bins
             counts = histCount
             formula = self.FormulaTextEdit.EditParam.text()
             try:
                 histCount = eval(formula)
+                np.shape(histCount) == np.shape(counts)  # Check if histCount is valid
             except Exception as e:
                 print(f"Error in custom formula: {e}")
                 histCount = counts
-  
+                
         # Normalisation computation
         self.NormDiv = 1
         if self.Norm.ComboParam.currentIndex()==1: self.NormDiv = np.max(histCount) # normalisation of max equal one
@@ -981,6 +991,10 @@ class DiagramAE(GeneralToolClass):
         self.InitParams()
 
     def InitParams(self):
+        # Equal aspect ratio
+        self.CheckEqualAspect = CheckBox('Equal aspect ratio', 'Force equal aspect ratio for the plot')
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckEqualAspect)
+
         # Bodies' positions
         self.CheckBodies = CheckBox("Bodies position")
         self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckBodies)
@@ -1069,6 +1083,7 @@ class DiagramAE(GeneralToolClass):
         
         # Plot initialisation
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
+        if self.CheckEqualAspect.CheckParam.isChecked(): self.Subplot.set_box_aspect(1)
     
         # Specific variables
         self.a = self.a_m[self.IndexSnap][:]
@@ -1133,6 +1148,10 @@ class DiagramTY(GeneralToolClass):
 
     def InitParams(self):
         # self.CheckTitle.setEnabled(False)
+
+        # Equal aspect ratio
+        self.CheckEqualAspect = CheckBox('Equal aspect ratio', 'Force equal aspect ratio for the plot')
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckEqualAspect)
 
         # Orbit parameters
         self.ParamOrbitWidget = ComboBox('Orbital parameter', 'Orbit Parameter', ['a','e','i','W','w','M','irel','other'])
@@ -1214,6 +1233,7 @@ class DiagramTY(GeneralToolClass):
         
         # Subplot initialization
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
+        if self.CheckEqualAspect.CheckParam.isChecked(): self.Subplot.set_box_aspect(1)
 
         # Update parameters
         self.try_UpdateParams(self.WidgetPlot)
@@ -1281,6 +1301,10 @@ class DiagramXY(GeneralToolClass):
 
 
     def InitParams(self):
+        # Equal aspect ratio
+        self.CheckEqualAspect = CheckBox('Equal aspect ratio', 'Force equal aspect ratio for the plot')
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.CheckEqualAspect)
+        
         # Ordinate quantity formula
         self.YFormula = ''
         self.YFormulaWidget = LineEdit('Y formula','Ordinate quantity by combining t, a, e, i, w, W, with [n] for orbit number counting outwards, and usual mathematical functions', self.YFormula)
@@ -1313,6 +1337,7 @@ class DiagramXY(GeneralToolClass):
 
         # Plot initialisation
         self.Subplot = self.WidgetPlot.Canvas.fig.add_subplot(111)
+        if self.CheckEqualAspect.CheckParam.isChecked(): self.Subplot.set_box_aspect(1)
 
         if self.X is None or self.Y is None or np.shape(self.X) != np.shape(self.Y):
             print('No data to plot or data shapes do not match.')
