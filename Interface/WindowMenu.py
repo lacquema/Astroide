@@ -20,7 +20,7 @@ class WindowMenuClass(QMainWindow):
 
         # Initialize the main layout
         Layout = QVBoxLayout()
-        Layout.addSpacing(15)
+        Layout.addSpacing(20)
 
         # Add "New Simulation" button
         self.BtnNew = self.create_button('New Simulation', Layout)
@@ -34,8 +34,10 @@ class WindowMenuClass(QMainWindow):
         self.BtnContinue.setStyleSheet('QPushButton {background-color: grey; color: grey; font: italic 15px;}')
 
         # Add "Analyse" button
-        Layout.addSpacing(90)
+        Layout.addSpacing(95)
         self.BtnAnalyse = self.create_button('Analyse', Layout)
+
+        Layout.addSpacing(40)  # Ajustement de l'espacement
 
         # Add credits in the status bar
         self.add_status_bar()
