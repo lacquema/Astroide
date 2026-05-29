@@ -83,8 +83,8 @@ C
         INTEGER NBOD,IALPHA,IP1,IP2,IUFLG,ICFLG,IRFLG
         INTEGER NNN1,NNN
 
-        CHARACTER*256 LINE, TRIMMED_LINE
-        INTEGER POS_COM, pos_slash
+        CHARACTER*256 LINE, TRIMMED_LINE, ORDERCMD
+        INTEGER POS_COM, pos_slash, POS_VERIFY
         CHARACTER*100 dirs_temp, diro_temp, gname_temp
         CHARACTER*1 BOOLS(6)
 
@@ -117,9 +117,8 @@ C
 22022    FORMAT('t_f=${2:-"',f0.0,'"}')   ! added by antoine
 22023    FORMAT('dt=${3:-"',f0.0,'"}')   ! added by antoine
 2203    FORMAT(f10.1)
-
-2205    FORMAT('order=${1:-"oarsub -l /nodes=1/cpu=1/core=',I1,
-     &       ',walltime=48 --project dynapla"}') ! modified by antoine
+2205    FORMAT('oarsub -l /nodes=1/cpu=1/core=',I1,
+     &       ',walltime=48 --project dynapla')
 2206    FORMAT('export OMP_NUM_THREADS=',I1)
 c     ........entree des parametres
 
@@ -228,10 +227,40 @@ c     ........entree des parametres
         CLOSE(55)
         CALL SYSTEM('chmod ogu+x '//TRIM(OPTIONFILE))  ! added by antoine
 
-        
 
-        WRITE(*,*)' Number of cores'
-        READ(*,*)NCOR
+
+                READ(*, '(A)') LINE ! launch order or number of cores (legacy input)
+                POS_COM = INDEX(LINE, '#')
+                IF (POS_COM > 0) THEN
+                  TRIMMED_LINE = TRIM(LINE(1:POS_COM-1))
+                ELSE
+                  TRIMMED_LINE = TRIM(LINE)
+                END IF
+                DO I = 1, LEN(TRIMMED_LINE)
+                  IF (TRIMMED_LINE(I:I) .EQ. CHAR(9)) THEN
+                    TRIMMED_LINE(I:I) = ' '
+                  END IF
+                END DO
+                TRIMMED_LINE = ADJUSTL(TRIM(TRIMMED_LINE))
+                POS_VERIFY = VERIFY(TRIM(TRIMMED_LINE), ' +-0123456789')
+
+                IF (LEN_TRIM(TRIMMED_LINE) .EQ. 0 .OR.
+     &              POS_VERIFY .EQ. 0) THEN
+                  IF (LEN_TRIM(TRIMMED_LINE) .EQ. 0) THEN
+                    WRITE(*,*)' Number of cores'
+                    READ(*,*)NCOR
+                  ELSE
+                    READ(TRIMMED_LINE,*)NCOR
+                  END IF
+                  WRITE(ORDERCMD,2205)NCOR
+                ELSE
+                  ORDERCMD = TRIM(TRIMMED_LINE)
+                  WRITE(*,*)' Number of cores'
+                  READ(*,*)NCOR
+                END IF
+
+                WRITE(52,'(a)')'order=${1:-"'//TRIM(ORDERCMD)//'"}'
+                WRITE(53,'(a)')'order=${1:-"'//TRIM(ORDERCMD)//'"}'
 
         OK=.FALSE.
         DO WHILE(.NOT.OK)
@@ -379,10 +408,6 @@ c         en lien avec le choix du réf de coord (écliptique ou invariant)
           print*,'dtmbod',dtbod(i),abod(i),mass(1)
         END DO
 
-        
-        WRITE(52,2205)NCOR ! added by antoine
-        WRITE(53,2205)NCOR ! added by antoine
-
         ! WRITE(53,'(a)')'success_count=0' ! added by antoine
 
         ! WRITE(51,'(a)')'simname="'//TRIM(GNAME)//'"'
@@ -510,7 +535,7 @@ c
                 WRITE(GOCFILE,0007)CNTFILE  ! added by antoine
                 OPEN(31,FILE=GOFILE,STATUS='UNKNOWN') ! go file
                 WRITE(31,'(a)')'#! /bin/bash' ! modified by antoine
-                WRITE(31,'(a)')'ulimit -s unlimited' ! modified by antoine
+                WRITE(31,'(a)')'ulimit -s "$(ulimit -Hs)"' ! modified by antoine
                 WRITE(GOCMD,2206)NCOR
                 WRITE(31,'(a)')TRIM(GOCMD)
                 WRITE(31,'(a)')'export STACKSIZE=1000000'
@@ -521,7 +546,7 @@ c
                 CLOSE(31)           
                 OPEN(32,FILE=GOCFILE,STATUS='UNKNOWN')  ! continuation file
                 WRITE(32,'(a)')'#! /bin/bash' ! modified by antoine
-                WRITE(32,'(a)')'ulimit -s unlimited' ! modified by antoine
+                WRITE(32,'(a)')'ulimit -s "$(ulimit -Hs)"' ! modified by antoine
                 WRITE(GOCMD,2206)NCOR
                 WRITE(32,'(a)')TRIM(GOCMD)
                 WRITE(32,'(a)')'export STACKSIZE=1000000'

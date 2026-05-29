@@ -51,6 +51,10 @@ This script generates sub-simulations input files for the `HJS` integrator, whic
    - *Type*: `str`
    - *Description*: Absolute path indicates where running files will be generated.
 
+**Starting order**
+   - *Type*: `str`
+   - *Description*: Shell command used by the generated `starts.sh` and `continues.sh` scripts to launch each sub-simulation. This can be a scheduler submission command such as `oarsub ...`, or a simpler local command such as `bash`. For legacy inputs where this line is omitted, a default OAR command is still generated from the number of CPU cores.
+
 **Number of CPU cores per sub-simulation**
    - *Type*: `int`
    - *Description*: Number of CPU cores used for each sub-simulation.

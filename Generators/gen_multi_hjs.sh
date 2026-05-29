@@ -8,6 +8,9 @@ BINPATH="<environment_path>/Astroide/Code/bin"
 # Path to the working directory
 WORKPATH="..."
 
+# Shell command used to launch each sub-simulation
+ORDER="..."
+
 # Generate the sub-simulations input files
 $BINPATH/gen_multi_hjs <<!
 $BINPATH
@@ -17,6 +20,7 @@ hjs_par							# Integration method
 F T F F T F						# Computational options
 0.005 200. 10. -1. F			# Removal limits
 $WORKPATH
+$ORDER
 8								# Number of CPU cores per sub-simulation
 1								# Units
 1								# Coordinate system

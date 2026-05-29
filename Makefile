@@ -14,6 +14,21 @@ GEN_FLAGS = -O3
 ALG_FLAGS = -O3
 DIR = .
 
+# On macOS, force an explicit deployment target to keep gfortran and the
+# active Apple SDK aligned, while still allowing users to override it from
+# the environment if they need a different minimum macOS version.
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+MACOSX_DEPLOYMENT_TARGET ?= $(shell xcrun --show-sdk-version 2>/dev/null | awk -F. '{print $$1 ".0"}')
+ifneq ($(strip $(MACOSX_DEPLOYMENT_TARGET)),)
+ADD_FLAGS += -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
+endif
+# swift_hjs_par keeps several NTPMAX-sized arrays in the main program.
+# On macOS, OpenMP implies -frecursive, which moves those locals to the
+# process stack and can exceed the hard stack limit before the program starts.
+HJS_PAR_MAIN_FLAGS += -fmax-stack-var-size=0
+endif
+
 # Induced directories
 CODE_DIR = $(DIR)/Code
 
@@ -137,7 +152,7 @@ swift_hjs:
 
 swift_hjs_par:
 	test ! -f $(BIN_DIR)/$@ || rm $(BIN_DIR)/$@
-	$(COMPILF) $(ALG_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
+	$(COMPILF) $(ALG_FLAGS) $(HJS_PAR_MAIN_FLAGS) $(ADD_FLAGS) $(HJS_MAIN_DIR)/$@.f -L$(LIB_DIR) -l$(LIB) -o $(BIN_DIR)/$@
 
 compile: 
 	make library
