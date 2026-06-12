@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(__file__)+'/..')
 
 
 ### --- Packages --- ###
@@ -12,15 +13,16 @@ sys.path.append(os.path.dirname(__file__))
 import numpy as np
 
 # PyQt packages
-from PyQt6.QtWidgets import QTabWidget, QMainWindow, QStatusBar, QApplication
+from PyQt6.QtWidgets import QTabWidget, QStatusBar, QApplication
 
 # My packages
 from Tabs import *
+from WindowWithFinder import WindowWithFinder
 
 
 ### --- Parameters Window Generating --- ###
 
-class WindowSetNewSimu(QMainWindow):
+class WindowSetNewSimu(WindowWithFinder):
 
     SignalCloseWindowSetNewSimu = pyqtSignal() # initiation of the closeEvent signal
     
@@ -58,7 +60,21 @@ class WindowSetNewSimu(QMainWindow):
         self.EnvPath = '/'.join(self.DirPath.split('/')[:-2])
         self.SimuDir = self.TabSimuFiles.SimuPath.EditPath.text()+self.TabSimuFiles.SimuName.EditParam.text()+'/'
 
-    
+        # Add tabs to the right side of the split window
+        self.Splitter.addWidget(self.Container)
+
+        # Connect folder selection to the simulation path field
+        self.Finder.doubleClicked.connect(self.ChangePath)
+
+        # Status bar
+        self.setStatusBar(QStatusBar(self))
+
+
+    def ChangePath(self):
+        index = self.Finder.selectedIndexes()[0]
+        info = self.Model.fileInfo(index)
+        self.TabSimuFiles.SimuPath.EditPath.setText(info.absoluteFilePath()+'/')
+
 
 
     def InitInterTabConnect(self, IdTab):
@@ -81,18 +97,6 @@ class WindowSetNewSimu(QMainWindow):
             self.TabStart.BtnCreate.clicked.connect(self.CreateInputFiles)
             # self.TabStart.BtnStart.clicked.connect(self.StartSimu)
             self.ChangeSumaPara()
-
-
-
-
-
-
-
-        # Container
-        self.setCentralWidget(self.Container)
-
-        # Status bar
-        self.setStatusBar(QStatusBar(self))
 
 
     def ChangeSumaPara(self):

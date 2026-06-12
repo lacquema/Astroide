@@ -33,13 +33,13 @@ class ResClass(QWidget):
         self.Layout.addWidget(self.nRefWidget)
 
         # Period ratio between the two resonating bodies
-        self.PResWidget = SpinBox(None, 'Resonant orbit period', 1, 1, None)
+        self.PResWidget = SpinBox(None, 'Resonant orbit period', 1, 1, 100)
         self.Layout.addWidget(self.PResWidget)
 
         self.LabelRatioWidget = QLabel(' :')
         self.Layout.addWidget(self.LabelRatioWidget)
 
-        self.PRefWidget = SpinBox(None, 'Reference orbit period', 1, 1, None)
+        self.PRefWidget = SpinBox(None, 'Reference orbit period', 1, 1, 100)
         self.Layout.addWidget(self.PRefWidget)
 
         # Delete the resonance

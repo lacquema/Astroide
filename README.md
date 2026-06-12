@@ -137,6 +137,8 @@ Once the sub-simulations are configured, you can start the computations by execu
 
 For each sub-simulation, this process creates a `run_i` directory in the location you specified as `WORKPATH` in the generation script (`gen_multi_rmvs3.sh` or `gen_multi_hjs.sh`). All computations for that sub-simulation are performed within its respective directory.
 
+If you want to compare the effect of different OpenMP thread counts on a single sub-simulation without modifying your original case, you can use the helper script `benchmark_threads.sh` in `<environment_path>/Astroide/Generators`. It copies the selected sub-simulation to temporary directories, rewrites the output path, shortens the run, and reports the execution time for each requested value of `OMP_NUM_THREADS`.
+
 To monitor the progress of the sub-simulations, you can run the `states.sh` script, which provides an overview of their current status.
 
 <div id='continuation'>  
