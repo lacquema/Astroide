@@ -419,7 +419,7 @@ class SpaceView(GeneralToolClass):
         return fx(t_dense), fy(t_dense), fz(t_dense)
 
     def FitClosedCentralOrbit(self, x, y, z, npts=1000):
-        """Fit a closed ellipse in XY for the central body and return a smooth 3D curve.
+        """Fit a closed ellipse in the best 3D orbital plane for the central body.
 
         Falls back to trajectory interpolation if the fit is ill-conditioned.
         """
@@ -431,8 +431,22 @@ class SpaceView(GeneralToolClass):
             return self.InterpolateTrajectory(x, y, z, npts=npts)
 
         try:
-            # Direct least-squares conic fit in XY: Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0
-            Dm = np.column_stack([x * x, x * y, y * y, x, y, np.ones_like(x)])
+            pts = np.column_stack((x, y, z))
+            center3d = np.mean(pts, axis=0)
+            pts0 = pts - center3d
+
+            # Best-fit plane from SVD (PCA basis in the plane).
+            _, _, vh = np.linalg.svd(pts0, full_matrices=False)
+            e1 = vh[0]
+            e2 = vh[1]
+
+            # Coordinates in the fitted orbital plane.
+            u = pts0 @ e1
+            v = pts0 @ e2
+
+            # Direct least-squares conic fit in plane coordinates:
+            # A u^2 + B uv + C v^2 + D u + E v + F = 0
+            Dm = np.column_stack([u * u, u * v, v * v, u, v, np.ones_like(u)])
             Sm = Dm.T @ Dm
             Cm = np.zeros((6, 6))
             Cm[0, 2] = 2.0
@@ -456,14 +470,14 @@ class SpaceView(GeneralToolClass):
             if abs(den) < 1e-14:
                 return self.InterpolateTrajectory(x, y, z, npts=npts)
 
-            x0 = (2.0 * C * D - B * E) / den
-            y0 = (2.0 * A * E - B * D) / den
+            u0 = (2.0 * C * D - B * E) / den
+            v0 = (2.0 * A * E - B * D) / den
 
             theta = 0.5 * np.arctan2(B, A - C)
             ct = np.cos(theta)
             st = np.sin(theta)
 
-            up = 2.0 * (A * x0 * x0 + B * x0 * y0 + C * y0 * y0 - F)
+            up = 2.0 * (A * u0 * u0 + B * u0 * v0 + C * v0 * v0 - F)
             root = np.sqrt((A - C) ** 2 + B * B)
             down1 = (A + C + root)
             down2 = (A + C - root)
@@ -483,21 +497,14 @@ class SpaceView(GeneralToolClass):
                 ct = np.cos(theta)
                 st = np.sin(theta)
 
+            # Closed ellipse in plane coordinates.
             t_dense = np.linspace(0.0, 2.0 * np.pi, npts)
-            x_fit = x0 + a * np.cos(t_dense) * ct - b * np.sin(t_dense) * st
-            y_fit = y0 + a * np.cos(t_dense) * st + b * np.sin(t_dense) * ct
+            u_fit = u0 + a * np.cos(t_dense) * ct - b * np.sin(t_dense) * st
+            v_fit = v0 + a * np.cos(t_dense) * st + b * np.sin(t_dense) * ct
 
-            # Map z along orbital phase to keep a smooth 3D central trajectory.
-            t_raw = np.arctan2(y - y0, x - x0)
-            t_raw = np.unwrap(t_raw)
-            order = np.argsort(t_raw)
-            t_sorted = t_raw[order]
-            z_sorted = z[order]
-            t_base = np.linspace(t_sorted[0], t_sorted[-1], npts)
-            kind = 'cubic' if len(z_sorted) >= 4 else 'linear'
-            z_fit = interp1d(t_sorted, z_sorted, kind=kind, fill_value='extrapolate')(t_base)
-
-            return x_fit, y_fit, z_fit
+            # Map fitted plane points back to 3D.
+            fit3d = center3d + np.outer(u_fit, e1) + np.outer(v_fit, e2)
+            return fit3d[:, 0], fit3d[:, 1], fit3d[:, 2]
         except Exception:
             return self.InterpolateTrajectory(x, y, z, npts=npts)
 
