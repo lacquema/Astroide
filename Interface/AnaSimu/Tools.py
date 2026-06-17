@@ -278,6 +278,12 @@ class SpaceView(GeneralToolClass):
         self.indexView = self.ViewWidget.ComboParam.currentIndex()
         self.ViewWidget.ComboParam.currentIndexChanged.connect(self.indexViewChanged)
 
+        # Reference frame
+        self.RefWidget = ComboBox('Frame', 'Reference frame', ['barycentric', 'heliocentric'])
+        self.WindowPlot.WidgetParam.Layout.addWidget(self.RefWidget)
+        self.indexRef = self.RefWidget.ComboParam.currentIndex()
+        self.RefWidget.ComboParam.currentIndexChanged.connect(self.indexRefChanged)
+
         # Bodies' positions
         self.SizeBodies = 15
         self.CheckBodies = CheckBox("Bodies position")
@@ -373,15 +379,21 @@ class SpaceView(GeneralToolClass):
             self.SizePartWidget.setEnabled(False)
         self.refresh_plots()
 
+    def indexRefChanged(self, value):
+        self.indexRef = value
+        self.refresh_plots()
+
     def UpdateParams(self):
         # self.SizeBodies = self.SizeBodiesWidget.SpinParam.value()
         self.SizePart = self.SizePartWidget.SpinParam.value()
         self.NbBinsX = self.NbBinsXWidget.SpinParam.value()
         self.NbBinsY = self.NbBinsYWidget.SpinParam.value()
         self.FWHMConv = self.FWHMConvWidget.SpinParam.value()
+        self.indexRef = self.RefWidget.ComboParam.currentIndex()
 
     def Ellipse2(self, a, e, Ex, Ey, Ez, Epx, Epy, Epz):
-        E = np.linspace(-pi, pi, 100)
+        npts = max(1000, int(a * 100))
+        E = np.linspace(-pi, pi, npts)
         try:    
             x = Ex*a*(np.cos(E)-e) + Epx*a*sqrt(1-e**2)*np.sin(E)
             y = Ey*a*(np.cos(E)-e) + Epy*a*sqrt(1-e**2)*np.sin(E)
@@ -391,14 +403,169 @@ class SpaceView(GeneralToolClass):
             print(f'Error in the ellipse computation: e > 1')
             return np.array([]), np.array([]), np.array([])
 
+    def InterpolateTrajectory(self, x, y, z, npts=1000):
+        """Smoothly interpolate a 3D trajectory from discrete snapshot points."""
+        if len(x) < 2:
+            return np.array(x), np.array(y), np.array(z)
+
+        t = np.arange(len(x), dtype=float)
+        t_dense = np.linspace(t[0], t[-1], npts)
+
+        # Use cubic interpolation when enough points are available.
+        kind = 'cubic' if len(x) >= 4 else 'linear'
+        fx = interp1d(t, x, kind=kind)
+        fy = interp1d(t, y, kind=kind)
+        fz = interp1d(t, z, kind=kind)
+        return fx(t_dense), fy(t_dense), fz(t_dense)
+
+    def FitClosedCentralOrbit(self, x, y, z, npts=1000):
+        """Fit a closed ellipse in XY for the central body and return a smooth 3D curve.
+
+        Falls back to trajectory interpolation if the fit is ill-conditioned.
+        """
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+        z = np.asarray(z, dtype=float)
+
+        if len(x) < 6:
+            return self.InterpolateTrajectory(x, y, z, npts=npts)
+
+        try:
+            # Direct least-squares conic fit in XY: Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0
+            Dm = np.column_stack([x * x, x * y, y * y, x, y, np.ones_like(x)])
+            Sm = Dm.T @ Dm
+            Cm = np.zeros((6, 6))
+            Cm[0, 2] = 2.0
+            Cm[1, 1] = -1.0
+            Cm[2, 0] = 2.0
+
+            eigvals, eigvecs = np.linalg.eig(np.linalg.pinv(Sm) @ Cm)
+            params = None
+            for i in range(len(eigvals)):
+                cand = np.real(eigvecs[:, i])
+                A, B, C, _, _, _ = cand
+                if (4.0 * A * C - B * B) > 0.0:
+                    params = cand
+                    break
+
+            if params is None:
+                return self.InterpolateTrajectory(x, y, z, npts=npts)
+
+            A, B, C, D, E, F = params
+            den = (B * B - 4.0 * A * C)
+            if abs(den) < 1e-14:
+                return self.InterpolateTrajectory(x, y, z, npts=npts)
+
+            x0 = (2.0 * C * D - B * E) / den
+            y0 = (2.0 * A * E - B * D) / den
+
+            theta = 0.5 * np.arctan2(B, A - C)
+            ct = np.cos(theta)
+            st = np.sin(theta)
+
+            up = 2.0 * (A * x0 * x0 + B * x0 * y0 + C * y0 * y0 - F)
+            root = np.sqrt((A - C) ** 2 + B * B)
+            down1 = (A + C + root)
+            down2 = (A + C - root)
+            if abs(down1) < 1e-14 or abs(down2) < 1e-14:
+                return self.InterpolateTrajectory(x, y, z, npts=npts)
+
+            a2 = up / down1
+            b2 = up / down2
+            if a2 <= 0.0 or b2 <= 0.0:
+                return self.InterpolateTrajectory(x, y, z, npts=npts)
+
+            a = np.sqrt(a2)
+            b = np.sqrt(b2)
+            if b > a:
+                a, b = b, a
+                theta += 0.5 * np.pi
+                ct = np.cos(theta)
+                st = np.sin(theta)
+
+            t_dense = np.linspace(0.0, 2.0 * np.pi, npts)
+            x_fit = x0 + a * np.cos(t_dense) * ct - b * np.sin(t_dense) * st
+            y_fit = y0 + a * np.cos(t_dense) * st + b * np.sin(t_dense) * ct
+
+            # Map z along orbital phase to keep a smooth 3D central trajectory.
+            t_raw = np.arctan2(y - y0, x - x0)
+            t_raw = np.unwrap(t_raw)
+            order = np.argsort(t_raw)
+            t_sorted = t_raw[order]
+            z_sorted = z[order]
+            t_base = np.linspace(t_sorted[0], t_sorted[-1], npts)
+            kind = 'cubic' if len(z_sorted) >= 4 else 'linear'
+            z_fit = interp1d(t_sorted, z_sorted, kind=kind, fill_value='extrapolate')(t_base)
+
+            return x_fit, y_fit, z_fit
+        except Exception:
+            return self.InterpolateTrajectory(x, y, z, npts=npts)
+
     def general_plot(self):
         # Bodies positions
         self.Xbf, self.Ybf, self.Zbf = [], [], []
         self.Xbm, self.Ybm, self.Zbm = [], [], []
-        for k in range(self.NbBodies_m[self.IndexSnap]):
+
+        snap = self.IndexSnap
+        nbodies = self.NbBodies_m[snap]
+        x_all = np.array(self.X[snap])
+        y_all = np.array(self.Y[snap])
+        z_all = np.array(self.Z[snap])
+
+        # Star position (first massive body) used for frame transforms.
+        if nbodies > 0:
+            x_star = x_all[0]
+            y_star = y_all[0]
+            z_star = z_all[0]
+        else:
+            x_star = 0.0
+            y_star = 0.0
+            z_star = 0.0
+
+        # Positions used for markers/particles in selected frame.
+        if self.indexRef == 0:
+            # Barycentric frame
+            x_plot = x_all
+            y_plot = y_all
+            z_plot = z_all
+        else:
+            # Heliocentric frame (centered on the central body)
+            x_plot = x_all - x_star
+            y_plot = y_all - y_star
+            z_plot = z_all - z_star
+
+        self.BodyX = x_plot[:nbodies]
+        self.BodyY = y_plot[:nbodies]
+        self.BodyZ = z_plot[:nbodies]
+        self.PartX = x_plot[nbodies:]
+        self.PartY = y_plot[nbodies:]
+        self.PartZ = z_plot[nbodies:]
+
+        for k in range(nbodies):
             # xbf, ybf, zbf = self.Ellipse(af[k][isave], ef[k][isave], i[k][isave]*pi/180, W[k][isave]*pi/180, w[k][isave]*pi/180)
             # print(self.a_m[self.IndexSnap][k], self.e_m[self.IndexSnap][k])
-            xbm, ybm, zbm = self.Ellipse2(self.a_m[self.IndexSnap][k], self.e_m[self.IndexSnap][k], self.Ex[self.IndexSnap][k], self.Ey[self.IndexSnap][k], self.Ez[self.IndexSnap][k], self.Epx[self.IndexSnap][k], self.Epy[self.IndexSnap][k], self.Epz[self.IndexSnap][k])
+            if k == 0:
+                # Central-body orbit: explicit barycentric trajectory or heliocentric origin.
+                if self.indexRef == 0:
+                    x_track = np.array([self.X[s][0] for s in range(len(self.X)) if len(self.X[s]) > 0])
+                    y_track = np.array([self.Y[s][0] for s in range(len(self.Y)) if len(self.Y[s]) > 0])
+                    z_track = np.array([self.Z[s][0] for s in range(len(self.Z)) if len(self.Z[s]) > 0])
+                    xbm, ybm, zbm = self.FitClosedCentralOrbit(x_track, y_track, z_track)
+                else:
+                    xbm = np.array([0.0])
+                    ybm = np.array([0.0])
+                    zbm = np.array([0.0])
+            else:
+                xbm, ybm, zbm = self.Ellipse2(self.a_m[snap][k], self.e_m[snap][k], self.Ex[snap][k], self.Ey[snap][k], self.Ez[snap][k], self.Epx[snap][k], self.Epy[snap][k], self.Epz[snap][k])
+
+                # Orbital elements define star-centered ellipses.
+                if self.indexRef == 0:
+                    # Display in barycentric frame.
+                    xbm = xbm + x_star
+                    ybm = ybm + y_star
+                    zbm = zbm + z_star
+                # else: keep heliocentric ellipses unchanged
+
             # self.Xbf.append(xbf)
             # self.Ybf.append(ybf)
             # self.Zbf.append(zbf)
@@ -407,8 +574,8 @@ class SpaceView(GeneralToolClass):
             self.Zbm.append(zbm)
         
         # Specific variables
-        self.NbBodies = self.NbBodies_m[self.IndexSnap]
-        self.t = self.t_m[self.IndexSnap]/10**6
+        self.NbBodies = nbodies
+        self.t = self.t_m[snap]/10**6
 
         # X limits
         self.LimDefault = 1.1*np.max(self.a_m[0])*(1+np.max(self.e_m[0]))
@@ -436,23 +603,23 @@ class SpaceView(GeneralToolClass):
             if self.CheckOrbits.CheckParam.isChecked():
                 self.SubplotXY.plot(self.Xbm[k], self.Ybm[k], color=self.colorList[k], linestyle='--', label="Orbit of "+str(k+1))
             if self.CheckBodies.CheckParam.isChecked():
-                self.SubplotXY.plot(self.X[self.IndexSnap][k], self.Y[self.IndexSnap][k], marker='.', markersize=self.SizeBodies, color=self.colorList[k], label="Marker of "+str(k+1))
+                self.SubplotXY.plot(self.BodyX[k], self.BodyY[k], marker='.', markersize=self.SizeBodies, color=self.colorList[k], label="Marker of "+str(k+1))
 
         # Plot
         if self.indexRepres == 0:
-            self.SubplotXY.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Y[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0, label='Particles')
+            self.SubplotXY.scatter(self.PartX, self.PartY, s=self.SizePart, c='black', linewidths=0, label='Particles')
         
         elif self.indexRepres == 1:
             if self.CheckConvolution.CheckParam.isChecked():
                 # Convolve positions
                 x, y = self.convolve_positions(
-                    x=self.X[self.IndexSnap][self.NbBodies-1:], 
-                    y=self.Y[self.IndexSnap][self.NbBodies-1:], 
+                    x=self.PartX,
+                    y=self.PartY,
                     fwhm_au=self.FWHMConv,
                     extent=self.LimDefault)
             else:
-                x = self.X[self.IndexSnap][self.NbBodies-1:]
-                y = self.Y[self.IndexSnap][self.NbBodies-1:]
+                x = self.PartX
+                y = self.PartY
                 
             hist, xedges, yedges = np.histogram2d(
                 x, 
@@ -507,22 +674,22 @@ class SpaceView(GeneralToolClass):
             if self.CheckOrbits.CheckParam.isChecked():
                 self.SubplotXZ.plot(self.Xbm[k], self.Zbm[k], color=self.colorList[k], linestyle='--', label="Orbit of "+str(k+1))
             if self.CheckBodies.CheckParam.isChecked():
-                self.SubplotXZ.plot(self.X[self.IndexSnap][k], self.Z[self.IndexSnap][k], marker='.', markersize=self.SizeBodies, color=self.colorList[k], label="Marker of "+str(k+1))
+                self.SubplotXZ.plot(self.BodyX[k], self.BodyZ[k], marker='.', markersize=self.SizeBodies, color=self.colorList[k], label="Marker of "+str(k+1))
 
         if self.indexRepres == 0:
-            self.SubplotXZ.scatter(self.X[self.IndexSnap][self.NbBodies-1:], self.Z[self.IndexSnap][self.NbBodies-1:], s=self.SizePart, c='black', linewidths=0, label='Particles')
+            self.SubplotXZ.scatter(self.PartX, self.PartZ, s=self.SizePart, c='black', linewidths=0, label='Particles')
         
         elif self.indexRepres == 1:
             if self.CheckConvolution.CheckParam.isChecked():
                 # Convolve positions
                 x, z = self.convolve_positions(
-                    x=self.X[self.IndexSnap][self.NbBodies-1:], 
-                    y=self.Z[self.IndexSnap][self.NbBodies-1:], 
+                    x=self.PartX,
+                    y=self.PartZ,
                     fwhm_au=self.FWHMConv,
                     extent=self.LimDefault)
             else:
-                x = self.X[self.IndexSnap][self.NbBodies-1:]
-                z = self.Z[self.IndexSnap][self.NbBodies-1:]
+                x = self.PartX
+                z = self.PartZ
             
             hist, xedges, yedges = np.histogram2d(
                 x, 
@@ -575,12 +742,12 @@ class SpaceView(GeneralToolClass):
             if self.CheckOrbits.CheckParam.isChecked():
                 self.SubplotXYZ.plot(self.Xbm[k], self.Ybm[k], self.Zbm[k], color=self.colorList[k], linestyle='--', label=f"Orbit of {k+1}")
             if self.CheckBodies.CheckParam.isChecked():
-                self.SubplotXYZ.plot(self.X[self.IndexSnap][k], self.Y[self.IndexSnap][k], self.Z[self.IndexSnap][k], 
+                self.SubplotXYZ.plot(self.BodyX[k], self.BodyY[k], self.BodyZ[k], 
                                      marker='.', markersize=self.SizeBodies, color=self.colorList[k], label=f"Marker of {k+1}")
 
-        self.SubplotXYZ.scatter(self.X[self.IndexSnap][self.NbBodies-1:], 
-                                self.Y[self.IndexSnap][self.NbBodies-1:], 
-                                self.Z[self.IndexSnap][self.NbBodies-1:], 
+        self.SubplotXYZ.scatter(self.PartX,
+                                self.PartY,
+                                self.PartZ,
                                 s=self.SizePart, c='black', linewidth=0, label='Particles')
         
         # Time

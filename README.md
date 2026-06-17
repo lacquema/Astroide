@@ -14,9 +14,11 @@
     - [Launch](#launch)
     - [Continuation](#continuation)
     - [Extraction](#extraction)
+    - [Output reference frames](#output_frames)
 
 - [Analyse](#analyse)
     - [Space view](#space_view)
+    - [Reference frame selection](#space_view_frames)
     - [Radial profile](#radial_profile)
     - [Diagram a=f(e)](#diagram_ae)
     - [Diagram y=f(t)](#diagram_yt)
@@ -161,6 +163,16 @@ At each time step, the script generates a snapshot and writes it to the followin
 
 These files provide a unified dataset from all sub-simulations, ready for further analysis.
 
+<div id='output_frames'>
+
+## Output reference frames
+
+Reference-frame conventions are crucial to interpret `mextract.dat` and `followbodies.dat` correctly.
+
+- In `HJS`, orbital elements of massive bodies are defined in Jacobi coordinates.
+- In `HJS`, Cartesian positions written in `mextract.dat` (X, Y, Z) are barycentric, for both massive bodies and test particles.
+- In `RMVS3`, orbital elements are built from heliocentric states, while positions written in `mextract.dat` are barycentric.
+
 <br><br>
 
 <div id='analyse'>  
@@ -184,6 +196,17 @@ The interface offers a comprehensive set of tools for exploring and visualizing 
 ## Space view
 
 This feature allows you to visualize the system in two or three dimensional space. You can display test particles either as individual points or as a density map using a histogram. This provides an intuitive overview of the spatial distribution and structure of both massive bodies and test particles within the simulation. 
+
+The Space view includes a frame selector with two modes:
+
+- `barycentric`: bodies and particles are displayed in the system barycentric frame. In this mode, the central body naturally shows its own small orbit around the barycenter.
+- `heliocentric`: all positions (including particles) are shifted by the central-body position at the selected snapshot, so the central body is at the origin.
+
+For consistency, all plotted quantities in a given figure are transformed into the same frame. This avoids mixing orbital curves and body/particle positions from different reference systems.
+
+In barycentric mode, the central-body black orbit is displayed as a smooth closed curve fitted from its barycentric trajectory across snapshots (visual aid for readability).
+
+As a result, no single fixed frame can make all bodies follow perfect ellipses simultaneously in a full N-body simulation. Small epicycle-like residuals are therefore expected. Jacobi coordinates strongly reduce these residuals in hierarchical systems, but cannot remove them entirely.
 
 <div id='radial_profile'>  
 
