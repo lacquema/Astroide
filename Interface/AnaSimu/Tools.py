@@ -27,6 +27,7 @@ from Curve import CurveClass
 from UtilsAnaSimu import find_delimiter
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.patches import Circle
 from scipy.interpolate import interp1d  # Import pour l'interpolation
 
 
@@ -391,6 +392,36 @@ class SpaceView(GeneralToolClass):
         self.FWHMConv = self.FWHMConvWidget.SpinParam.value()
         self.indexRef = self.RefWidget.ComboParam.currentIndex()
 
+    def add_kernel_indicator(self, subplot, xmin, xmax, ymin, ymax):
+        """Display a circle indicating the Gaussian kernel size (FWHM)."""
+        if self.FWHMConv <= 0:
+            return
+
+        x_span = xmax - xmin
+        y_span = ymax - ymin
+        radius = 0.5 * self.FWHMConv
+
+        margin_x = 0.04 * x_span
+        margin_y = 0.04 * y_span
+
+        cx = xmax - margin_x - radius
+        cy = ymin + margin_y + radius
+
+        # Keep the indicator fully visible in the current view.
+        cx = np.clip(cx, xmin + radius, xmax - radius)
+        cy = np.clip(cy, ymin + radius, ymax - radius)
+
+        kernel_circle = Circle(
+            (cx, cy),
+            radius=radius,
+            fill=False,
+            edgecolor='white',
+            linewidth=2,
+            alpha=0.95,
+            zorder=10
+        )
+        subplot.add_patch(kernel_circle)
+
     def Ellipse2(self, a, e, Ex, Ey, Ez, Epx, Epy, Epz):
         npts = max(1000, int(a * 100))
         E = np.linspace(-pi, pi, npts)
@@ -633,19 +664,25 @@ class SpaceView(GeneralToolClass):
                 y, 
                 range=[[Xmin, Xmax], [Ymin, Ymax]], 
                 bins=[self.NbBinsX, self.NbBinsY])
-            norm_hist = hist
+            hist_max = np.max(hist)
+            norm_hist = hist / hist_max if hist_max > 0 else hist
             im = self.SubplotXY.imshow(
                 norm_hist.T, 
                 interpolation='bicubic', 
                 extent=[Xmin, Xmax, Ymin, Ymax], 
-                cmap='magma', 
+                cmap='inferno', 
                 origin='lower',
+                vmin=0,
+                vmax=1,
                 label='Colormap')
             
             # Create a colorbar axis with the same height as the main plot
             divider = make_axes_locatable(self.SubplotXY)
             cax = divider.append_axes("right", size="5%", pad=0.1)
             cbar = self.WidgetPlotXY.Canvas.fig.colorbar(im, cax=cax, ticks=[], label='Density')
+
+            if self.CheckConvolution.CheckParam.isChecked():
+                self.add_kernel_indicator(self.SubplotXY, Xmin, Xmax, Ymin, Ymax)
 
         # Time
         self.SubplotXY.text(x=0.99, y=1.01, s='t='+str(round(self.t, 1))+' Myr', horizontalalignment='right', verticalalignment='bottom', transform=self.SubplotXY.transAxes, label='Time')
@@ -703,19 +740,25 @@ class SpaceView(GeneralToolClass):
                 z, 
                 range=[[Xmin, Xmax], [Zmin, Zmax]], 
                 bins=[self.NbBinsX, self.NbBinsY])
-            norm_hist = hist
+            hist_max = np.max(hist)
+            norm_hist = hist / hist_max if hist_max > 0 else hist
             im = self.SubplotXZ.imshow(
                 norm_hist.T, 
                 interpolation='bicubic', 
                 extent=[Xmin, Xmax, Zmin, Zmax], 
-                cmap='magma', 
+                cmap='inferno', 
                 origin='lower',
+                vmin=0,
+                vmax=1,
                 label='Colormap')
             
             # Create a colorbar axis with the same height as the main plot
             divider = make_axes_locatable(self.SubplotXZ)
             cax = divider.append_axes("right", size="5%", pad=0.1)
             cbar = self.WidgetPlotXZ.Canvas.fig.colorbar(im, cax=cax, ticks=[], label='Density')
+
+            if self.CheckConvolution.CheckParam.isChecked():
+                self.add_kernel_indicator(self.SubplotXZ, Xmin, Xmax, Zmin, Zmax)
        
         # Time
         self.SubplotXZ.text(x=0.99, y=1.01, s='t='+str(round(self.t, 1))+' Myr', horizontalalignment='right', verticalalignment='bottom', transform=self.SubplotXZ.transAxes, label='Time')
