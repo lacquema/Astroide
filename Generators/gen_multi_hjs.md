@@ -138,11 +138,11 @@ For each debris disk, repeat the next 7 lines:
 
 4. **Reference frame of the disk**
     - *Values*: 
-        - `-1`: Aligned with the orbital plane of the reference body.
-        - `0`: Aligned with the ecliptic plane.
-        - `1`: Aligned with the system's center of mass.
-        - `2`: Aligned with the invariant plane.
-    - *Description*: Specifies the coordinate system in which the disk is initialized.
+      - `<0`: Aligned with the orbital plane of the selected body (e.g., `-2` aligns the disk with body 2).
+      - `0`: Aligned with the ecliptic plane.
+      - `1`: Aligned with the invariant plane of bodies inside the disk (those marked `-1` in the disk hierarchy; at least two are required).
+      - `2`: Uses the default reference plane selected by the **Coordinate system** parameter.
+   - *Description*: Specifies the reference plane used to initialize disk particle orbital elements.
 
 5. **Eccentricity range in the disk**
    - *Format*: `e_min` `e_max`
