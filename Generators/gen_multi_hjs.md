@@ -67,9 +67,9 @@ This script generates sub-simulations input files for the `HJS` integrator, whic
 
 **Coordinate system**
    - *Values*: 
-      - `0`: Ecliptic plane.
+      - `0`: Default reference plane.
       - `1`: Invariant plane.
-   - *Description*: Determines the reference plane for all orbital elements. The ecliptic plane is the plane of Earth's orbit, while the invariant plane is defined by the total angular momentum of the system.
+   - *Description*: Determines the reference plane for all orbital elements. In this generator, the default reference plane is the input reference plane of the model, while the invariant plane is defined by the total angular momentum of the system.
 
 **Planetary radius type**
    - *Values*: 
@@ -139,9 +139,9 @@ For each debris disk, repeat the next 7 lines:
 4. **Reference frame of the disk**
     - *Values*: 
       - `<0`: Aligned with the orbital plane of the selected body (e.g., `-2` aligns the disk with body 2).
-      - `0`: Aligned with the ecliptic plane.
+      - `0`: Uses the default reference plane selected by the **Coordinate system** parameter.
       - `1`: Aligned with the invariant plane of bodies inside the disk (those marked `-1` in the disk hierarchy; at least two are required).
-      - `2`: Uses the default reference plane selected by the **Coordinate system** parameter.
+      - `3`: Uses a user-defined plane specified by its inclination and longitude of ascending node, relative to the default reference frame.
    - *Description*: Specifies the reference plane used to initialize disk particle orbital elements.
 
 5. **Eccentricity range in the disk**
