@@ -139,8 +139,9 @@ For each debris disk, repeat the next 7 lines:
 4. **Reference frame of the disk**
     - *Values*: 
       - `<0`: Aligned with the orbital plane of the selected body (e.g., `-2` aligns the disk with body 2).
-      - `0`: Uses the default reference plane selected by the **Coordinate system** parameter.
+      - `0`: Uses the reference plane selected by the **Coordinate system** parameter.
       - `1`: Aligned with the invariant plane of bodies inside the disk (those marked `-1` in the disk hierarchy; at least two are required).
+      - `2`: Uses the default reference plane
       - `3`: Uses a user-defined plane specified by its inclination and longitude of ascending node, relative to the default reference frame.
    - *Description*: Specifies the reference plane used to initialize disk particle orbital elements.
 
