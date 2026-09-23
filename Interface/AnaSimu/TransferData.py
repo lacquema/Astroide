@@ -14,6 +14,31 @@ class TransferDataClass():
     def __init__(self):
         super().__init__()
 
+    def _load_mextract_data(FileMextract, NbLines, NbColumns):
+        ExpectedSize = NbLines * NbColumns
+        DataMextract = np.loadtxt(FileMextract, skiprows = 1)
+        DataMextract = np.atleast_1d(DataMextract)
+
+        if DataMextract.size == ExpectedSize:
+            return DataMextract.reshape(NbColumns, NbLines)
+
+        GdfFile = FileMextract.rsplit('.', 1)[0] + '.gdf'
+        try:
+            with open(GdfFile, 'rb') as file:
+                if file.read(6) != b'GILDAS':
+                    raise ValueError
+                file.seek(1024)
+                DataMextract = np.fromfile(file, dtype = '<f4', count = ExpectedSize)
+        except (FileNotFoundError, ValueError):
+            DataMextract = np.array([])
+
+        if DataMextract.size != ExpectedSize:
+            raise ValueError(
+                f'mextract.dat is incomplete and no compatible GDF data was found for {FileMextract}'
+            )
+
+        return DataMextract.reshape(NbColumns, NbLines)
+
     # Open followbodies.dat data
     def OpenFollowbodies(FileFollowbodies):
 
@@ -42,7 +67,7 @@ class TransferDataClass():
         # print(NbLines, NbColumns)
 
         # Data
-        DataMextract = np.loadtxt(FileMextract, skiprows = 1, max_rows = 2).reshape(NbColumns, NbLines)
+        DataMextract = TransferDataClass._load_mextract_data(FileMextract, NbLines, NbColumns)
 
         # with open('./mext0.txt', 'w') as file:
         #     for i in range(NbLines):

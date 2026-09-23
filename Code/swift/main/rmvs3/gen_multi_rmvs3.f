@@ -148,7 +148,7 @@ c     ........entree des parametres
         WRITE(54,'(a)')'#! /bin/bash' ! added by antoine
 
         WRITE(51,'(a)')'#! /bin/bash' ! modified by antoine
-        ! WRITE(51,'(a)')'unlimit'
+        WRITE(51,'(a)')'ulimit -f unlimited'
         WRITE(51,'(a)')'export OMP_NUM_THREADS=1'
         WRITE(51,'(a)')'export STACKSIZE=1000000'
         
